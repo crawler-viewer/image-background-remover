@@ -1,17 +1,44 @@
 import BgRemover from "@/components/BgRemover";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
 
 export default function Home() {
   return (
     <main className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="border-b border-gray-800">
+      <header className="border-b border-gray-800/50 sticky top-0 z-50 bg-gray-950/80 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold tracking-tight">
-            <span className="text-violet-400">BG</span>Remover
-          </h2>
+          <a href="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center group-hover:bg-violet-500 transition-colors">
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <span className="text-lg font-bold tracking-tight">
+              <span className="text-violet-400">BG</span>Remover
+            </span>
+          </a>
           <nav className="flex gap-6 text-sm text-gray-400">
-            <a href="#how-it-works" className="hover:text-white transition-colors">
+            <a
+              href="#how-it-works"
+              className="hover:text-white transition-colors hidden sm:block"
+            >
               How it works
+            </a>
+            <a
+              href="#use-cases"
+              className="hover:text-white transition-colors hidden sm:block"
+            >
+              Use Cases
             </a>
             <a href="#faq" className="hover:text-white transition-colors">
               FAQ
@@ -20,90 +47,161 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="flex-1 flex flex-col items-center justify-center px-4 py-16">
-        <h1 className="text-4xl md:text-5xl font-bold text-center mb-4 tracking-tight">
-          Image Background Remover
-        </h1>
-        <p className="text-gray-400 text-lg text-center mb-10 max-w-xl">
-          Remove backgrounds from your photos instantly with AI. 100% automatic,
-          no signup required. Get a transparent PNG in seconds.
-        </p>
+      {/* Hero + Tool */}
+      <section className="flex-1 flex flex-col items-center px-4 pt-12 md:pt-20 pb-16">
+        <div className="text-center mb-10 max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-violet-500/10 border border-violet-500/20 rounded-full text-violet-300 text-xs font-medium mb-6">
+            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+            100% Free · No Signup Required
+          </div>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-5 bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent">
+            Image Background
+            <br />
+            Remover
+          </h1>
+          <p className="text-gray-400 text-lg md:text-xl leading-relaxed">
+            Remove backgrounds from your photos instantly with AI.
+            <br className="hidden md:block" />
+            Get a transparent PNG in seconds.
+          </p>
+        </div>
+
         <BgRemover />
+
+        {/* Trust signals */}
+        <div className="flex flex-wrap justify-center gap-6 mt-10 text-xs text-gray-500">
+          <div className="flex items-center gap-1.5">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Images never stored
+          </div>
+          <div className="flex items-center gap-1.5">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Processed in seconds
+          </div>
+          <div className="flex items-center gap-1.5">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            AI-powered accuracy
+          </div>
+        </div>
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="border-t border-gray-800 py-16">
+      <section id="how-it-works" className="border-t border-gray-800/50 py-20 bg-gray-900/20">
         <div className="max-w-4xl mx-auto px-4">
-          <h2 className="text-2xl font-bold text-center mb-10">
+          <h2 className="text-3xl font-bold text-center mb-4">
             How to Remove Background from Image
           </h2>
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="text-4xl mb-3">📤</div>
-              <h3 className="font-semibold mb-2">1. Upload Image</h3>
-              <p className="text-gray-400 text-sm">
-                Drag and drop or click to upload your photo. Supports PNG, JPG,
-                and WebP formats.
-              </p>
-            </div>
-            <div>
-              <div className="text-4xl mb-3">🤖</div>
-              <h3 className="font-semibold mb-2">2. AI Processing</h3>
-              <p className="text-gray-400 text-sm">
-                Our AI automatically detects the subject and removes the
-                background in seconds.
-              </p>
-            </div>
-            <div>
-              <div className="text-4xl mb-3">⬇️</div>
-              <h3 className="font-semibold mb-2">3. Download Result</h3>
-              <p className="text-gray-400 text-sm">
-                Preview the result with the comparison slider and download your
-                transparent PNG.
-              </p>
-            </div>
+          <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
+            Three simple steps to get a transparent background. No technical skills needed.
+          </p>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                step: "01",
+                icon: (
+                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                  </svg>
+                ),
+                title: "Upload Image",
+                desc: "Drag and drop or click to upload your photo. Supports PNG, JPG, and WebP up to 25MB.",
+              },
+              {
+                step: "02",
+                icon: (
+                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 00.659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M19 14.5l-2.47 4.11a2.25 2.25 0 01-1.94 1.14H9.41a2.25 2.25 0 01-1.94-1.14L5 14.5m14 0H5" />
+                  </svg>
+                ),
+                title: "AI Processing",
+                desc: "Our AI automatically detects the subject and removes the background with precision.",
+              },
+              {
+                step: "03",
+                icon: (
+                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                ),
+                title: "Download Result",
+                desc: "Preview with the comparison slider and download your transparent PNG for free.",
+              },
+            ].map((item) => (
+              <div key={item.step} className="text-center group">
+                <div className="w-16 h-16 mx-auto mb-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl flex items-center justify-center text-violet-400 group-hover:bg-violet-500/20 transition-colors">
+                  {item.icon}
+                </div>
+                <div className="text-xs text-violet-400 font-mono mb-2">
+                  Step {item.step}
+                </div>
+                <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  {item.desc}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Use Cases */}
-      <section className="border-t border-gray-800 py-16 bg-gray-900/30">
+      <section id="use-cases" className="border-t border-gray-800/50 py-20">
         <div className="max-w-4xl mx-auto px-4">
-          <h2 className="text-2xl font-bold text-center mb-10">
-            Perfect For
+          <h2 className="text-3xl font-bold text-center mb-4">
+            Perfect For Every Use Case
           </h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
+            Whether you&apos;re selling products or creating content, clean backgrounds make all the difference.
+          </p>
+          <div className="grid md:grid-cols-2 gap-4">
             {[
               {
                 icon: "🛍️",
                 title: "E-commerce Product Photos",
-                desc: "Clean product images with transparent backgrounds for your online store.",
+                desc: "Clean white or transparent backgrounds for your online store listings. Boost conversion with professional product images.",
               },
               {
                 icon: "📸",
-                title: "Profile Pictures",
-                desc: "Remove messy backgrounds from portraits and headshots.",
+                title: "Portrait & Profile Pictures",
+                desc: "Remove messy backgrounds from portraits and headshots. Perfect for LinkedIn, resumes, and social profiles.",
               },
               {
                 icon: "🎨",
                 title: "Graphic Design",
-                desc: "Extract subjects for use in designs, presentations, and marketing materials.",
+                desc: "Extract subjects for use in designs, presentations, marketing materials, and creative compositions.",
               },
               {
                 icon: "📱",
                 title: "Social Media Content",
-                desc: "Create eye-catching posts with clean, professional-looking images.",
+                desc: "Create eye-catching posts, stories, and thumbnails with clean, professional-looking images.",
+              },
+              {
+                icon: "🏷️",
+                title: "Marketing & Ads",
+                desc: "Prepare product images for banners, flyers, and ad campaigns without expensive photo editing.",
+              },
+              {
+                icon: "📋",
+                title: "Documents & Presentations",
+                desc: "Insert clean images into slides, reports, and documents. No more awkward white boxes.",
               },
             ].map((item) => (
               <div
                 key={item.title}
-                className="flex gap-4 p-4 rounded-xl bg-gray-800/50"
+                className="flex gap-4 p-5 rounded-2xl bg-gray-900/50 border border-gray-800/50 hover:border-gray-700/50 transition-colors"
               >
-                <div className="text-3xl">{item.icon}</div>
+                <div className="text-3xl flex-shrink-0">{item.icon}</div>
                 <div>
                   <h3 className="font-semibold mb-1">{item.title}</h3>
-                  <p className="text-gray-400 text-sm">{item.desc}</p>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    {item.desc}
+                  </p>
                 </div>
               </div>
             ))}
@@ -112,49 +210,86 @@ export default function Home() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="border-t border-gray-800 py-16">
+      <section id="faq" className="border-t border-gray-800/50 py-20 bg-gray-900/20">
         <div className="max-w-3xl mx-auto px-4">
-          <h2 className="text-2xl font-bold text-center mb-10">
+          <h2 className="text-3xl font-bold text-center mb-4">
             Frequently Asked Questions
           </h2>
-          <div className="space-y-6">
+          <p className="text-gray-400 text-center mb-12">
+            Everything you need to know about our background remover tool.
+          </p>
+          <div className="space-y-4">
             {[
               {
-                q: "Is this background remover free?",
-                a: "Yes! You can remove backgrounds from your images completely free. No signup or credit card required.",
+                q: "Is this background remover completely free?",
+                a: "Yes! You can remove backgrounds from your images completely free. No signup, no credit card, no hidden fees. Just upload and download.",
               },
               {
-                q: "What image formats are supported?",
-                a: "We support PNG, JPG, JPEG, and WebP formats. The maximum file size is 25MB.",
+                q: "What image formats and sizes are supported?",
+                a: "We support PNG, JPG, JPEG, and WebP formats. The maximum file size is 25MB. For best results, use high-resolution images with clear subjects.",
               },
               {
                 q: "How does the AI background removal work?",
-                a: "We use advanced AI models that detect the foreground subject in your image and precisely separate it from the background, producing a clean transparent PNG.",
+                a: "We use state-of-the-art AI models that analyze your image to detect the foreground subject — whether it's a person, product, animal, or object — and precisely separate it from the background, producing a clean transparent PNG.",
               },
               {
-                q: "Is my image data safe?",
-                a: "Your images are processed in real-time and are not stored on our servers. Once processing is complete, the data is discarded.",
+                q: "Is my image data safe and private?",
+                a: "Absolutely. Your images are processed in real-time and are never stored on our servers. Once the background is removed and you receive your result, all data is immediately discarded. We take your privacy seriously.",
               },
               {
-                q: "Can I use the results commercially?",
-                a: "Absolutely. The processed images are yours to use for any purpose — personal or commercial.",
+                q: "Can I use the results for commercial purposes?",
+                a: "Yes! The processed images are entirely yours. Use them for e-commerce, marketing, social media, print — any purpose, personal or commercial, with no attribution required.",
+              },
+              {
+                q: "What types of images work best?",
+                a: "Our AI works great with portraits, product photos, animals, vehicles, and objects. Images with clear contrast between the subject and background produce the best results. Complex scenes with multiple overlapping subjects may require some manual touchup.",
               },
             ].map((faq) => (
-              <div key={faq.q}>
-                <h3 className="font-semibold mb-2">{faq.q}</h3>
-                <p className="text-gray-400 text-sm">{faq.a}</p>
-              </div>
+              <details key={faq.q} className="group bg-gray-900/50 border border-gray-800/50 rounded-xl overflow-hidden">
+                <summary className="flex items-center justify-between p-5 cursor-pointer font-semibold hover:text-violet-300 transition-colors list-none">
+                  {faq.q}
+                  <svg
+                    className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </summary>
+                <p className="px-5 pb-5 text-gray-400 text-sm leading-relaxed -mt-1">
+                  {faq.a}
+                </p>
+              </details>
             ))}
           </div>
         </div>
       </section>
 
+      {/* CTA */}
+      <section className="border-t border-gray-800/50 py-16">
+        <div className="max-w-2xl mx-auto px-4 text-center">
+          <h2 className="text-2xl font-bold mb-3">
+            Ready to Remove Backgrounds?
+          </h2>
+          <p className="text-gray-400 mb-6">
+            It&apos;s free, fast, and requires no signup. Try it now.
+          </p>
+          <ScrollToTopButton />
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="border-t border-gray-800 py-8 text-center text-gray-500 text-sm">
-        <p>
-          © {new Date().getFullYear()} BGRemover — Free Online Image Background
-          Remover Tool
-        </p>
+      <footer className="border-t border-gray-800/50 py-8">
+        <div className="max-w-5xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4 text-gray-500 text-sm">
+          <p>© {new Date().getFullYear()} BGRemover — Free Online Image Background Remover</p>
+          <div className="flex gap-6">
+            <a href="#how-it-works" className="hover:text-gray-300 transition-colors">How it works</a>
+            <a href="#use-cases" className="hover:text-gray-300 transition-colors">Use Cases</a>
+            <a href="#faq" className="hover:text-gray-300 transition-colors">FAQ</a>
+          </div>
+        </div>
       </footer>
     </main>
   );
