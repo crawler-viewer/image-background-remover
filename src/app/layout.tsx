@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     "photo background remover",
     "product photo background remover",
   ],
-  metadataBase: new URL("https://bgremover.example.com"),
+  metadataBase: new URL("https://image-background-remover-bbk.pages.dev"),
   alternates: { canonical: "/" },
   openGraph: {
     title: "Image Background Remover - Free Online AI Tool",
@@ -56,7 +56,7 @@ export default function RootLayout({
               offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
               description:
                 "Free online AI tool to remove backgrounds from images instantly.",
-              url: "https://bgremover.example.com",
+              url: "https://image-background-remover-bbk.pages.dev",
               featureList: [
                 "AI background removal",
                 "Before/after comparison",

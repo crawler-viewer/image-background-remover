@@ -1,7 +1,14 @@
+import AuthButton from "@/components/AuthButton";
 import BgRemover from "@/components/BgRemover";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
 
 export default function Home() {
+  const authErrorMessage = {
+    config: "Google login is not configured yet.",
+    state: "Login expired or became invalid. Please try again.",
+    google: "Google login failed. Please try again.",
+  } as const;
+
   return (
     <main className="min-h-screen flex flex-col">
       {/* Header */}
@@ -27,29 +34,50 @@ export default function Home() {
               <span className="text-violet-400">BG</span>Remover
             </span>
           </a>
-          <nav className="flex gap-6 text-sm text-gray-400">
-            <a
-              href="#how-it-works"
-              className="hover:text-white transition-colors hidden sm:block"
-            >
-              How it works
-            </a>
-            <a
-              href="#use-cases"
-              className="hover:text-white transition-colors hidden sm:block"
-            >
-              Use Cases
-            </a>
-            <a href="#faq" className="hover:text-white transition-colors">
-              FAQ
-            </a>
-          </nav>
+          <div className="flex items-center gap-4">
+            <nav className="flex gap-6 text-sm text-gray-400">
+              <a
+                href="#how-it-works"
+                className="hover:text-white transition-colors hidden sm:block"
+              >
+                How it works
+              </a>
+              <a
+                href="#use-cases"
+                className="hover:text-white transition-colors hidden sm:block"
+              >
+                Use Cases
+              </a>
+              <a href="#faq" className="hover:text-white transition-colors">
+                FAQ
+              </a>
+            </nav>
+            <AuthButton />
+          </div>
         </div>
       </header>
 
       {/* Hero + Tool */}
       <section className="flex-1 flex flex-col items-center px-4 pt-12 md:pt-20 pb-16">
         <div className="text-center mb-10 max-w-2xl">
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(() => {
+                const params = new URLSearchParams(window.location.search);
+                const error = params.get("auth_error");
+                const map = ${JSON.stringify({ config: "Google login is not configured yet.", state: "Login expired or became invalid. Please try again.", google: "Google login failed. Please try again." })};
+                if (!error || !map[error]) return;
+                const box = document.getElementById("auth-error-box");
+                if (!box) return;
+                box.textContent = map[error];
+                box.classList.remove("hidden");
+                params.delete("auth_error");
+                const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash}`;
+                window.history.replaceState({}, "", nextUrl);
+              })();`,
+            }}
+          />
+          <div id="auth-error-box" className="hidden mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300" />
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-violet-500/10 border border-violet-500/20 rounded-full text-violet-300 text-xs font-medium mb-6">
             <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
             100% Free · No Signup Required

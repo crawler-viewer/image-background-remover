@@ -6,9 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "pages:build": "npx @cloudflare/next-on-pages",
-    "pages:deploy": "npm run pages:build && npx wrangler pages deploy .vercel/output/static --project-name=bg-remover",
-    "preview": "npm run pages:build && npx wrangler pages dev .vercel/output/static"
+    "export": "next build",
+    "pages:deploy": "wrangler pages deploy out --project-name=image-background-remover --commit-dirty=true",
+    "preview": "wrangler pages dev out"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.2",
