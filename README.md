@@ -47,14 +47,40 @@ This deploys:
 - static files from `out`
 - Pages Functions from `functions/`
 
+## Automate Cloudflare Environment Variables
+
+You can update Google OAuth variables for both `preview` and `production` via API:
+
+```bash
+CLOUDFLARE_API_TOKEN=your_cloudflare_token \
+CLOUDFLARE_ACCOUNT_ID=your_account_id \
+GOOGLE_CLIENT_ID=your_google_client_id \
+GOOGLE_CLIENT_SECRET=your_google_client_secret \
+AUTH_SECRET=your_random_auth_secret \
+npm run pages:env:update
+```
+
+This script reads the current Pages project config first, then merge-updates env vars to avoid overwriting the rest of the project configuration.
+
 ## Google OAuth Configuration
 
 Set these in Google Cloud Console:
 
 - **Authorized JavaScript origins**
+  - `https://picturebackgroundremover.xyz`
   - `https://image-background-remover-bbk.pages.dev`
 - **Authorized redirect URIs**
+  - `https://picturebackgroundremover.xyz/api/auth/google/callback`
   - `https://image-background-remover-bbk.pages.dev/api/auth/google/callback`
+
+## D1 Database
+
+Create a D1 database and bind it to Pages as `DB`, then initialize schema:
+
+```bash
+npx wrangler d1 create bg-remover-db
+npx wrangler d1 execute bg-remover-db --remote --file=db/schema.sql
+```
 
 ## Features
 

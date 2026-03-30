@@ -72,7 +72,8 @@ export default function Home() {
                 box.textContent = map[error];
                 box.classList.remove("hidden");
                 params.delete("auth_error");
-                const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash}`;
+                const nextQuery = params.toString();
+                const nextUrl = window.location.pathname + (nextQuery ? "?" + nextQuery : "") + window.location.hash;
                 window.history.replaceState({}, "", nextUrl);
               })();`,
             }}

@@ -6,6 +6,7 @@ import {
   fetchGoogleProfile,
   readState,
 } from "../_lib";
+import { upsertUser } from "../db";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -29,6 +30,7 @@ export async function onRequestGet(context) {
 
     const tokenData = await exchangeCode(request, env, code);
     const profile = await fetchGoogleProfile(tokenData.access_token);
+    await upsertUser(env, profile);
     const headers = new Headers({ Location: "/" });
     headers.append("Set-Cookie", clearStateHeader());
     headers.append("Set-Cookie", await createSessionCookie(env, profile));
