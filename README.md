@@ -31,16 +31,16 @@ In Cloudflare Pages, set the same variables in:
 ## Development
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 ## Deploy to Cloudflare Pages
 
 ```bash
-npm install
-npm run build
-npm run pages:deploy
+pnpm install
+pnpm build
+pnpm pages:deploy
 ```
 
 This deploys:
@@ -58,7 +58,7 @@ GOOGLE_CLIENT_ID=your_google_client_id \
 GOOGLE_CLIENT_SECRET=your_google_client_secret \
 AUTH_SECRET=your_random_auth_secret \
 REMOVE_BG_API_KEY=your_remove_bg_api_key \
-npm run pages:env:update
+pnpm pages:env:update
 ```
 
 This script reads the current Pages project config first, then merge-updates env vars to avoid overwriting the rest of the project configuration.
