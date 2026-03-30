@@ -166,9 +166,12 @@ export default function AccountPageClient() {
                 style={{ width: `${Math.min(100, (user.today_used / user.daily_limit) * 100)}%` }}
               />
             </div>
-            <button className="mt-6 w-full rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm font-medium text-violet-200 hover:bg-violet-500/20 transition-colors">
-              Upgrade Plan
-            </button>
+            <Link
+              href="/pricing"
+              className="mt-6 inline-flex w-full items-center justify-center rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm font-medium text-violet-200 hover:bg-violet-500/20 transition-colors"
+            >
+              Upgrade to Pro
+            </Link>
           </div>
         </section>
 

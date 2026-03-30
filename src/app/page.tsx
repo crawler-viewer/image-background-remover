@@ -36,6 +36,9 @@ export default function Home() {
           </a>
           <div className="flex items-center gap-4">
             <nav className="flex gap-6 text-sm text-gray-400">
+              <a href="/pricing" className="hover:text-white transition-colors hidden sm:block">
+                Pricing
+              </a>
               <a
                 href="#how-it-works"
                 className="hover:text-white transition-colors hidden sm:block"
@@ -52,6 +55,12 @@ export default function Home() {
                 FAQ
               </a>
             </nav>
+            <a
+              href="/pricing"
+              className="hidden rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-sm font-medium text-violet-200 transition-colors hover:bg-violet-500/20 sm:inline-flex"
+            >
+              Upgrade
+            </a>
             <AuthButton />
           </div>
         </div>
