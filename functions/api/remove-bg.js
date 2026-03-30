@@ -1,3 +1,7 @@
+import { getUserWithSession } from "./auth/db";
+import { json, readSession } from "./auth/_lib";
+import { assertDailyLimit, recordUsage } from "./usage";
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -10,6 +14,24 @@ export async function onRequestPost(context) {
   }
 
   try {
+    const session = await readSession(request, env);
+    const user = await getUserWithSession(env, session);
+
+    if (user?.google_sub) {
+      const quota = await assertDailyLimit(env, user.google_sub);
+      if (!quota.allowed) {
+        return json(
+          {
+            error: "Daily limit reached. Please try again tomorrow.",
+            code: "DAILY_LIMIT_REACHED",
+            used: quota.used,
+            limit: quota.limit,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     const formData = await request.formData();
     const file = formData.get("image");
 
@@ -69,6 +91,14 @@ export async function onRequestPost(context) {
     }
 
     const buffer = await response.arrayBuffer();
+
+    if (user?.google_sub) {
+      await recordUsage(env, {
+        googleSub: user.google_sub,
+        userId: user.id || null,
+        sourceFilename: file?.name || null,
+      });
+    }
 
     return new Response(buffer, {
       status: 200,

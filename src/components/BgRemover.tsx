@@ -107,7 +107,10 @@ export default function BgRemover() {
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           throw new Error(
-            data.error || `Server error (${res.status}). Please try again.`
+            data.error ||
+              (res.status === 429
+                ? "Daily limit reached. Please try again tomorrow."
+                : `Server error (${res.status}). Please try again.`)
           );
         }
 

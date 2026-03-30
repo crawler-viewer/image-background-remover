@@ -47,6 +47,11 @@ export async function getUserByGoogleSub(env, googleSub) {
   return result || null;
 }
 
+export async function getUserWithSession(env, session) {
+  if (!session?.sub) return null;
+  return getUserByGoogleSub(env, session.sub);
+}
+
 export async function handleDbError(error) {
   console.error("D1 error:", error);
   return json({ error: "Database error." }, { status: 500 });
