@@ -15,10 +15,17 @@ export async function onRequestGet(context) {
     return json({
       user:
         user || {
-          sub: session.sub,
+          id: null,
+          google_sub: session.sub,
           email: session.email || null,
           name: session.name || null,
           avatar_url: session.picture || null,
+          plan: "free",
+          status: "active",
+          created_at: null,
+          updated_at: null,
+          last_seen_at: null,
+          last_login_at: null,
         },
     });
   } catch (error) {

@@ -16,6 +16,7 @@ require_var CLOUDFLARE_ACCOUNT_ID
 require_var GOOGLE_CLIENT_ID
 require_var GOOGLE_CLIENT_SECRET
 require_var AUTH_SECRET
+require_var REMOVE_BG_API_KEY
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "[ERROR] jq is required but not installed." >&2
@@ -45,20 +46,23 @@ fi
 jq --arg googleId "$GOOGLE_CLIENT_ID" \
    --arg googleSecret "$GOOGLE_CLIENT_SECRET" \
    --arg authSecret "$AUTH_SECRET" \
+   --arg removeBgKey "$REMOVE_BG_API_KEY" \
    '{
       deployment_configs: {
         preview: {
           env_vars: ((.result.deployment_configs.preview.env_vars // {}) + {
             GOOGLE_CLIENT_ID: { type: "plain_text", value: $googleId },
             GOOGLE_CLIENT_SECRET: { type: "secret_text", value: $googleSecret },
-            AUTH_SECRET: { type: "secret_text", value: $authSecret }
+            AUTH_SECRET: { type: "secret_text", value: $authSecret },
+            REMOVE_BG_API_KEY: { type: "secret_text", value: $removeBgKey }
           })
         },
         production: {
           env_vars: ((.result.deployment_configs.production.env_vars // {}) + {
             GOOGLE_CLIENT_ID: { type: "plain_text", value: $googleId },
             GOOGLE_CLIENT_SECRET: { type: "secret_text", value: $googleSecret },
-            AUTH_SECRET: { type: "secret_text", value: $authSecret }
+            AUTH_SECRET: { type: "secret_text", value: $authSecret },
+            REMOVE_BG_API_KEY: { type: "secret_text", value: $removeBgKey }
           })
         }
       }

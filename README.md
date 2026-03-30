@@ -57,6 +57,7 @@ CLOUDFLARE_ACCOUNT_ID=your_account_id \
 GOOGLE_CLIENT_ID=your_google_client_id \
 GOOGLE_CLIENT_SECRET=your_google_client_secret \
 AUTH_SECRET=your_random_auth_secret \
+REMOVE_BG_API_KEY=your_remove_bg_api_key \
 npm run pages:env:update
 ```
 

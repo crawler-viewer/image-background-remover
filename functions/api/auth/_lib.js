@@ -39,10 +39,15 @@ function toBase64Url(bytes) {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-async function sha256(input) {
-  const data = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return new Uint8Array(digest);
+function fromBase64Url(value) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
+  const binary = atob(`${normalized}${padding}`);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
 }
 
 async function hmacSign(secret, payload) {
@@ -68,7 +73,15 @@ async function verifySession(secret, token) {
   const [payload, signature] = token.split(".");
   const expected = await hmacSign(secret, payload);
   if (signature !== expected) return null;
-  const json = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(payload.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0))));
+
+  let json;
+  try {
+    json = JSON.parse(new TextDecoder().decode(fromBase64Url(payload)));
+  } catch (error) {
+    console.error("Failed to decode session payload:", error);
+    return null;
+  }
+
   if (!json?.exp || Date.now() > json.exp) return null;
   return json;
 }
@@ -172,6 +185,49 @@ export function readState(request) {
 export async function readSession(request, env) {
   const token = getCookie(request, SESSION_COOKIE);
   return verifySession(env.AUTH_SECRET, token);
+}
+
+export async function debugSession(request, env) {
+  const token = getCookie(request, SESSION_COOKIE);
+  if (!token) {
+    return {
+      hasCookie: false,
+      tokenPreview: null,
+      verified: false,
+      reason: "missing_cookie",
+    };
+  }
+
+  const [payload, signature] = token.includes(".") ? token.split(".") : [null, null];
+  if (!payload || !signature) {
+    return {
+      hasCookie: true,
+      tokenPreview: token.slice(0, 24),
+      verified: false,
+      reason: "invalid_token_shape",
+    };
+  }
+
+  const expected = await hmacSign(env.AUTH_SECRET, payload);
+  const signatureValid = signature === expected;
+
+  let decoded = null;
+  let decodeError = null;
+  try {
+    decoded = JSON.parse(new TextDecoder().decode(fromBase64Url(payload)));
+  } catch (error) {
+    decodeError = error instanceof Error ? error.message : String(error);
+  }
+
+  return {
+    hasCookie: true,
+    tokenPreview: token.slice(0, 24),
+    signatureValid,
+    decodeError,
+    decoded,
+    verified: signatureValid && !!decoded,
+    reason: signatureValid ? (decoded ? null : "decode_failed") : "signature_mismatch",
+  };
 }
 
 export function json(data, init = {}) {

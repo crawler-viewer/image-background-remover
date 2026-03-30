@@ -30,8 +30,14 @@ export async function onRequestGet(context) {
 
     const tokenData = await exchangeCode(request, env, code);
     const profile = await fetchGoogleProfile(tokenData.access_token);
-    await upsertUser(env, profile);
-    const headers = new Headers({ Location: "/" });
+
+    try {
+      await upsertUser(env, profile);
+    } catch (dbError) {
+      console.error("Failed to persist Google user in D1:", dbError);
+    }
+
+    const headers = new Headers({ Location: "/account" });
     headers.append("Set-Cookie", clearStateHeader());
     headers.append("Set-Cookie", await createSessionCookie(env, profile));
     return new Response(null, { status: 302, headers });
