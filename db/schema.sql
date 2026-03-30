@@ -4,7 +4,11 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT,
   name TEXT,
   avatar_url TEXT,
+  plan TEXT NOT NULL DEFAULT 'free',
+  status TEXT NOT NULL DEFAULT 'active',
   created_at TEXT NOT NULL,
+  updated_at TEXT,
+  last_seen_at TEXT,
   last_login_at TEXT NOT NULL
 );
 
@@ -17,6 +21,7 @@ CREATE TABLE IF NOT EXISTS usage_logs (
   google_sub TEXT NOT NULL,
   action TEXT NOT NULL,
   source_filename TEXT,
+  status TEXT NOT NULL DEFAULT 'success',
   created_at TEXT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );

@@ -90,6 +90,7 @@ npx wrangler d1 execute bg-remover-db --remote --file=db/schema.sql
 - One-click transparent PNG download
 - Google login with secure HttpOnly session cookie
 - D1-backed user storage
+- Personal account center with profile, quota, and recent activity
 - Daily usage limit for logged-in users
 - SEO optimized (structured data, meta tags)
 - Mobile responsive

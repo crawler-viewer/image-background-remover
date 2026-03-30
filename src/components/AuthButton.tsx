@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 type User = {
@@ -88,6 +89,12 @@ export default function AuthButton() {
         )}
         <div className="max-w-32 truncate text-sm text-gray-200">{user.name || user.email}</div>
       </div>
+      <Link
+        href="/account"
+        className="rounded-xl border border-gray-800 bg-gray-900/70 px-4 py-2.5 text-sm text-gray-200 hover:bg-gray-800 transition-colors"
+      >
+        Account
+      </Link>
       <button
         onClick={handleLogout}
         className="rounded-xl border border-gray-800 bg-gray-900/70 px-4 py-2.5 text-sm text-gray-200 hover:bg-gray-800 transition-colors"

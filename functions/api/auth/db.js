@@ -13,12 +13,25 @@ export async function upsertUser(env, profile) {
 
   await db
     .prepare(
-      `INSERT INTO users (google_sub, email, name, avatar_url, created_at, last_login_at)
-       VALUES (?, ?, ?, ?, ?, ?)
+      `INSERT INTO users (
+         google_sub,
+         email,
+         name,
+         avatar_url,
+         plan,
+         status,
+         created_at,
+         updated_at,
+         last_seen_at,
+         last_login_at
+       )
+       VALUES (?, ?, ?, ?, 'free', 'active', ?, ?, ?, ?)
        ON CONFLICT(google_sub) DO UPDATE SET
          email = excluded.email,
          name = excluded.name,
          avatar_url = excluded.avatar_url,
+         updated_at = excluded.updated_at,
+         last_seen_at = excluded.last_seen_at,
          last_login_at = excluded.last_login_at`
     )
     .bind(
@@ -26,6 +39,8 @@ export async function upsertUser(env, profile) {
       profile.email || null,
       profile.name || null,
       profile.picture || null,
+      now,
+      now,
       now,
       now
     )
@@ -36,7 +51,7 @@ export async function getUserByGoogleSub(env, googleSub) {
   const db = ensureDb(env);
   const result = await db
     .prepare(
-      `SELECT id, google_sub, email, name, avatar_url, created_at, last_login_at
+      `SELECT id, google_sub, email, name, avatar_url, plan, status, created_at, updated_at, last_seen_at, last_login_at
        FROM users
        WHERE google_sub = ?
        LIMIT 1`
