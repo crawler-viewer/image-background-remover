@@ -1,5 +1,6 @@
 import { getUserWithSession } from "../auth/db";
 import { json, readSession } from "../auth/_lib";
+import { getPlanConfig } from "../plan-config";
 import { assertDailyLimit } from "../usage";
 
 const DEFAULT_QUOTA = {
@@ -22,9 +23,16 @@ export async function onRequestGet(context) {
       return json({ user: null }, { status: 404 });
     }
 
-    let quota = DEFAULT_QUOTA;
+    const planCode = user.plan || "free";
+    const plan = getPlanConfig(planCode);
+
+    let quota = {
+      used: 0,
+      limit: plan.dailyLimit,
+      remaining: plan.dailyLimit,
+    };
     try {
-      quota = await assertDailyLimit(env, user.google_sub);
+      quota = await assertDailyLimit(env, user.google_sub, planCode);
     } catch (quotaError) {
       console.error("Failed to load quota for account/me:", quotaError);
     }
@@ -36,7 +44,7 @@ export async function onRequestGet(context) {
         email: user.email,
         name: user.name,
         avatar_url: user.avatar_url,
-        plan: user.plan || "free",
+        plan: planCode,
         status: user.status || "active",
         created_at: user.created_at || null,
         updated_at: user.updated_at || null,
@@ -45,6 +53,7 @@ export async function onRequestGet(context) {
         today_used: quota.used,
         daily_limit: quota.limit,
         remaining: quota.remaining,
+        max_file_size_mb: Math.round(plan.maxFileSizeBytes / (1024 * 1024)),
       },
     });
   } catch (error) {

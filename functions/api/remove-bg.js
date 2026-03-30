@@ -1,6 +1,13 @@
 import { getUserWithSession } from "./auth/db";
 import { json, readSession } from "./auth/_lib";
-import { assertDailyLimit, recordUsage } from "./usage";
+import { getPlanConfig } from "./plan-config";
+import {
+  assertDailyLimit,
+  assertGuestDailyLimit,
+  getGuestKey,
+  recordGuestUsage,
+  recordUsage,
+} from "./usage";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -16,9 +23,11 @@ export async function onRequestPost(context) {
   try {
     const session = await readSession(request, env);
     const user = await getUserWithSession(env, session);
+    const planCode = user?.plan || (user ? "free" : "guest");
+    const plan = getPlanConfig(planCode);
 
     if (user?.google_sub) {
-      const quota = await assertDailyLimit(env, user.google_sub);
+      const quota = await assertDailyLimit(env, user.google_sub, planCode);
       if (!quota.allowed) {
         return json(
           {
@@ -26,6 +35,22 @@ export async function onRequestPost(context) {
             code: "DAILY_LIMIT_REACHED",
             used: quota.used,
             limit: quota.limit,
+            plan: planCode,
+          },
+          { status: 429 }
+        );
+      }
+    } else {
+      const guestKey = getGuestKey(request);
+      const quota = await assertGuestDailyLimit(env, guestKey);
+      if (!quota.allowed) {
+        return json(
+          {
+            error: "Guest daily limit reached. Sign in to unlock more removals.",
+            code: "GUEST_DAILY_LIMIT_REACHED",
+            used: quota.used,
+            limit: quota.limit,
+            plan: "guest",
           },
           { status: 429 }
         );
@@ -48,10 +73,13 @@ export async function onRequestPost(context) {
       );
     }
 
-    // Validate size (25MB)
-    if (file.size > 25 * 1024 * 1024) {
+    if (file.size > plan.maxFileSizeBytes) {
       return Response.json(
-        { error: "File too large. Maximum size is 25MB." },
+        {
+          error: `File too large. Maximum size is ${Math.round(
+            plan.maxFileSizeBytes / (1024 * 1024)
+          )}MB for your current plan.`,
+        },
         { status: 400 }
       );
     }
@@ -96,6 +124,11 @@ export async function onRequestPost(context) {
       await recordUsage(env, {
         googleSub: user.google_sub,
         userId: user.id || null,
+        sourceFilename: file?.name || null,
+      });
+    } else {
+      await recordGuestUsage(env, {
+        guestKey: getGuestKey(request),
         sourceFilename: file?.name || null,
       });
     }

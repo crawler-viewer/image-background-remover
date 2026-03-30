@@ -28,3 +28,14 @@ CREATE TABLE IF NOT EXISTS usage_logs (
 
 CREATE INDEX IF NOT EXISTS idx_usage_logs_google_sub_created_at ON usage_logs(google_sub, created_at);
 CREATE INDEX IF NOT EXISTS idx_usage_logs_action_created_at ON usage_logs(action, created_at);
+
+CREATE TABLE IF NOT EXISTS guest_usage_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guest_key TEXT NOT NULL,
+  action TEXT NOT NULL,
+  source_filename TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_guest_usage_logs_guest_key_created_at ON guest_usage_logs(guest_key, created_at);
+CREATE INDEX IF NOT EXISTS idx_guest_usage_logs_action_created_at ON guest_usage_logs(action, created_at);

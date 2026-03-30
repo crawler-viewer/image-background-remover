@@ -16,6 +16,7 @@ type AccountResponse = {
     today_used: number;
     daily_limit: number;
     remaining: number;
+    max_file_size_mb: number;
   } | null;
 };
 
@@ -144,6 +145,12 @@ export default function AccountPageClient() {
               <div className="rounded-2xl border border-gray-800 bg-gray-950/60 p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Last Login</p>
                 <p className="mt-2 text-sm text-gray-300">{formatDate(user.last_login_at)}</p>
+              </div>
+              <div className="rounded-2xl border border-gray-800 bg-gray-950/60 p-4 md:col-span-2">
+                <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Plan Limits</p>
+                <p className="mt-2 text-sm text-gray-300">
+                  Up to {user.max_file_size_mb}MB per image · {user.daily_limit} removals per day
+                </p>
               </div>
             </div>
           </div>
