@@ -1,6 +1,7 @@
 import AuthButton from "@/components/AuthButton";
 import dynamic from "next/dynamic";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
+import { StatsCounter } from "@/components/StatsCounter";
 
 const BgRemover = dynamic(() => import("@/components/BgRemover"), {
   loading: () => (
@@ -141,6 +142,8 @@ export default function Home() {
             AI-powered accuracy
           </div>
         </div>
+
+        <StatsCounter />
       </section>
 
       {/* How it works */}
