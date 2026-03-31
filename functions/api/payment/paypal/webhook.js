@@ -1,4 +1,4 @@
-import { getPayPalConfig, getPayPalAccessToken } from "../paypal-lib";
+import { getPayPalConfig, getPayPalAccessToken, PRODUCTS, calcPlanExpiry } from "../paypal-lib";
 
 // Verify webhook signature with PayPal
 async function verifyWebhookSignature(env, headers, body) {
@@ -99,9 +99,14 @@ export async function onRequestPost(context) {
 
       // Apply purchase
       if (order.order_type === "subscription" && order.plan_code) {
+        const productEntry = Object.values(PRODUCTS).find(
+          (p) => p.type === "subscription" && p.planCode === order.plan_code && p.amount === order.amount_usd
+        );
+        const expiresAt = productEntry ? calcPlanExpiry(productEntry) : new Date(Date.now() + 30 * 86400000).toISOString();
+
         await db
-          .prepare(`UPDATE users SET plan = ?, updated_at = ? WHERE google_sub = ?`)
-          .bind(order.plan_code, now, order.google_sub)
+          .prepare(`UPDATE users SET plan = ?, plan_expires_at = ?, updated_at = ? WHERE google_sub = ?`)
+          .bind(order.plan_code, expiresAt, now, order.google_sub)
           .run();
       } else if (order.order_type === "credits" && order.credit_amount) {
         await db

@@ -1,4 +1,4 @@
-import { capturePayPalOrder } from "../paypal-lib";
+import { capturePayPalOrder, PRODUCTS, calcPlanExpiry } from "../paypal-lib";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -33,6 +33,12 @@ export async function onRequestGet(context) {
       return Response.redirect(`${env.SITE_URL || "https://picturebackgroundremover.xyz"}/pricing?payment=error`, 302);
     }
 
+    // Prevent duplicate processing
+    if (order.status === "paid") {
+      console.log("Order already paid, skipping:", order.id);
+      return Response.redirect(`${env.SITE_URL || "https://picturebackgroundremover.xyz"}/account?payment=success`, 302);
+    }
+
     // Mark order as paid
     await db
       .prepare(`UPDATE payment_orders SET status = 'paid', paid_at = ? WHERE id = ?`)
@@ -41,10 +47,15 @@ export async function onRequestGet(context) {
 
     // Apply the purchase
     if (order.order_type === "subscription" && order.plan_code) {
-      // Upgrade user plan
+      // Find product to determine period
+      const productEntry = Object.values(PRODUCTS).find(
+        (p) => p.type === "subscription" && p.planCode === order.plan_code && p.amount === order.amount_usd
+      );
+      const expiresAt = productEntry ? calcPlanExpiry(productEntry) : new Date(Date.now() + 30 * 86400000).toISOString();
+
       await db
-        .prepare(`UPDATE users SET plan = ?, updated_at = ? WHERE google_sub = ?`)
-        .bind(order.plan_code, now, order.google_sub)
+        .prepare(`UPDATE users SET plan = ?, plan_expires_at = ?, updated_at = ? WHERE google_sub = ?`)
+        .bind(order.plan_code, expiresAt, now, order.google_sub)
         .run();
     } else if (order.order_type === "credits" && order.credit_amount) {
       // Add credits

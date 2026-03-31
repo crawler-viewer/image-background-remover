@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT,
   avatar_url TEXT,
   plan TEXT NOT NULL DEFAULT 'free',
+  plan_expires_at TEXT,
   status TEXT NOT NULL DEFAULT 'active',
   created_at TEXT NOT NULL,
   updated_at TEXT,

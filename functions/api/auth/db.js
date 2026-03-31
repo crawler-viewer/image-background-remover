@@ -51,7 +51,7 @@ export async function getUserByGoogleSub(env, googleSub) {
   const db = ensureDb(env);
   const result = await db
     .prepare(
-      `SELECT id, google_sub, email, name, avatar_url, plan, status, created_at, updated_at, last_seen_at, last_login_at
+      `SELECT id, google_sub, email, name, avatar_url, plan, plan_expires_at, status, created_at, updated_at, last_seen_at, last_login_at
        FROM users
        WHERE google_sub = ?
        LIMIT 1`

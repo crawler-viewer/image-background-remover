@@ -25,7 +25,21 @@ export async function onRequestPost(context) {
   try {
     const session = await readSession(request, env);
     const user = await getUserWithSession(env, session);
-    const planCode = user?.plan || (user ? "free" : "guest");
+    let planCode = user?.plan || (user ? "free" : "guest");
+
+    // Check subscription expiry
+    if (user && (planCode === "pro" || planCode === "business") && user.plan_expires_at) {
+      if (new Date(user.plan_expires_at) < new Date()) {
+        // Plan expired, downgrade to free
+        planCode = "free";
+        await env.DB
+          .prepare(`UPDATE users SET plan = 'free', plan_expires_at = NULL, updated_at = ? WHERE google_sub = ?`)
+          .bind(new Date().toISOString(), user.google_sub)
+          .run()
+          .catch((e) => console.error("Failed to downgrade expired plan:", e));
+      }
+    }
+
     const plan = getPlanConfig(planCode);
 
     let useCredits = false;

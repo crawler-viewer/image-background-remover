@@ -62,6 +62,8 @@ export async function onRequestGet(context) {
         last_login_at: user.last_login_at || null,
         today_used: quota.used,
         daily_limit: quota.limit,
+        monthly_used: quota.used,
+        monthly_limit: quota.limit,
         remaining: quota.remaining,
         credits: creditBalance,
         max_file_size_mb: Math.round(plan.maxFileSizeBytes / (1024 * 1024)),

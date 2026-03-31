@@ -151,3 +151,14 @@ export const PRODUCTS = {
     label: "800 Credits",
   },
 };
+
+// Calculate plan expiry date from now
+export function calcPlanExpiry(product) {
+  const now = new Date();
+  if (product.period === "yearly") {
+    now.setFullYear(now.getFullYear() + 1);
+  } else {
+    now.setMonth(now.getMonth() + 1);
+  }
+  return now.toISOString();
+}
