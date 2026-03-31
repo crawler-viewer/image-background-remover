@@ -1,6 +1,17 @@
 import AuthButton from "@/components/AuthButton";
-import BgRemover from "@/components/BgRemover";
+import dynamic from "next/dynamic";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
+
+const BgRemover = dynamic(() => import("@/components/BgRemover"), {
+  loading: () => (
+    <div className="w-full max-w-3xl mx-auto">
+      <div className="border-2 border-dashed border-gray-600 rounded-2xl p-12 md:p-16 text-center animate-pulse">
+        <div className="w-16 h-16 mx-auto mb-4 bg-gray-800 rounded-full" />
+        <div className="h-6 w-48 mx-auto bg-gray-800 rounded-lg" />
+      </div>
+    </div>
+  ),
+});
 
 export default function Home() {
   const authErrorMessage = {

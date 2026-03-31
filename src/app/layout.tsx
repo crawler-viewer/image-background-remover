@@ -53,6 +53,8 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
+        <link rel="dns-prefetch" href="https://api.remove.bg" />
+        <link rel="preconnect" href="https://accounts.google.com" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
