@@ -78,8 +78,11 @@ export default function Home() {
       </header>
 
       {/* Hero + Tool */}
-      <section className="flex-1 flex flex-col items-center px-4 pt-12 md:pt-20 pb-16">
-        <div className="text-center mb-10 max-w-2xl">
+      <section className="relative flex-1 flex flex-col items-center px-4 pt-12 md:pt-20 pb-16 overflow-hidden">
+        {/* Background glow */}
+        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] glow-violet opacity-60" />
+
+        <div className="relative text-center mb-10 max-w-2xl">
           <script
             dangerouslySetInnerHTML={{
               __html: `(() => {
@@ -118,20 +121,20 @@ export default function Home() {
         <BgRemover />
 
         {/* Trust signals */}
-        <div className="flex flex-wrap justify-center gap-6 mt-10 text-xs text-gray-500">
-          <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap justify-center gap-8 mt-12 text-xs text-gray-500">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-900/30 border border-gray-800/30">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
             Images never stored
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-900/30 border border-gray-800/30">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             Processed in seconds
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-900/30 border border-gray-800/30">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
@@ -243,9 +246,9 @@ export default function Home() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="flex gap-4 p-5 rounded-2xl bg-gray-900/50 border border-gray-800/50 hover:border-gray-700/50 transition-colors"
+                className="flex gap-4 p-5 rounded-2xl bg-gray-900/50 border border-gray-800/50 hover:border-violet-500/20 hover:bg-gray-900/80 transition-all duration-300 group/card"
               >
-                <div className="text-3xl flex-shrink-0">{item.icon}</div>
+                <div className="text-3xl flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl bg-gray-800/50 group-hover/card:bg-violet-500/10 transition-colors">{item.icon}</div>
                 <div>
                   <h3 className="font-semibold mb-1">{item.title}</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">
@@ -259,8 +262,9 @@ export default function Home() {
       </section>
 
       {/* Pricing Preview */}
-      <section className="border-t border-gray-800/50 py-20">
-        <div className="max-w-4xl mx-auto px-4">
+      <section className="relative border-t border-gray-800/50 py-20">
+        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] glow-violet-sm" />
+        <div className="relative max-w-4xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
             Choose the plan that fits your workflow
           </h2>
@@ -293,10 +297,10 @@ export default function Home() {
             ].map((plan) => (
               <div
                 key={plan.name}
-                className={`rounded-2xl border p-6 text-center ${
+                className={`rounded-2xl border p-6 text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${
                   plan.highlight
-                    ? "border-violet-500/30 bg-violet-500/5"
-                    : "border-gray-800 bg-gray-900/50"
+                    ? "border-violet-500/30 bg-violet-500/5 hover:shadow-violet-500/10"
+                    : "border-gray-800 bg-gray-900/50 hover:border-gray-700 hover:shadow-gray-900/50"
                 }`}
               >
                 <h3 className="text-lg font-semibold">{plan.name}</h3>
@@ -391,34 +395,64 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="border-t border-gray-800/50 py-16">
-        <div className="max-w-2xl mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-3">
-            Ready to remove more backgrounds?
-          </h2>
-          <p className="text-gray-400 mb-6">
-            Start free, sign in for more daily access, or upgrade to Pro for higher limits.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <ScrollToTopButton />
-            <a
-              href="/pricing"
-              className="px-6 py-3 rounded-xl border border-gray-800 bg-gray-950/70 text-sm font-medium text-gray-200 hover:bg-gray-800 transition-colors"
-            >
-              See Pricing
-            </a>
+      <section className="relative border-t border-gray-800/50 py-20 overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-violet-500/5 via-transparent to-transparent" />
+        <div className="relative max-w-2xl mx-auto px-4 text-center">
+          <div className="rounded-3xl border border-violet-500/20 bg-violet-500/5 p-10">
+            <h2 className="text-3xl font-bold mb-3">
+              Ready to remove more backgrounds?
+            </h2>
+            <p className="text-gray-400 mb-8">
+              Start free, sign in for more daily access, or upgrade to Pro for higher limits.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <ScrollToTopButton />
+              <a
+                href="/pricing"
+                className="px-6 py-3 rounded-xl border border-gray-800 bg-gray-950/70 text-sm font-medium text-gray-200 hover:bg-gray-800 transition-colors"
+              >
+                See Pricing
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800/50 py-8">
-        <div className="max-w-5xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4 text-gray-500 text-sm">
-          <p>© {new Date().getFullYear()} BGRemover — Free Online Image Background Remover</p>
-          <div className="flex gap-6">
-            <a href="/pricing" className="hover:text-gray-300 transition-colors">Pricing</a>
-            <a href="#how-it-works" className="hover:text-gray-300 transition-colors">How it works</a>
-            <a href="#faq" className="hover:text-gray-300 transition-colors">FAQ</a>
+      <footer className="border-t border-gray-800/50 py-12">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+            <div>
+              <a href="/" className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <span className="text-sm font-bold">
+                  <span className="text-violet-400">BG</span>Remover
+                </span>
+              </a>
+              <p className="text-xs text-gray-600 max-w-xs">
+                Free online AI tool to remove backgrounds from images instantly. Built for sellers, creators, and designers.
+              </p>
+            </div>
+            <div className="flex gap-8 text-sm text-gray-500">
+              <div className="flex flex-col gap-2">
+                <span className="text-xs uppercase tracking-[0.15em] text-gray-600 mb-1">Product</span>
+                <a href="/#tool" className="hover:text-gray-300 transition-colors">Try Now</a>
+                <a href="/pricing" className="hover:text-gray-300 transition-colors">Pricing</a>
+                <a href="#how-it-works" className="hover:text-gray-300 transition-colors">How it works</a>
+              </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-xs uppercase tracking-[0.15em] text-gray-600 mb-1">Support</span>
+                <a href="#faq" className="hover:text-gray-300 transition-colors">FAQ</a>
+                <a href="#use-cases" className="hover:text-gray-300 transition-colors">Use Cases</a>
+              </div>
+            </div>
+          </div>
+          <div className="mt-8 pt-6 border-t border-gray-800/50 text-center text-xs text-gray-600">
+            © {new Date().getFullYear()} BGRemover — Free Online Image Background Remover
           </div>
         </div>
       </footer>
