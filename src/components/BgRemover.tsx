@@ -4,6 +4,15 @@ import { useState, useCallback, useRef, useEffect } from "react";
 
 type Stage = "idle" | "processing" | "done" | "error";
 
+type QuotaInfo = {
+  plan: string;
+  used: number;
+  limit: number;
+  remaining: number;
+  maxFileSizeMb: number;
+  loggedIn: boolean;
+};
+
 export default function BgRemover() {
   const [stage, setStage] = useState<Stage>("idle");
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
@@ -14,9 +23,27 @@ export default function BgRemover() {
   const [sliderPos, setSliderPos] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const [processingTime, setProcessingTime] = useState(0);
+  const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch quota on mount and after each successful removal
+  const fetchQuota = useCallback(async () => {
+    try {
+      const res = await fetch("/api/quota");
+      if (res.ok) {
+        const data = await res.json();
+        setQuota(data);
+      }
+    } catch {
+      // silently fail
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchQuota();
+  }, [fetchQuota]);
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -48,6 +75,8 @@ export default function BgRemover() {
   };
 
   const validateFile = (file: File): string | null => {
+    const maxMb = quota?.maxFileSizeMb || 25;
+    const maxBytes = maxMb * 1024 * 1024;
     const allowedTypes = [
       "image/png",
       "image/jpeg",
@@ -57,8 +86,8 @@ export default function BgRemover() {
     if (!allowedTypes.includes(file.type)) {
       return `Unsupported format: ${file.type || "unknown"}. Please upload PNG, JPG, or WebP.`;
     }
-    if (file.size > 25 * 1024 * 1024) {
-      return `File too large (${formatFileSize(file.size)}). Maximum size is 25MB.`;
+    if (file.size > maxBytes) {
+      return `File too large (${formatFileSize(file.size)}). Maximum size is ${maxMb}MB for your current plan.`;
     }
     if (file.size < 100) {
       return "File appears to be empty or corrupted.";
@@ -122,6 +151,9 @@ export default function BgRemover() {
         const resultObjUrl = URL.createObjectURL(blob);
         setResultUrl(resultObjUrl);
         setStage("done");
+
+        // Refresh quota after successful removal
+        fetchQuota();
       } catch (err: unknown) {
         if (err instanceof DOMException && err.name === "AbortError") {
           setError("Request timed out. Please try a smaller image.");
@@ -204,6 +236,38 @@ export default function BgRemover() {
 
   return (
     <div className="w-full max-w-3xl mx-auto">
+      {/* Quota Status Bar */}
+      {quota && (stage === "idle" || stage === "error") && (
+        <div className="mb-4 flex items-center justify-between rounded-xl border border-gray-800 bg-gray-900/50 px-4 py-3 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-xs text-violet-300">
+              {quota.plan === "guest" ? "Guest" : quota.plan === "free" ? "Free" : "Pro"}
+            </span>
+            <span className="text-gray-400">
+              {quota.remaining}/{quota.limit} removals left today
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {!quota.loggedIn && (
+              <a
+                href="/api/auth/google/login"
+                className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+              >
+                Sign in for {quota.plan === "guest" ? "10/day" : "more"}
+              </a>
+            )}
+            {quota.loggedIn && quota.plan !== "pro" && (
+              <a
+                href="/pricing"
+                className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+              >
+                Upgrade to Pro
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Upload Zone */}
       {(stage === "idle" || stage === "error") && (
         <div
@@ -249,7 +313,7 @@ export default function BgRemover() {
             <span className="text-violet-400">browse</span>
           </p>
           <p className="text-gray-400 text-sm">
-            PNG, JPG, WebP — up to 25MB
+            PNG, JPG, WebP — up to {quota?.maxFileSizeMb || 25}MB
           </p>
 
           {stage === "error" && (
@@ -407,6 +471,31 @@ export default function BgRemover() {
               New Image
             </button>
           </div>
+
+          {/* Post-download quota hint */}
+          {quota && (
+            <div className="mt-4 text-center text-sm text-gray-500">
+              <span>
+                {quota.remaining}/{quota.limit} removals left today
+              </span>
+              {!quota.loggedIn && (
+                <span>
+                  {" · "}
+                  <a href="/api/auth/google/login" className="text-violet-400 hover:text-violet-300">
+                    Sign in for more
+                  </a>
+                </span>
+              )}
+              {quota.loggedIn && quota.plan !== "pro" && (
+                <span>
+                  {" · "}
+                  <a href="/pricing" className="text-violet-400 hover:text-violet-300">
+                    Upgrade
+                  </a>
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
