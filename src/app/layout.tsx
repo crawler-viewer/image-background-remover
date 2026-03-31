@@ -55,12 +55,6 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <link rel="dns-prefetch" href="https://clipdrop-api.co" />
         <link rel="preconnect" href="https://accounts.google.com" />
-        {/* Cloudflare Web Analytics */}
-        <script
-          defer
-          src="https://static.cloudflareinsights.com/beacon.min.js"
-          data-cf-beacon='{"token": "__CF_ANALYTICS_TOKEN__"}'
-        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
