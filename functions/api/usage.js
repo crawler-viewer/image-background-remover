@@ -77,13 +77,15 @@ export async function assertDailyLimit(env, googleSub, planCode = "free") {
 export async function recordUsage(env, { googleSub, userId = null, sourceFilename = null }) {
   const db = ensureDb(env);
   const now = new Date().toISOString();
-  await db
+  const result = await db
     .prepare(
       `INSERT INTO usage_logs (user_id, google_sub, action, source_filename, created_at)
        VALUES (?, ?, 'remove_bg', ?, ?)`
     )
     .bind(userId, googleSub, sourceFilename, now)
     .run();
+
+  return result;
 }
 
 export async function assertGuestDailyLimit(env, guestKey) {
@@ -100,11 +102,13 @@ export async function assertGuestDailyLimit(env, guestKey) {
 export async function recordGuestUsage(env, { guestKey, sourceFilename = null }) {
   const db = ensureDb(env);
   const now = new Date().toISOString();
-  await db
+  const result = await db
     .prepare(
       `INSERT INTO guest_usage_logs (guest_key, action, source_filename, created_at)
        VALUES (?, 'remove_bg', ?, ?)`
     )
     .bind(guestKey, sourceFilename, now)
     .run();
+
+  return result;
 }

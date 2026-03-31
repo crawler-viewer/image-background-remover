@@ -120,17 +120,21 @@ export async function onRequestPost(context) {
 
     const buffer = await response.arrayBuffer();
 
-    if (user?.google_sub) {
-      await recordUsage(env, {
-        googleSub: user.google_sub,
-        userId: user.id || null,
-        sourceFilename: file?.name || null,
-      });
-    } else {
-      await recordGuestUsage(env, {
-        guestKey: getGuestKey(request),
-        sourceFilename: file?.name || null,
-      });
+    try {
+      if (user?.google_sub) {
+        await recordUsage(env, {
+          googleSub: user.google_sub,
+          userId: user.id || null,
+          sourceFilename: file?.name || null,
+        });
+      } else {
+        await recordGuestUsage(env, {
+          guestKey: getGuestKey(request),
+          sourceFilename: file?.name || null,
+        });
+      }
+    } catch (usageError) {
+      console.error("Failed to record usage after successful remove-bg:", usageError);
     }
 
     return new Response(buffer, {

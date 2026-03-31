@@ -93,7 +93,7 @@ npx wrangler d1 execute bg-remover-db --remote --file=db/schema.sql
 - D1-backed user storage
 - Personal account center with profile, quota, and recent activity
 - Guest / Free / Pro plan rules with different daily limits and file sizes
-- Daily usage limit enforcement
+- Daily usage limit enforcement based on successful removals
 - SEO optimized (structured data, meta tags)
 - Mobile responsive
 - Dark theme UI
