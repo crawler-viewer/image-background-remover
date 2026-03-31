@@ -90,12 +90,6 @@ export async function onRequestPost(context) {
           }),
           { status: 429, headers }
         );
-            used: quota.used,
-            limit: quota.limit,
-            plan: "guest",
-          },
-          { status: 429 }
-        );
       }
     }
 
