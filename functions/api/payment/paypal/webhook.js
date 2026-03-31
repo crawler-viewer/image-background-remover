@@ -1,4 +1,4 @@
-import { getPayPalConfig, getPayPalAccessToken } from "./paypal-lib";
+import { getPayPalConfig, getPayPalAccessToken } from "../paypal-lib";
 
 // Verify webhook signature with PayPal
 async function verifyWebhookSignature(env, headers, body) {
