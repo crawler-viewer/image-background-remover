@@ -132,7 +132,12 @@ export default function AccountPageClient() {
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border border-gray-800 bg-gray-950/60 p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Plan</p>
-                <p className="mt-2 text-xl font-semibold capitalize">{user.plan}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <p className="text-xl font-semibold capitalize">{user.plan}</p>
+                  {user.plan === "pro" && (
+                    <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-xs text-violet-300">Pro</span>
+                  )}
+                </div>
               </div>
               <div className="rounded-2xl border border-gray-800 bg-gray-950/60 p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Status</p>
@@ -167,18 +172,32 @@ export default function AccountPageClient() {
                 <p className="text-xl font-semibold">{user.today_used} / {user.daily_limit}</p>
               </div>
             </div>
-            <div className="mt-5 h-3 overflow-hidden rounded-full bg-gray-800">
-              <div
-                className="h-full rounded-full bg-violet-500"
-                style={{ width: `${Math.min(100, (user.today_used / user.daily_limit) * 100)}%` }}
-              />
-            </div>
-            <Link
-              href="/pricing"
-              className="mt-6 inline-flex w-full items-center justify-center rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm font-medium text-violet-200 hover:bg-violet-500/20 transition-colors"
-            >
-              Upgrade to Pro
-            </Link>
+            {(() => {
+              const pct = Math.min(100, (user.today_used / user.daily_limit) * 100);
+              const barColor = pct >= 90 ? "bg-red-500" : pct >= 60 ? "bg-amber-500" : "bg-violet-500";
+              return (
+                <div className="mt-5 h-3 overflow-hidden rounded-full bg-gray-800">
+                  <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+                </div>
+              );
+            })()}
+            {user.remaining === 0 && (
+              <p className="mt-3 text-sm text-red-400">
+                Daily limit reached. Resets tomorrow.
+              </p>
+            )}
+            {user.plan !== "pro" ? (
+              <Link
+                href="/pricing"
+                className="mt-6 inline-flex w-full items-center justify-center rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm font-medium text-violet-200 hover:bg-violet-500/20 transition-colors"
+              >
+                Upgrade to Pro — 100 removals/day
+              </Link>
+            ) : (
+              <div className="mt-6 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-300">
+                You&apos;re on the Pro plan ✓
+              </div>
+            )}
           </div>
         </section>
 
