@@ -1,7 +1,7 @@
 import { readSession } from "./auth/_lib";
 import { getUserWithSession } from "./auth/db";
 import { getPlanConfig } from "./plan-config";
-import { assertMonthlyLimit, assertGuestMonthlyLimit, getGuestKey } from "./usage";
+import { assertMonthlyLimit, assertGuestMonthlyLimit, getOrCreateGuestId, guestCookieString } from "./usage";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -37,17 +37,17 @@ export async function onRequestGet(context) {
       });
     }
 
-    const guestKey = getGuestKey(request);
+    const { guestId, isNew } = getOrCreateGuestId(request);
     const plan = getPlanConfig("guest");
 
     let quota;
     try {
-      quota = await assertGuestMonthlyLimit(env, guestKey);
+      quota = await assertGuestMonthlyLimit(env, guestId);
     } catch {
       quota = { used: 0, limit: plan.monthlyLimit, remaining: plan.monthlyLimit };
     }
 
-    return Response.json({
+    const res = Response.json({
       plan: "guest",
       used: quota.used,
       limit: quota.limit,
@@ -56,6 +56,15 @@ export async function onRequestGet(context) {
       loggedIn: false,
       period: "monthly",
     });
+
+    if (isNew) {
+      // Clone response to add Set-Cookie header
+      const headers = new Headers(res.headers);
+      headers.set("Set-Cookie", guestCookieString(guestId));
+      return new Response(res.body, { status: res.status, headers });
+    }
+
+    return res;
   } catch (err) {
     console.error("Quota API error:", err);
     return Response.json({

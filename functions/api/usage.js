@@ -22,9 +22,39 @@ export async function getCurrentUser(request, env) {
 }
 
 export function getGuestKey(request) {
+  // Prefer cookie-based guest ID for persistence
+  const cookieHeader = request.headers.get("cookie") || "";
+  const match = cookieHeader.match(/(?:^|;\s*)__bg_gid=([a-f0-9-]+)/);
+  if (match) return match[1];
+
+  // Fallback to IP+UA
   const ip = request.headers.get("cf-connecting-ip") || "unknown";
   const userAgent = request.headers.get("user-agent") || "unknown";
   return `${ip}:${userAgent.slice(0, 80)}`;
+}
+
+export function makeGuestCookieHeader(guestKey) {
+  // Only set cookie if it's a UUID (not IP-based fallback)
+  if (guestKey.includes(":")) return null;
+  return null; // already set
+}
+
+export function generateGuestId() {
+  // crypto.randomUUID() is available in Cloudflare Workers
+  return crypto.randomUUID();
+}
+
+export function getOrCreateGuestId(request) {
+  const cookieHeader = request.headers.get("cookie") || "";
+  const match = cookieHeader.match(/(?:^|;\s*)__bg_gid=([a-f0-9-]+)/);
+  if (match) return { guestId: match[1], isNew: false };
+  return { guestId: generateGuestId(), isNew: true };
+}
+
+export function guestCookieString(guestId) {
+  // 1 year expiry, SameSite=Lax, HttpOnly
+  const maxAge = 365 * 24 * 60 * 60;
+  return `__bg_gid=${guestId}; Path=/; Max-Age=${maxAge}; SameSite=Lax; Secure`;
 }
 
 export async function getMonthlyUsage(env, googleSub) {

@@ -4,7 +4,8 @@ import { getPlanConfig } from "./plan-config";
 import {
   assertMonthlyLimit,
   assertGuestMonthlyLimit,
-  getGuestKey,
+  getOrCreateGuestId,
+  guestCookieString,
   recordGuestUsage,
   recordUsage,
 } from "./usage";
@@ -42,6 +43,7 @@ export async function onRequestPost(context) {
 
     const plan = getPlanConfig(planCode);
 
+    let guestInfo = null;
     let useCredits = false;
 
     if (user?.google_sub) {
@@ -71,13 +73,23 @@ export async function onRequestPost(context) {
         }
       }
     } else {
-      const guestKey = getGuestKey(request);
-      const quota = await assertGuestMonthlyLimit(env, guestKey);
+      guestInfo = getOrCreateGuestId(request);
+      const quota = await assertGuestMonthlyLimit(env, guestInfo.guestId);
       if (!quota.allowed) {
-        return json(
-          {
+        const headers = { "Content-Type": "application/json" };
+        if (guestInfo.isNew) {
+          headers["Set-Cookie"] = guestCookieString(guestInfo.guestId);
+        }
+        return new Response(
+          JSON.stringify({
             error: "Guest monthly limit reached. Sign in to unlock more removals.",
             code: "GUEST_MONTHLY_LIMIT_REACHED",
+            used: quota.used,
+            limit: quota.limit,
+            plan: "guest",
+          }),
+          { status: 429, headers }
+        );
             used: quota.used,
             limit: quota.limit,
             plan: "guest",
@@ -180,7 +192,7 @@ export async function onRequestPost(context) {
         });
       } else {
         await recordGuestUsage(env, {
-          guestKey: getGuestKey(request),
+          guestKey: guestInfo.guestId,
           sourceFilename: file?.name || null,
         });
       }
@@ -188,13 +200,20 @@ export async function onRequestPost(context) {
       console.error("Failed to record usage after successful remove-bg:", usageError);
     }
 
+    const responseHeaders = {
+      "Content-Type": "image/png",
+      "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "*",
+    };
+
+    // Set guest cookie if new
+    if (guestInfo?.isNew) {
+      responseHeaders["Set-Cookie"] = guestCookieString(guestInfo.guestId);
+    }
+
     return new Response(buffer, {
       status: 200,
-      headers: {
-        "Content-Type": "image/png",
-        "Cache-Control": "no-store",
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers: responseHeaders,
     });
   } catch (err) {
     console.error("API error:", err);
