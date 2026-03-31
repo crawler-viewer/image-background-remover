@@ -9,6 +9,7 @@ type QuotaInfo = {
   used: number;
   limit: number;
   remaining: number;
+  credits?: number;
   maxFileSizeMb: number;
   loggedIn: boolean;
 };
@@ -245,6 +246,7 @@ export default function BgRemover() {
             </span>
             <span className="text-gray-400">
               {quota.remaining}/{quota.limit} removals left this month
+              {quota.credits ? ` · ${quota.credits} credits` : ""}
             </span>
           </div>
           <div className="flex items-center gap-2">

@@ -40,6 +40,15 @@ export function PricingCards() {
             <PricingCard key={plan.code} plan={plan} billingCycle={billingCycle} />
           ))}
         </div>
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-500">
+            Need extra removals without a subscription?{" "}
+            <a href="/credits" className="text-violet-400 hover:text-violet-300">
+              Buy credit packs →
+            </a>
+          </p>
+        </div>
       </div>
     </section>
   );

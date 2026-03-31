@@ -37,6 +37,16 @@ export async function onRequestGet(context) {
       console.error("Failed to load quota for account/me:", quotaError);
     }
 
+    // Get credit balance
+    let creditBalance = 0;
+    try {
+      const creditRow = await env.DB
+        .prepare(`SELECT balance FROM user_credits WHERE google_sub = ? LIMIT 1`)
+        .bind(user.google_sub)
+        .first();
+      creditBalance = Number(creditRow?.balance || 0);
+    } catch {}
+
     return json({
       user: {
         id: user.id,
@@ -53,6 +63,7 @@ export async function onRequestGet(context) {
         today_used: quota.used,
         daily_limit: quota.limit,
         remaining: quota.remaining,
+        credits: creditBalance,
         max_file_size_mb: Math.round(plan.maxFileSizeBytes / (1024 * 1024)),
       },
     });

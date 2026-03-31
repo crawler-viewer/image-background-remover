@@ -442,6 +442,7 @@ export default function Home() {
                 <span className="text-xs uppercase tracking-[0.15em] text-gray-600 mb-1">Product</span>
                 <a href="/#tool" className="hover:text-gray-300 transition-colors">Try Now</a>
                 <a href="/pricing" className="hover:text-gray-300 transition-colors">Pricing</a>
+                <a href="/credits" className="hover:text-gray-300 transition-colors">Credit Packs</a>
                 <a href="#how-it-works" className="hover:text-gray-300 transition-colors">How it works</a>
               </div>
               <div className="flex flex-col gap-2">

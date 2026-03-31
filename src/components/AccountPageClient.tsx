@@ -16,6 +16,7 @@ type AccountResponse = {
     today_used: number;
     daily_limit: number;
     remaining: number;
+    credits: number;
     max_file_size_mb: number;
   } | null;
 };
@@ -202,9 +203,24 @@ export default function AccountPageClient() {
             })()}
             {user.remaining === 0 && (
               <p className="mt-3 text-sm text-red-400">
-                Monthly limit reached. Resets on the 1st.
+                Monthly limit reached. {user.credits > 0 ? "Using credits for additional removals." : "Resets on the 1st."}
               </p>
             )}
+
+            {/* Credits balance */}
+            <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-800 bg-gray-950/50 px-4 py-3">
+              <div>
+                <p className="text-sm text-gray-400">Credit Balance</p>
+                <p className="text-lg font-semibold">{user.credits || 0} credits</p>
+              </div>
+              <Link
+                href="/credits"
+                className="rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-300 hover:bg-violet-500/20 transition-colors"
+              >
+                Buy Credits
+              </Link>
+            </div>
+
             {user.plan !== "pro" && user.plan !== "business" ? (
               <Link
                 href="/pricing"

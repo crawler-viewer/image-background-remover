@@ -28,19 +28,33 @@ export async function onRequestPost(context) {
     const planCode = user?.plan || (user ? "free" : "guest");
     const plan = getPlanConfig(planCode);
 
+    let useCredits = false;
+
     if (user?.google_sub) {
       const quota = await assertMonthlyLimit(env, user.google_sub, planCode);
       if (!quota.allowed) {
-        return json(
-          {
-            error: "Monthly limit reached. Upgrade your plan for more removals.",
-            code: "MONTHLY_LIMIT_REACHED",
-            used: quota.used,
-            limit: quota.limit,
-            plan: planCode,
-          },
-          { status: 429 }
-        );
+        // Check if user has credits
+        const creditRow = await env.DB
+          .prepare(`SELECT balance FROM user_credits WHERE google_sub = ? LIMIT 1`)
+          .bind(user.google_sub)
+          .first();
+        const creditBalance = Number(creditRow?.balance || 0);
+
+        if (creditBalance > 0) {
+          useCredits = true;
+        } else {
+          return json(
+            {
+              error: "Monthly limit reached. Buy credits or upgrade your plan.",
+              code: "MONTHLY_LIMIT_REACHED",
+              used: quota.used,
+              limit: quota.limit,
+              plan: planCode,
+              credits: 0,
+            },
+            { status: 429 }
+          );
+        }
       }
     } else {
       const guestKey = getGuestKey(request);
@@ -138,6 +152,13 @@ export async function onRequestPost(context) {
 
     try {
       if (user?.google_sub) {
+        if (useCredits) {
+          // Deduct 1 credit
+          await env.DB
+            .prepare(`UPDATE user_credits SET balance = balance - 1, updated_at = ? WHERE google_sub = ? AND balance > 0`)
+            .bind(new Date().toISOString(), user.google_sub)
+            .run();
+        }
         await recordUsage(env, {
           googleSub: user.google_sub,
           userId: user.id || null,

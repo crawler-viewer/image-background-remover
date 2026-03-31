@@ -15,11 +15,22 @@ export async function onRequestGet(context) {
       const plan = getPlanConfig(planCode);
       const quota = await assertMonthlyLimit(env, user.google_sub, planCode);
 
+      // Get credit balance
+      let creditBalance = 0;
+      try {
+        const creditRow = await env.DB
+          .prepare(`SELECT balance FROM user_credits WHERE google_sub = ? LIMIT 1`)
+          .bind(user.google_sub)
+          .first();
+        creditBalance = Number(creditRow?.balance || 0);
+      } catch {}
+
       return Response.json({
         plan: planCode,
         used: quota.used,
         limit: quota.limit,
         remaining: quota.remaining,
+        credits: creditBalance,
         maxFileSizeMb: Math.round(plan.maxFileSizeBytes / (1024 * 1024)),
         loggedIn: true,
         period: "monthly",
