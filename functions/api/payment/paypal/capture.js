@@ -1,4 +1,4 @@
-import { capturePayPalOrder, PRODUCTS } from "./paypal-lib";
+import { capturePayPalOrder } from "../paypal-lib";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
