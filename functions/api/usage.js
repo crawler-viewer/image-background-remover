@@ -8,10 +8,10 @@ function ensureDb(env) {
   return env.DB;
 }
 
-function dayRange() {
+function monthRange() {
   const now = new Date();
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)).toISOString();
-  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0)).toISOString();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0)).toISOString();
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0)).toISOString();
   return { start, end };
 }
 
@@ -27,27 +27,9 @@ export function getGuestKey(request) {
   return `${ip}:${userAgent.slice(0, 80)}`;
 }
 
-export async function getGuestDailyUsage(env, guestKey) {
+export async function getMonthlyUsage(env, googleSub) {
   const db = ensureDb(env);
-  const { start, end } = dayRange();
-  const row = await db
-    .prepare(
-      `SELECT COUNT(*) AS count
-       FROM guest_usage_logs
-       WHERE guest_key = ?
-         AND action = 'remove_bg'
-         AND created_at >= ?
-         AND created_at < ?`
-    )
-    .bind(guestKey, start, end)
-    .first();
-
-  return Number(row?.count || 0);
-}
-
-export async function getDailyUsage(env, googleSub) {
-  const db = ensureDb(env);
-  const { start, end } = dayRange();
+  const { start, end } = monthRange();
   const row = await db
     .prepare(
       `SELECT COUNT(*) AS count
@@ -63,14 +45,43 @@ export async function getDailyUsage(env, googleSub) {
   return Number(row?.count || 0);
 }
 
-export async function assertDailyLimit(env, googleSub, planCode = "free") {
-  const used = await getDailyUsage(env, googleSub);
+export async function getGuestMonthlyUsage(env, guestKey) {
+  const db = ensureDb(env);
+  const { start, end } = monthRange();
+  const row = await db
+    .prepare(
+      `SELECT COUNT(*) AS count
+       FROM guest_usage_logs
+       WHERE guest_key = ?
+         AND action = 'remove_bg'
+         AND created_at >= ?
+         AND created_at < ?`
+    )
+    .bind(guestKey, start, end)
+    .first();
+
+  return Number(row?.count || 0);
+}
+
+export async function assertMonthlyLimit(env, googleSub, planCode = "free") {
+  const used = await getMonthlyUsage(env, googleSub);
   const plan = getPlanConfig(planCode);
   return {
     used,
-    limit: plan.dailyLimit,
-    allowed: used < plan.dailyLimit,
-    remaining: Math.max(0, plan.dailyLimit - used),
+    limit: plan.monthlyLimit,
+    allowed: used < plan.monthlyLimit,
+    remaining: Math.max(0, plan.monthlyLimit - used),
+  };
+}
+
+export async function assertGuestMonthlyLimit(env, guestKey) {
+  const used = await getGuestMonthlyUsage(env, guestKey);
+  const plan = getPlanConfig("guest");
+  return {
+    used,
+    limit: plan.monthlyLimit,
+    allowed: used < plan.monthlyLimit,
+    remaining: Math.max(0, plan.monthlyLimit - used),
   };
 }
 
@@ -86,17 +97,6 @@ export async function recordUsage(env, { googleSub, userId = null, sourceFilenam
     .run();
 
   return result;
-}
-
-export async function assertGuestDailyLimit(env, guestKey) {
-  const used = await getGuestDailyUsage(env, guestKey);
-  const plan = getPlanConfig("guest");
-  return {
-    used,
-    limit: plan.dailyLimit,
-    allowed: used < plan.dailyLimit,
-    remaining: Math.max(0, plan.dailyLimit - used),
-  };
 }
 
 export async function recordGuestUsage(env, { guestKey, sourceFilename = null }) {

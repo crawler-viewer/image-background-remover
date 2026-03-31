@@ -1,7 +1,7 @@
 import { readSession } from "./auth/_lib";
 import { getUserWithSession } from "./auth/db";
 import { getPlanConfig } from "./plan-config";
-import { assertDailyLimit, assertGuestDailyLimit, getGuestKey } from "./usage";
+import { assertMonthlyLimit, assertGuestMonthlyLimit, getGuestKey } from "./usage";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -13,7 +13,7 @@ export async function onRequestGet(context) {
     if (user?.google_sub) {
       const planCode = user.plan || "free";
       const plan = getPlanConfig(planCode);
-      const quota = await assertDailyLimit(env, user.google_sub, planCode);
+      const quota = await assertMonthlyLimit(env, user.google_sub, planCode);
 
       return Response.json({
         plan: planCode,
@@ -22,6 +22,7 @@ export async function onRequestGet(context) {
         remaining: quota.remaining,
         maxFileSizeMb: Math.round(plan.maxFileSizeBytes / (1024 * 1024)),
         loggedIn: true,
+        period: "monthly",
       });
     }
 
@@ -30,9 +31,9 @@ export async function onRequestGet(context) {
 
     let quota;
     try {
-      quota = await assertGuestDailyLimit(env, guestKey);
+      quota = await assertGuestMonthlyLimit(env, guestKey);
     } catch {
-      quota = { used: 0, limit: plan.dailyLimit, remaining: plan.dailyLimit };
+      quota = { used: 0, limit: plan.monthlyLimit, remaining: plan.monthlyLimit };
     }
 
     return Response.json({
@@ -42,16 +43,18 @@ export async function onRequestGet(context) {
       remaining: quota.remaining,
       maxFileSizeMb: Math.round(plan.maxFileSizeBytes / (1024 * 1024)),
       loggedIn: false,
+      period: "monthly",
     });
   } catch (err) {
     console.error("Quota API error:", err);
     return Response.json({
       plan: "guest",
       used: 0,
-      limit: 3,
-      remaining: 3,
+      limit: 5,
+      remaining: 5,
       maxFileSizeMb: 10,
       loggedIn: false,
+      period: "monthly",
     });
   }
 }

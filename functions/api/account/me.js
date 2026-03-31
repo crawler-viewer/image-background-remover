@@ -1,7 +1,7 @@
 import { getUserWithSession } from "../auth/db";
 import { json, readSession } from "../auth/_lib";
 import { getPlanConfig } from "../plan-config";
-import { assertDailyLimit } from "../usage";
+import { assertMonthlyLimit } from "../usage";
 
 const DEFAULT_QUOTA = {
   used: 0,
@@ -28,11 +28,11 @@ export async function onRequestGet(context) {
 
     let quota = {
       used: 0,
-      limit: plan.dailyLimit,
-      remaining: plan.dailyLimit,
+      limit: plan.monthlyLimit,
+      remaining: plan.monthlyLimit,
     };
     try {
-      quota = await assertDailyLimit(env, user.google_sub, planCode);
+      quota = await assertMonthlyLimit(env, user.google_sub, planCode);
     } catch (quotaError) {
       console.error("Failed to load quota for account/me:", quotaError);
     }

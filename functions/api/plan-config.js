@@ -1,17 +1,22 @@
 export const PLAN_CONFIG = {
   guest: {
     code: "guest",
-    dailyLimit: 3,
+    monthlyLimit: 5,
     maxFileSizeBytes: 10 * 1024 * 1024,
   },
   free: {
     code: "free",
-    dailyLimit: 10,
-    maxFileSizeBytes: 25 * 1024 * 1024,
+    monthlyLimit: 20,
+    maxFileSizeBytes: 15 * 1024 * 1024,
   },
   pro: {
     code: "pro",
-    dailyLimit: 100,
+    monthlyLimit: 200,
+    maxFileSizeBytes: 25 * 1024 * 1024,
+  },
+  business: {
+    code: "business",
+    monthlyLimit: 800,
     maxFileSizeBytes: 50 * 1024 * 1024,
   },
 };

@@ -2,8 +2,8 @@ import { getUserWithSession } from "./auth/db";
 import { json, readSession } from "./auth/_lib";
 import { getPlanConfig } from "./plan-config";
 import {
-  assertDailyLimit,
-  assertGuestDailyLimit,
+  assertMonthlyLimit,
+  assertGuestMonthlyLimit,
   getGuestKey,
   recordGuestUsage,
   recordUsage,
@@ -12,7 +12,9 @@ import {
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  const apiKey = env.REMOVE_BG_API_KEY;
+  const apiKey = env.CLIPDROP_API_KEY || env.REMOVE_BG_API_KEY;
+  const useClipdrop = !!env.CLIPDROP_API_KEY;
+
   if (!apiKey) {
     return Response.json(
       { error: "Service temporarily unavailable." },
@@ -27,12 +29,12 @@ export async function onRequestPost(context) {
     const plan = getPlanConfig(planCode);
 
     if (user?.google_sub) {
-      const quota = await assertDailyLimit(env, user.google_sub, planCode);
+      const quota = await assertMonthlyLimit(env, user.google_sub, planCode);
       if (!quota.allowed) {
         return json(
           {
-            error: "Daily limit reached. Please try again tomorrow.",
-            code: "DAILY_LIMIT_REACHED",
+            error: "Monthly limit reached. Upgrade your plan for more removals.",
+            code: "MONTHLY_LIMIT_REACHED",
             used: quota.used,
             limit: quota.limit,
             plan: planCode,
@@ -42,12 +44,12 @@ export async function onRequestPost(context) {
       }
     } else {
       const guestKey = getGuestKey(request);
-      const quota = await assertGuestDailyLimit(env, guestKey);
+      const quota = await assertGuestMonthlyLimit(env, guestKey);
       if (!quota.allowed) {
         return json(
           {
-            error: "Guest daily limit reached. Sign in to unlock more removals.",
-            code: "GUEST_DAILY_LIMIT_REACHED",
+            error: "Guest monthly limit reached. Sign in to unlock more removals.",
+            code: "GUEST_MONTHLY_LIMIT_REACHED",
             used: quota.used,
             limit: quota.limit,
             plan: "guest",
@@ -84,20 +86,34 @@ export async function onRequestPost(context) {
       );
     }
 
-    // Forward to Remove.bg
-    const rbFormData = new FormData();
-    rbFormData.append("image_file", file);
-    rbFormData.append("size", "auto");
+    let response;
 
-    const response = await fetch("https://api.remove.bg/v1.0/removebg", {
-      method: "POST",
-      headers: { "X-Api-Key": apiKey },
-      body: rbFormData,
-    });
+    if (useClipdrop) {
+      // Clipdrop Remove Background API
+      const clipdropForm = new FormData();
+      clipdropForm.append("image_file", file);
+
+      response = await fetch("https://clipdrop-api.co/remove-background/v1", {
+        method: "POST",
+        headers: { "x-api-key": apiKey },
+        body: clipdropForm,
+      });
+    } else {
+      // Fallback: Remove.bg API
+      const rbFormData = new FormData();
+      rbFormData.append("image_file", file);
+      rbFormData.append("size", "auto");
+
+      response = await fetch("https://api.remove.bg/v1.0/removebg", {
+        method: "POST",
+        headers: { "X-Api-Key": apiKey },
+        body: rbFormData,
+      });
+    }
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "");
-      console.error(`Remove.bg error [${response.status}]:`, errText);
+      console.error(`BG removal API error [${response.status}]:`, errText);
 
       if (response.status === 402) {
         return Response.json(

@@ -114,7 +114,7 @@ export default function Home() {
           <p className="text-gray-400 text-lg md:text-xl leading-relaxed">
             Remove image backgrounds instantly with AI.
             <br className="hidden md:block" />
-            Free to try. Sign in for more daily removals.
+            Free to try. Sign in for more monthly removals.
           </p>
         </div>
 
@@ -278,21 +278,21 @@ export default function Home() {
                 price: "Free",
                 desc: "Try without signing in",
                 highlight: false,
-                features: ["3 removals/day", "Up to 10MB"],
+                features: ["5 removals/month", "Up to 10MB"],
               },
               {
                 name: "Free",
                 price: "$0",
-                desc: "More daily access + dashboard",
+                desc: "More monthly access + dashboard",
                 highlight: false,
-                features: ["10 removals/day", "Up to 25MB"],
+                features: ["20 removals/month", "Up to 15MB"],
               },
               {
                 name: "Pro",
                 price: "$9.9/mo",
                 desc: "Best for power users",
                 highlight: true,
-                features: ["100 removals/day", "Up to 50MB"],
+                features: ["200 removals/month", "Up to 25MB"],
               },
             ].map((plan) => (
               <div
@@ -341,19 +341,19 @@ export default function Home() {
             {[
               {
                 q: "Is this tool free to try?",
-                a: "Yes! Guests get 3 free removals per day. Sign in for a free account to unlock 10 removals per day. Upgrade to Pro for even higher limits.",
+                a: "Yes! Guests get 5 free removals per month. Sign in for a free account to unlock 20 removals per month. Upgrade for even higher limits.",
               },
               {
                 q: "Why should I create an account?",
-                a: "A free account gives you more daily removals (10/day vs 3/day), access to your personal dashboard, and recent activity tracking.",
+                a: "A free account gives you 4x more monthly removals (20/mo vs 5/mo), access to your personal dashboard, and usage tracking.",
               },
               {
                 q: "What does Pro include?",
-                a: "Pro gives you 100 removals per day, larger upload sizes (up to 50MB), priority processing, and expanded usage history.",
+                a: "Pro gives you 200 removals per month, larger upload sizes (up to 25MB), priority processing, and expanded usage history.",
               },
               {
                 q: "What image formats and sizes are supported?",
-                a: "We support PNG, JPG, JPEG, and WebP formats. Maximum file size depends on your plan: 10MB for guests, 25MB for free accounts, and 50MB for Pro.",
+                a: "We support PNG, JPG, JPEG, and WebP formats. Maximum file size depends on your plan: 10MB for guests, 15MB for free accounts, 25MB for Pro, and 50MB for Business.",
               },
               {
                 q: "Is my image data safe and private?",
@@ -361,7 +361,7 @@ export default function Home() {
               },
               {
                 q: "Do unused removals roll over?",
-                a: "No. Daily limits reset every day. Each successful background removal counts as one usage toward your daily limit.",
+                a: "No. Monthly limits reset on the 1st of each month.",
               },
               {
                 q: "Can I cancel anytime?",

@@ -244,7 +244,7 @@ export default function BgRemover() {
               {quota.plan === "guest" ? "Guest" : quota.plan === "free" ? "Free" : "Pro"}
             </span>
             <span className="text-gray-400">
-              {quota.remaining}/{quota.limit} removals left today
+              {quota.remaining}/{quota.limit} removals left this month
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -253,7 +253,7 @@ export default function BgRemover() {
                 href="/api/auth/google/login"
                 className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
               >
-                Sign in for {quota.plan === "guest" ? "10/day" : "more"}
+                Sign in for {quota.plan === "guest" ? "20/mo" : "more"}
               </a>
             )}
             {quota.loggedIn && quota.plan !== "pro" && (
@@ -476,7 +476,7 @@ export default function BgRemover() {
           {quota && (
             <div className="mt-4 text-center text-sm text-gray-500">
               <span>
-                {quota.remaining}/{quota.limit} removals left today
+                {quota.remaining}/{quota.limit} removals left this month
               </span>
               {!quota.loggedIn && (
                 <span>
