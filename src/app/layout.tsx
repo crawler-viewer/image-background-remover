@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     "photo background remover",
     "product photo background remover",
   ],
-  metadataBase: new URL("https://image-background-remover-bbk.pages.dev"),
+  metadataBase: new URL("https://picturebackgroundremover.xyz"),
   alternates: { canonical: "/" },
   openGraph: {
     title: "Image Background Remover - Free Online AI Tool",
@@ -53,15 +53,20 @@ export default function RootLayout({
               name: "Image Background Remover",
               applicationCategory: "MultimediaApplication",
               operatingSystem: "Web",
-              offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+              offers: [
+                { "@type": "Offer", price: "0", priceCurrency: "USD", name: "Free" },
+                { "@type": "Offer", price: "9.9", priceCurrency: "USD", name: "Pro", billingIncrement: "P1M" },
+              ],
               description:
                 "Free online AI tool to remove backgrounds from images instantly.",
-              url: "https://image-background-remover-bbk.pages.dev",
+              url: "https://picturebackgroundremover.xyz",
               featureList: [
                 "AI background removal",
                 "Before/after comparison",
                 "Transparent PNG download",
-                "No signup required",
+                "Guest: 3 free removals per day",
+                "Free account: 10 removals per day",
+                "Pro: 100 removals per day",
               ],
             }),
           }}
@@ -75,10 +80,10 @@ export default function RootLayout({
               mainEntity: [
                 {
                   "@type": "Question",
-                  name: "Is this background remover free?",
+                  name: "Is this tool free to try?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Yes! You can remove backgrounds from your images completely free. No signup or credit card required.",
+                    text: "Yes! Guests get 3 free removals per day. Sign in for a free account to unlock 10 removals per day. Upgrade to Pro for even higher limits.",
                   },
                 },
                 {
@@ -86,15 +91,7 @@ export default function RootLayout({
                   name: "What image formats are supported?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "We support PNG, JPG, JPEG, and WebP formats. The maximum file size is 25MB.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "How does AI background removal work?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "We use advanced AI models that detect the foreground subject in your image and precisely separate it from the background, producing a clean transparent PNG.",
+                    text: "We support PNG, JPG, JPEG, and WebP formats. Maximum file size depends on your plan: 10MB for guests, 25MB for free accounts, and 50MB for Pro.",
                   },
                 },
                 {
@@ -111,6 +108,14 @@ export default function RootLayout({
                   acceptedAnswer: {
                     "@type": "Answer",
                     text: "Absolutely. The processed images are yours to use for any purpose — personal or commercial.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "What does Pro include?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Pro gives you 100 removals per day, larger upload sizes (up to 50MB), priority processing, and expanded usage history.",
                   },
                 },
               ],
