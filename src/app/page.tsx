@@ -90,7 +90,7 @@ export default function Home() {
           <div id="auth-error-box" className="hidden mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300" />
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-violet-500/10 border border-violet-500/20 rounded-full text-violet-300 text-xs font-medium mb-6">
             <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-            100% Free · No Signup Required
+            Free to try · No design skills needed
           </div>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-5 bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent">
             Image Background
@@ -98,9 +98,9 @@ export default function Home() {
             Remover
           </h1>
           <p className="text-gray-400 text-lg md:text-xl leading-relaxed">
-            Remove backgrounds from your photos instantly with AI.
+            Remove image backgrounds instantly with AI.
             <br className="hidden md:block" />
-            Get a transparent PNG in seconds.
+            Free to try. Sign in for more daily removals.
           </p>
         </div>
 
@@ -148,7 +148,7 @@ export default function Home() {
                   </svg>
                 ),
                 title: "Upload Image",
-                desc: "Drag and drop or click to upload your photo. Supports PNG, JPG, and WebP up to 25MB.",
+                desc: "Drag and drop or click to upload your photo. Supports PNG, JPG, and WebP.",
               },
               {
                 step: "02",
@@ -259,28 +259,36 @@ export default function Home() {
           <div className="space-y-4">
             {[
               {
-                q: "Is this background remover completely free?",
-                a: "Yes! You can remove backgrounds from your images completely free. No signup, no credit card, no hidden fees. Just upload and download.",
+                q: "Is this tool free to try?",
+                a: "Yes! Guests get 3 free removals per day. Sign in for a free account to unlock 10 removals per day. Upgrade to Pro for even higher limits.",
+              },
+              {
+                q: "Why should I create an account?",
+                a: "A free account gives you more daily removals (10/day vs 3/day), access to your personal dashboard, and recent activity tracking.",
+              },
+              {
+                q: "What does Pro include?",
+                a: "Pro gives you 100 removals per day, larger upload sizes (up to 50MB), priority processing, and expanded usage history.",
               },
               {
                 q: "What image formats and sizes are supported?",
-                a: "We support PNG, JPG, JPEG, and WebP formats. The maximum file size is 25MB. For best results, use high-resolution images with clear subjects.",
-              },
-              {
-                q: "How does the AI background removal work?",
-                a: "We use state-of-the-art AI models that analyze your image to detect the foreground subject — whether it's a person, product, animal, or object — and precisely separate it from the background, producing a clean transparent PNG.",
+                a: "We support PNG, JPG, JPEG, and WebP formats. Maximum file size depends on your plan: 10MB for guests, 25MB for free accounts, and 50MB for Pro.",
               },
               {
                 q: "Is my image data safe and private?",
-                a: "Absolutely. Your images are processed in real-time and are never stored on our servers. Once the background is removed and you receive your result, all data is immediately discarded. We take your privacy seriously.",
+                a: "Absolutely. Your images are processed in real-time and are never stored on our servers. Once the background is removed and you receive your result, all data is immediately discarded.",
+              },
+              {
+                q: "Do unused removals roll over?",
+                a: "No. Daily limits reset every day. Each successful background removal counts as one usage toward your daily limit.",
+              },
+              {
+                q: "Can I cancel anytime?",
+                a: "Yes. You can cancel your Pro subscription anytime with no questions asked.",
               },
               {
                 q: "Can I use the results for commercial purposes?",
-                a: "Yes! The processed images are entirely yours. Use them for e-commerce, marketing, social media, print — any purpose, personal or commercial, with no attribution required.",
-              },
-              {
-                q: "What types of images work best?",
-                a: "Our AI works great with portraits, product photos, animals, vehicles, and objects. Images with clear contrast between the subject and background produce the best results. Complex scenes with multiple overlapping subjects may require some manual touchup.",
+                a: "Yes! The processed images are entirely yours. Use them for e-commerce, marketing, social media, print — any purpose, personal or commercial.",
               },
             ].map((faq) => (
               <details key={faq.q} className="group bg-gray-900/50 border border-gray-800/50 rounded-xl overflow-hidden">
@@ -309,12 +317,20 @@ export default function Home() {
       <section className="border-t border-gray-800/50 py-16">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold mb-3">
-            Ready to Remove Backgrounds?
+            Ready to remove more backgrounds?
           </h2>
           <p className="text-gray-400 mb-6">
-            It&apos;s free, fast, and requires no signup. Try it now.
+            Start free, sign in for more daily access, or upgrade to Pro for higher limits.
           </p>
-          <ScrollToTopButton />
+          <div className="flex flex-wrap justify-center gap-3">
+            <ScrollToTopButton />
+            <a
+              href="/pricing"
+              className="px-6 py-3 rounded-xl border border-gray-800 bg-gray-950/70 text-sm font-medium text-gray-200 hover:bg-gray-800 transition-colors"
+            >
+              See Pricing
+            </a>
+          </div>
         </div>
       </section>
 
@@ -323,8 +339,8 @@ export default function Home() {
         <div className="max-w-5xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4 text-gray-500 text-sm">
           <p>© {new Date().getFullYear()} BGRemover — Free Online Image Background Remover</p>
           <div className="flex gap-6">
+            <a href="/pricing" className="hover:text-gray-300 transition-colors">Pricing</a>
             <a href="#how-it-works" className="hover:text-gray-300 transition-colors">How it works</a>
-            <a href="#use-cases" className="hover:text-gray-300 transition-colors">Use Cases</a>
             <a href="#faq" className="hover:text-gray-300 transition-colors">FAQ</a>
           </div>
         </div>
