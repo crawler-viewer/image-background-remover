@@ -39,6 +39,19 @@ export default function AccountPageClient() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<AccountResponse["user"]>(null);
   const [items, setItems] = useState<UsageResponse["items"]>([]);
+  const [paymentMsg, setPaymentMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for payment status in URL
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    if (payment === "success") {
+      setPaymentMsg("Payment successful! Your plan has been upgraded.");
+      params.delete("payment");
+      const next = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
+      window.history.replaceState({}, "", next);
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -112,6 +125,12 @@ export default function AccountPageClient() {
             Back to Home
           </Link>
         </div>
+
+        {paymentMsg && (
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+            ✓ {paymentMsg}
+          </div>
+        )}
 
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-3xl border border-gray-800 bg-gray-900/60 p-6">

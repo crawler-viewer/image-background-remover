@@ -39,3 +39,35 @@ CREATE TABLE IF NOT EXISTS guest_usage_logs (
 
 CREATE INDEX IF NOT EXISTS idx_guest_usage_logs_guest_key_created_at ON guest_usage_logs(guest_key, created_at);
 CREATE INDEX IF NOT EXISTS idx_guest_usage_logs_action_created_at ON guest_usage_logs(action, created_at);
+
+-- Payment orders
+CREATE TABLE IF NOT EXISTS payment_orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  google_sub TEXT NOT NULL,
+  order_type TEXT NOT NULL,
+  plan_code TEXT,
+  credit_amount INTEGER,
+  amount_usd TEXT NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  paypal_order_id TEXT,
+  paypal_subscription_id TEXT,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TEXT NOT NULL,
+  paid_at TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_orders_user_id ON payment_orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_payment_orders_paypal_order_id ON payment_orders(paypal_order_id);
+CREATE INDEX IF NOT EXISTS idx_payment_orders_status ON payment_orders(status);
+
+-- Credit balance for credit pack purchases
+CREATE TABLE IF NOT EXISTS user_credits (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL UNIQUE,
+  google_sub TEXT NOT NULL UNIQUE,
+  balance INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);

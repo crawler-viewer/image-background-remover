@@ -1,16 +1,54 @@
-import Link from "next/link";
+"use client";
+
 import type { BillingCycle, PricingPlan } from "@/lib/pricing";
+import { useState } from "react";
 
 type PricingCardProps = {
   plan: PricingPlan;
   billingCycle: BillingCycle;
 };
 
+function getProductId(planCode: string, billingCycle: BillingCycle): string | null {
+  if (planCode === "pro") return billingCycle === "yearly" ? "pro_yearly" : "pro_monthly";
+  if (planCode === "business") return billingCycle === "yearly" ? "business_yearly" : "business_monthly";
+  return null;
+}
+
 export function PricingCard({ plan, billingCycle }: PricingCardProps) {
+  const [loading, setLoading] = useState(false);
+
   const priceLabel =
     plan.code === "pro" && billingCycle === "yearly" && plan.yearlyPriceLabel
       ? plan.yearlyPriceLabel
-      : plan.monthlyPriceLabel;
+      : plan.code === "business" && billingCycle === "yearly" && plan.yearlyPriceLabel
+        ? plan.yearlyPriceLabel
+        : plan.monthlyPriceLabel;
+
+  const productId = getProductId(plan.code, billingCycle);
+
+  const handleBuy = async () => {
+    if (!productId) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/payment/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId }),
+      });
+      const data = await res.json();
+      if (data.approvalUrl) {
+        window.location.href = data.approvalUrl;
+      } else {
+        alert(data.error || "Failed to create checkout");
+      }
+    } catch {
+      alert("Payment error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isPayable = !!productId;
 
   return (
     <div
@@ -34,8 +72,8 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
 
       <div className="mt-6">
         <div className="text-4xl font-bold tracking-tight">{priceLabel}</div>
-        {plan.code === "pro" ? (
-          <p className="mt-2 text-sm text-gray-400">Save 33% with yearly billing</p>
+        {(plan.code === "pro" || plan.code === "business") && billingCycle === "yearly" ? (
+          <p className="mt-2 text-sm text-gray-400">Save with yearly billing</p>
         ) : null}
       </div>
 
@@ -48,16 +86,26 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
         ))}
       </ul>
 
-      <Link
-        href={plan.ctaHref}
-        className={`mt-8 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
-          plan.highlight
-            ? "bg-violet-600 text-white hover:bg-violet-500"
-            : "border border-gray-800 bg-gray-950/70 text-gray-200 hover:bg-gray-800"
-        }`}
-      >
-        {plan.ctaLabel}
-      </Link>
+      {isPayable ? (
+        <button
+          onClick={handleBuy}
+          disabled={loading}
+          className={`mt-8 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+            plan.highlight
+              ? "bg-violet-600 text-white hover:bg-violet-500 disabled:bg-violet-800"
+              : "border border-gray-800 bg-gray-950/70 text-gray-200 hover:bg-gray-800"
+          }`}
+        >
+          {loading ? "Redirecting to PayPal..." : plan.ctaLabel}
+        </button>
+      ) : (
+        <a
+          href={plan.ctaHref}
+          className={`mt-8 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors border border-gray-800 bg-gray-950/70 text-gray-200 hover:bg-gray-800`}
+        >
+          {plan.ctaLabel}
+        </a>
+      )}
     </div>
   );
 }
