@@ -247,6 +247,72 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Pricing Preview */}
+      <section className="border-t border-gray-800/50 py-20">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            Choose the plan that fits your workflow
+          </h2>
+          <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
+            Start free. Upgrade only when you need higher limits.
+          </p>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                name: "Guest",
+                price: "Free",
+                desc: "Try without signing in",
+                highlight: false,
+                features: ["3 removals/day", "Up to 10MB"],
+              },
+              {
+                name: "Free",
+                price: "$0",
+                desc: "More daily access + dashboard",
+                highlight: false,
+                features: ["10 removals/day", "Up to 25MB"],
+              },
+              {
+                name: "Pro",
+                price: "$9.9/mo",
+                desc: "Best for power users",
+                highlight: true,
+                features: ["100 removals/day", "Up to 50MB"],
+              },
+            ].map((plan) => (
+              <div
+                key={plan.name}
+                className={`rounded-2xl border p-6 text-center ${
+                  plan.highlight
+                    ? "border-violet-500/30 bg-violet-500/5"
+                    : "border-gray-800 bg-gray-900/50"
+                }`}
+              >
+                <h3 className="text-lg font-semibold">{plan.name}</h3>
+                <p className="mt-1 text-2xl font-bold">{plan.price}</p>
+                <p className="mt-1 text-sm text-gray-400">{plan.desc}</p>
+                <ul className="mt-4 space-y-2 text-sm text-gray-300">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-center justify-center gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 text-center">
+            <a
+              href="/pricing"
+              className="inline-flex rounded-xl border border-gray-800 bg-gray-950/70 px-6 py-3 text-sm font-medium text-gray-200 hover:bg-gray-800 transition-colors"
+            >
+              See Full Pricing
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ */}
       <section id="faq" className="border-t border-gray-800/50 py-20 bg-gray-900/20">
         <div className="max-w-3xl mx-auto px-4">
