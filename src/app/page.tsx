@@ -449,6 +449,11 @@ export default function Home() {
                 <a href="#faq" className="hover:text-gray-300 transition-colors">FAQ</a>
                 <a href="#use-cases" className="hover:text-gray-300 transition-colors">Use Cases</a>
               </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-xs uppercase tracking-[0.15em] text-gray-600 mb-1">Legal</span>
+                <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
+                <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
+              </div>
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-gray-800/50 text-center text-xs text-gray-600">
