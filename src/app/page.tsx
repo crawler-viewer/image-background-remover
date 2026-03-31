@@ -24,7 +24,7 @@ export default function Home() {
     <main className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="border-b border-gray-800/50 sticky top-0 z-50 bg-gray-950/80 backdrop-blur-xl">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2 group">
             <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center group-hover:bg-violet-500 transition-colors">
               <svg
@@ -82,7 +82,7 @@ export default function Home() {
         {/* Background glow */}
         <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] glow-violet opacity-60" />
 
-        <div className="relative text-center mb-10 max-w-2xl">
+        <div className="relative text-center mb-10 max-w-2xl min-h-[220px] md:min-h-[260px]">
           <script
             dangerouslySetInnerHTML={{
               __html: `(() => {
@@ -185,7 +185,7 @@ export default function Home() {
                 desc: "Preview with the comparison slider and download your transparent PNG for free.",
               },
             ].map((item) => (
-              <div key={item.step} className="text-center group">
+              <div key={item.step} className="text-center group min-h-[200px]">
                 <div className="w-16 h-16 mx-auto mb-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl flex items-center justify-center text-violet-400 group-hover:bg-violet-500/20 transition-colors">
                   {item.icon}
                 </div>
@@ -304,7 +304,7 @@ export default function Home() {
             ].map((plan) => (
               <div
                 key={plan.name}
-                className={`rounded-2xl border p-6 text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${
+                className={`rounded-2xl border p-6 text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg min-h-[220px] ${
                   plan.highlight
                     ? "border-violet-500/30 bg-violet-500/5 hover:shadow-violet-500/10"
                     : "border-gray-800 bg-gray-900/50 hover:border-gray-700 hover:shadow-gray-900/50"

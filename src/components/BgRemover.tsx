@@ -237,36 +237,44 @@ export default function BgRemover() {
 
   return (
     <div className="w-full max-w-3xl mx-auto">
-      {/* Quota Status Bar */}
-      {quota && (stage === "idle" || stage === "error") && (
-        <div className="mb-4 flex items-center justify-between rounded-xl border border-gray-800 bg-gray-900/50 px-4 py-3 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-xs text-violet-300">
-              {quota.plan === "guest" ? "Guest" : quota.plan === "free" ? "Free" : "Pro"}
-            </span>
-            <span className="text-gray-400">
-              {quota.remaining}/{quota.limit} removals left this month
-              {quota.credits ? ` · ${quota.credits} credits` : ""}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {!quota.loggedIn && (
-              <a
-                href="/api/auth/google/login"
-                className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
-              >
-                Sign in for {quota.plan === "guest" ? "20/mo" : "more"}
-              </a>
-            )}
-            {quota.loggedIn && quota.plan !== "pro" && (
-              <a
-                href="/pricing"
-                className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
-              >
-                Upgrade to Pro
-              </a>
-            )}
-          </div>
+      {/* Quota Status Bar - fixed height to prevent CLS */}
+      {(stage === "idle" || stage === "error") && (
+        <div className="mb-4 flex items-center justify-between rounded-xl border border-gray-800 bg-gray-900/50 px-4 py-3 text-sm min-h-[48px]">
+          {quota ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-xs text-violet-300">
+                  {quota.plan === "guest" ? "Guest" : quota.plan === "free" ? "Free" : quota.plan === "pro" ? "Pro" : "Business"}
+                </span>
+                <span className="text-gray-400">
+                  {quota.remaining}/{quota.limit} removals left this month
+                  {quota.credits ? ` · ${quota.credits} credits` : ""}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {!quota.loggedIn && (
+                  <a
+                    href="/api/auth/google/login"
+                    className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                  >
+                    Sign in for {quota.plan === "guest" ? "20/mo" : "more"}
+                  </a>
+                )}
+                {quota.loggedIn && quota.plan !== "pro" && quota.plan !== "business" && (
+                  <a
+                    href="/pricing"
+                    className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                  >
+                    Upgrade to Pro
+                  </a>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex rounded-full border border-gray-700 bg-gray-800/50 px-2 py-0.5 text-xs text-gray-500">Loading...</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -280,7 +288,7 @@ export default function BgRemover() {
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-2xl p-12 md:p-16 text-center cursor-pointer transition-all duration-300 group ${
+          className={`relative border-2 border-dashed rounded-2xl p-12 md:p-16 text-center cursor-pointer transition-all duration-300 group min-h-[280px] flex flex-col items-center justify-center ${
             dragOver
               ? "border-violet-400 bg-violet-500/10 scale-[1.02]"
               : "border-gray-600 hover:border-violet-400 hover:bg-gray-900/50"
