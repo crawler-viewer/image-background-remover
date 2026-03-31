@@ -456,6 +456,7 @@ export default function Home() {
                 <span className="text-xs uppercase tracking-[0.15em] text-gray-600 mb-1">Support</span>
                 <a href="#faq" className="hover:text-gray-300 transition-colors">FAQ</a>
                 <a href="#use-cases" className="hover:text-gray-300 transition-colors">Use Cases</a>
+                <a href="/blog" className="hover:text-gray-300 transition-colors">Blog</a>
               </div>
               <div className="flex flex-col gap-2">
                 <span className="text-xs uppercase tracking-[0.15em] text-gray-600 mb-1">Legal</span>
