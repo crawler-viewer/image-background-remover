@@ -25,11 +25,20 @@ export const metadata: Metadata = {
     type: "website",
     url: "/",
     siteName: "BGRemover",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Image Background Remover - Free Online AI Tool",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Image Background Remover",
     description: "Remove backgrounds from images instantly with AI.",
+    images: ["/og-image.png"],
   },
   robots: { index: true, follow: true },
 };
