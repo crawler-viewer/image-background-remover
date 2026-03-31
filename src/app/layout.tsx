@@ -53,8 +53,14 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
-        <link rel="dns-prefetch" href="https://api.remove.bg" />
+        <link rel="dns-prefetch" href="https://clipdrop-api.co" />
         <link rel="preconnect" href="https://accounts.google.com" />
+        {/* Cloudflare Web Analytics */}
+        <script
+          defer
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon='{"token": "__CF_ANALYTICS_TOKEN__"}'
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -67,6 +73,7 @@ export default function RootLayout({
               offers: [
                 { "@type": "Offer", price: "0", priceCurrency: "USD", name: "Free" },
                 { "@type": "Offer", price: "9.9", priceCurrency: "USD", name: "Pro", billingIncrement: "P1M" },
+                { "@type": "Offer", price: "29.9", priceCurrency: "USD", name: "Business", billingIncrement: "P1M" },
               ],
               description:
                 "Free online AI tool to remove backgrounds from images instantly.",
@@ -75,9 +82,10 @@ export default function RootLayout({
                 "AI background removal",
                 "Before/after comparison",
                 "Transparent PNG download",
-                "Guest: 3 free removals per day",
-                "Free account: 10 removals per day",
-                "Pro: 100 removals per day",
+                "Guest: 5 free removals per month",
+                "Free account: 20 removals per month",
+                "Pro: 200 removals per month",
+                "Business: 800 removals per month",
               ],
             }),
           }}
@@ -94,7 +102,7 @@ export default function RootLayout({
                   name: "Is this tool free to try?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Yes! Guests get 3 free removals per day. Sign in for a free account to unlock 10 removals per day. Upgrade to Pro for even higher limits.",
+                    text: "Yes! Guests get 5 free removals per month. Sign in for a free account to unlock 20 removals per month. Upgrade for even higher limits.",
                   },
                 },
                 {
@@ -102,7 +110,7 @@ export default function RootLayout({
                   name: "What image formats are supported?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "We support PNG, JPG, JPEG, and WebP formats. Maximum file size depends on your plan: 10MB for guests, 25MB for free accounts, and 50MB for Pro.",
+                    text: "We support PNG, JPG, JPEG, and WebP formats. Maximum file size depends on your plan: 10MB for guests, 15MB for free accounts, 25MB for Pro, and 50MB for Business.",
                   },
                 },
                 {
@@ -126,7 +134,7 @@ export default function RootLayout({
                   name: "What does Pro include?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Pro gives you 100 removals per day, larger upload sizes (up to 50MB), priority processing, and expanded usage history.",
+                    text: "Pro gives you 200 removals per month, larger upload sizes (up to 25MB), priority processing, and expanded usage history.",
                   },
                 },
               ],
