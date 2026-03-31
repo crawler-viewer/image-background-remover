@@ -12,11 +12,13 @@ export function PricingHero() {
           Start free, then upgrade only when you need higher limits and a smoother workflow.
         </p>
         <div className="mt-6 flex justify-center gap-3 text-sm text-gray-400">
-          <span>Guest: 3/day</span>
+          <span>Guest: 5/mo</span>
           <span>•</span>
-          <span>Free account: 10/day</span>
+          <span>Free account: 20/mo</span>
           <span>•</span>
-          <span>Pro: 100/day</span>
+          <span>Pro: 200/mo</span>
+          <span>•</span>
+          <span>Business: 800/mo</span>
         </div>
       </div>
     </section>

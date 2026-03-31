@@ -8,7 +8,7 @@ import { PlanComparison } from "@/components/pricing/PlanComparison";
 export const metadata: Metadata = {
   title: "Pricing - Image Background Remover",
   description:
-    "Simple pricing for background removal. Start free with 3 removals per day. Sign in for 10/day. Upgrade to Pro for 100/day.",
+    "Simple pricing for background removal. Start free with 5 removals per month. Sign in for 20/mo. Upgrade to Pro for 200/mo.",
   alternates: { canonical: "/pricing" },
   openGraph: {
     title: "Pricing - Image Background Remover",
@@ -33,6 +33,7 @@ export default function PricingPage() {
           </a>
           <nav className="flex items-center gap-6 text-sm text-gray-400">
             <a href="/" className="hover:text-white transition-colors">Home</a>
+            <a href="/credits" className="hover:text-white transition-colors">Credits</a>
             <a href="/#faq" className="hover:text-white transition-colors">FAQ</a>
           </nav>
         </div>

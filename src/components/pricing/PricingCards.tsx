@@ -30,7 +30,7 @@ export function PricingCards() {
               }`}
               onClick={() => setBillingCycle("yearly")}
             >
-              Yearly · Save 33%
+              Yearly · Save 17%
             </button>
           </div>
         </div>

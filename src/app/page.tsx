@@ -271,7 +271,7 @@ export default function Home() {
           <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
             Start free. Upgrade only when you need higher limits.
           </p>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-4 gap-6">
             {[
               {
                 name: "Guest",
@@ -293,6 +293,13 @@ export default function Home() {
                 desc: "Best for power users",
                 highlight: true,
                 features: ["200 removals/month", "Up to 25MB"],
+              },
+              {
+                name: "Business",
+                price: "$29.9/mo",
+                desc: "Teams & high volume",
+                highlight: false,
+                features: ["800 removals/month", "Up to 50MB"],
               },
             ].map((plan) => (
               <div

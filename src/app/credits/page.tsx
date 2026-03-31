@@ -6,8 +6,8 @@ import Link from "next/link";
 const CREDIT_PACKS = [
   { id: "credits_20", credits: 20, price: "$2.90", perUnit: "$0.145", badge: null },
   { id: "credits_100", credits: 100, price: "$9.90", perUnit: "$0.099", badge: "Popular" },
-  { id: "credits_300", credits: 300, price: "$24.90", perUnit: "$0.083", badge: "Best Value" },
-  { id: "credits_800", credits: 800, price: "$49.90", perUnit: "$0.062", badge: null },
+  { id: "credits_300", credits: 300, price: "$24.90", perUnit: "$0.083", badge: null },
+  { id: "credits_800", credits: 800, price: "$49.90", perUnit: "$0.062", badge: "Best Value" },
 ];
 
 export default function CreditsPage() {
