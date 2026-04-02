@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     "photo background remover",
     "product photo background remover",
   ],
-  metadataBase: new URL("https://picturebackgroundremover.xyz"),
+  metadataBase: new URL("https://picturebackgroundremover.xyz/"),
   alternates: { canonical: "/" },
   openGraph: {
     title: "Image Background Remover - Free Online AI Tool",
