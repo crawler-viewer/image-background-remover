@@ -71,7 +71,7 @@ export default function RootLayout({
               ],
               description:
                 "Free online AI tool to remove backgrounds from images instantly.",
-              url: "https://picturebackgroundremover.xyz",
+              url: "https://picturebackgroundremover.xyz/",
               featureList: [
                 "AI background removal",
                 "Before/after comparison",
