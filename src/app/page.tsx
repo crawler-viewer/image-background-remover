@@ -80,7 +80,12 @@ export default function Home() {
 
       {/* Hero + Tool */}
       <section className="relative flex-1 overflow-hidden px-4 pt-10 pb-16 md:pt-16">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_58%)]" />
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-x-0 top-[-120px] h-[560px] bg-[radial-gradient(circle_at_22%_18%,rgba(255,255,255,0.12),transparent_34%),radial-gradient(circle_at_78%_14%,rgba(148,163,184,0.12),transparent_28%),radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.06),transparent_52%)]" />
+          <div className="ambient-grid absolute inset-x-0 top-0 h-[420px] opacity-40" />
+          <div className="ambient-noise absolute inset-0" />
+          <div className="ambient-vignette absolute inset-0" />
+        </div>
         <div className="pointer-events-none absolute inset-x-0 top-24 mx-auto h-px max-w-5xl bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
         <script
@@ -149,8 +154,12 @@ export default function Home() {
               </div>
             </div>
 
-            <div id="tool" className="rounded-[28px] border border-white/10 bg-white/[0.03] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.35)] md:p-4">
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-x-10 -top-8 h-28 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.12),transparent_68%)] blur-2xl" />
+              <div className="pointer-events-none absolute inset-x-6 bottom-[-24px] h-20 rounded-full bg-[radial-gradient(circle,rgba(148,163,184,0.12),transparent_70%)] blur-2xl" />
+              <div id="tool" className="relative rounded-[28px] border border-white/10 bg-white/[0.03] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-[2px] md:p-4">
               <BgRemover />
+              </div>
             </div>
           </div>
         </div>
@@ -278,7 +287,10 @@ export default function Home() {
 
       {/* Pricing Preview */}
       <section className="relative border-t border-gray-800/50 py-20">
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[400px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.08),transparent_68%)] blur-3xl" />
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-1/2 top-1/2 h-[420px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.08),transparent_64%)] blur-3xl" />
+          <div className="absolute right-[14%] top-[22%] h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(148,163,184,0.08),transparent_70%)] blur-2xl" />
+        </div>
         <div className="relative max-w-4xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
             Straightforward pricing

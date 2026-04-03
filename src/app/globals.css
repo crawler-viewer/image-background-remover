@@ -19,13 +19,24 @@
   animation: float 6s ease-in-out infinite;
 }
 
-/* Glow effects */
-.glow-violet {
-  background: radial-gradient(ellipse at center, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+/* Ambient background layers */
+.ambient-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(circle at center, black 18%, transparent 82%);
 }
 
-.glow-violet-sm {
-  background: radial-gradient(ellipse at center, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
+.ambient-noise {
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.035) 0.6px, transparent 0.6px);
+  background-size: 12px 12px;
+  opacity: 0.22;
+}
+
+.ambient-vignette {
+  background: radial-gradient(circle at center, transparent 34%, rgba(3, 7, 18, 0.42) 100%);
 }
 
 /* Smooth scrollbar */
