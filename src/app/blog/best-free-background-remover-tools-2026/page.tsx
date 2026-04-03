@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Best Free Background Remover Tools in 2026 Compared",
     description: "An honest comparison of the top free background removal tools.",
+    url: "/blog/best-free-background-remover-tools-2026/",
+    type: "article",
   },
 };
 

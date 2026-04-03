@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   openGraph: {
     title: "How to Remove Background for Amazon Product Photos",
     description: "Meet Amazon's white background requirement in seconds with AI.",
+    url: "/blog/remove-background-amazon-product-photos/",
+    type: "article",
   },
 };
 

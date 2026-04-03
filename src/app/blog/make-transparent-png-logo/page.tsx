@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   openGraph: {
     title: "How to Make a Transparent PNG for Your Logo",
     description: "Convert any logo to transparent PNG in seconds with AI.",
+    url: "/blog/make-transparent-png-logo/",
+    type: "article",
   },
 };
 

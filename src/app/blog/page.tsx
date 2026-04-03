@@ -6,6 +6,13 @@ export const metadata: Metadata = {
   description:
     "Learn how to remove backgrounds from images, create transparent PNGs, and optimize product photos with our free AI tool.",
   alternates: { canonical: "/blog/" },
+  openGraph: {
+    title: "Blog - Background Removal Tips & Tutorials | BGRemover",
+    description:
+      "Learn how to remove backgrounds from images, create transparent PNGs, and optimize product photos with our free AI tool.",
+    url: "/blog/",
+    type: "website",
+  },
 };
 
 const posts = [
