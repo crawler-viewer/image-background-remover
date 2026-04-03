@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Best Free Background Remover Tools in 2026 Compared | BGRemover",
   description:
     "We compared the top free background removal tools — remove.bg, Canva, PhotoRoom, Clipdrop, and BGRemover. See which one is best for your needs.",
-  alternates: { canonical: "/blog/best-free-background-remover-tools-2026" },
+  alternates: { canonical: "/blog/best-free-background-remover-tools-2026/" },
   openGraph: {
     title: "Best Free Background Remover Tools in 2026 Compared",
     description: "An honest comparison of the top free background removal tools.",
@@ -28,7 +28,7 @@ export default function ComparisonPost() {
             </span>
           </a>
           <nav className="flex items-center gap-6 text-sm text-gray-400">
-            <a href="/blog" className="hover:text-white transition-colors">← Blog</a>
+            <a href="/blog/" className="hover:text-white transition-colors">← Blog</a>
           </nav>
         </div>
       </header>
@@ -167,8 +167,8 @@ export default function ComparisonPost() {
       <footer className="border-t border-gray-800/50 py-8">
         <div className="max-w-5xl mx-auto px-4 text-center text-xs text-gray-600">
           © {new Date().getFullYear()} BGRemover ·{" "}
-          <a href="/privacy" className="hover:text-gray-400">Privacy</a> ·{" "}
-          <a href="/terms" className="hover:text-gray-400">Terms</a>
+          <a href="/privacy/" className="hover:text-gray-400">Privacy</a> ·{" "}
+          <a href="/terms/" className="hover:text-gray-400">Terms</a>
         </div>
       </footer>
     </main>

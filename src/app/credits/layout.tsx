@@ -24,7 +24,7 @@ export default function CreditsLayout({ children }: { children: React.ReactNode 
           </a>
           <nav className="flex items-center gap-6 text-sm text-gray-400">
             <a href="/" className="hover:text-white transition-colors">Home</a>
-            <a href="/pricing" className="hover:text-white transition-colors">Pricing</a>
+            <a href="/pricing/" className="hover:text-white transition-colors">Pricing</a>
             <a href="/#faq" className="hover:text-white transition-colors">FAQ</a>
           </nav>
         </div>
@@ -35,8 +35,8 @@ export default function CreditsLayout({ children }: { children: React.ReactNode 
       <footer className="border-t border-gray-800/50 py-8">
         <div className="max-w-5xl mx-auto px-4 text-center text-xs text-gray-600">
           © {new Date().getFullYear()} BGRemover ·{" "}
-          <a href="/privacy" className="hover:text-gray-400">Privacy</a> ·{" "}
-          <a href="/terms" className="hover:text-gray-400">Terms</a>
+          <a href="/privacy/" className="hover:text-gray-400">Privacy</a> ·{" "}
+          <a href="/terms/" className="hover:text-gray-400">Terms</a>
         </div>
       </footer>
     </div>

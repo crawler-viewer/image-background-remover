@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "How to Remove Background for Amazon Product Photos | BGRemover",
   description:
     "Amazon requires white backgrounds for main product images. Learn how to remove backgrounds instantly and meet Amazon's strict image requirements with our free AI tool.",
-  alternates: { canonical: "/blog/remove-background-amazon-product-photos" },
+  alternates: { canonical: "/blog/remove-background-amazon-product-photos/" },
   openGraph: {
     title: "How to Remove Background for Amazon Product Photos",
     description: "Meet Amazon's white background requirement in seconds with AI.",
@@ -28,7 +28,7 @@ export default function AmazonPost() {
             </span>
           </a>
           <nav className="flex items-center gap-6 text-sm text-gray-400">
-            <a href="/blog" className="hover:text-white transition-colors">← Blog</a>
+            <a href="/blog/" className="hover:text-white transition-colors">← Blog</a>
           </nav>
         </div>
       </header>
@@ -123,8 +123,8 @@ export default function AmazonPost() {
       <footer className="border-t border-gray-800/50 py-8">
         <div className="max-w-5xl mx-auto px-4 text-center text-xs text-gray-600">
           © {new Date().getFullYear()} BGRemover ·{" "}
-          <a href="/privacy" className="hover:text-gray-400">Privacy</a> ·{" "}
-          <a href="/terms" className="hover:text-gray-400">Terms</a>
+          <a href="/privacy/" className="hover:text-gray-400">Privacy</a> ·{" "}
+          <a href="/terms/" className="hover:text-gray-400">Terms</a>
         </div>
       </footer>
     </main>

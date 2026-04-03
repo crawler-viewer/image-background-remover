@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "How to Make a Transparent PNG for Your Logo | BGRemover",
   description:
     "Learn how to quickly convert any logo to a transparent PNG. Perfect for websites, social media, business cards, and merchandise.",
-  alternates: { canonical: "/blog/make-transparent-png-logo" },
+  alternates: { canonical: "/blog/make-transparent-png-logo/" },
   openGraph: {
     title: "How to Make a Transparent PNG for Your Logo",
     description: "Convert any logo to transparent PNG in seconds with AI.",
@@ -28,7 +28,7 @@ export default function LogoPost() {
             </span>
           </a>
           <nav className="flex items-center gap-6 text-sm text-gray-400">
-            <a href="/blog" className="hover:text-white transition-colors">← Blog</a>
+            <a href="/blog/" className="hover:text-white transition-colors">← Blog</a>
           </nav>
         </div>
       </header>
@@ -126,8 +126,8 @@ export default function LogoPost() {
       <footer className="border-t border-gray-800/50 py-8">
         <div className="max-w-5xl mx-auto px-4 text-center text-xs text-gray-600">
           © {new Date().getFullYear()} BGRemover ·{" "}
-          <a href="/privacy" className="hover:text-gray-400">Privacy</a> ·{" "}
-          <a href="/terms" className="hover:text-gray-400">Terms</a>
+          <a href="/privacy/" className="hover:text-gray-400">Privacy</a> ·{" "}
+          <a href="/terms/" className="hover:text-gray-400">Terms</a>
         </div>
       </footer>
     </main>

@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Blog - Background Removal Tips & Tutorials | BGRemover",
   description:
     "Learn how to remove backgrounds from images, create transparent PNGs, and optimize product photos with our free AI tool.",
-  alternates: { canonical: "/blog" },
+  alternates: { canonical: "/blog/" },
 };
 
 const posts = [
@@ -55,7 +55,7 @@ export default function BlogPage() {
           </a>
           <nav className="flex items-center gap-6 text-sm text-gray-400">
             <a href="/" className="hover:text-white transition-colors">Home</a>
-            <a href="/pricing" className="hover:text-white transition-colors">Pricing</a>
+            <a href="/pricing/" className="hover:text-white transition-colors">Pricing</a>
           </nav>
         </div>
       </header>
@@ -68,7 +68,7 @@ export default function BlogPage() {
           {posts.map((post) => (
             <Link
               key={post.slug}
-              href={`/blog/${post.slug}`}
+              href={`/blog/${post.slug}/`}
               className="block rounded-2xl border border-gray-800 bg-gray-900/50 p-6 hover:border-gray-700 hover:bg-gray-900/80 transition-colors group"
             >
               <div className="flex items-center gap-3 text-xs text-gray-500">
@@ -91,8 +91,8 @@ export default function BlogPage() {
       <footer className="border-t border-gray-800/50 py-8">
         <div className="max-w-5xl mx-auto px-4 text-center text-xs text-gray-600">
           © {new Date().getFullYear()} BGRemover ·{" "}
-          <a href="/privacy" className="hover:text-gray-400">Privacy</a> ·{" "}
-          <a href="/terms" className="hover:text-gray-400">Terms</a>
+          <a href="/privacy/" className="hover:text-gray-400">Privacy</a> ·{" "}
+          <a href="/terms/" className="hover:text-gray-400">Terms</a>
         </div>
       </footer>
     </main>

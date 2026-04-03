@@ -48,7 +48,7 @@ export default function Home() {
           </a>
           <div className="flex items-center gap-4">
             <nav className="flex gap-6 text-sm text-gray-400">
-              <a href="/pricing" className="hover:text-white transition-colors hidden sm:block">
+              <a href="/pricing/" className="hover:text-white transition-colors hidden sm:block">
                 Pricing
               </a>
               <a
@@ -68,7 +68,7 @@ export default function Home() {
               </a>
             </nav>
             <a
-              href="/pricing"
+              href="/pricing/"
               className="hidden rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-sm font-medium text-violet-200 transition-colors hover:bg-violet-500/20 sm:inline-flex"
             >
               Upgrade
@@ -329,7 +329,7 @@ export default function Home() {
           </div>
           <div className="mt-8 text-center">
             <a
-              href="/pricing"
+              href="/pricing/"
               className="inline-flex rounded-xl border border-gray-800 bg-gray-950/70 px-6 py-3 text-sm font-medium text-gray-200 hover:bg-gray-800 transition-colors"
             >
               See Full Pricing
@@ -418,7 +418,7 @@ export default function Home() {
             <div className="flex flex-wrap justify-center gap-3">
               <ScrollToTopButton />
               <a
-                href="/pricing"
+                href="/pricing/"
                 className="px-6 py-3 rounded-xl border border-gray-800 bg-gray-950/70 text-sm font-medium text-gray-200 hover:bg-gray-800 transition-colors"
               >
                 See Pricing
@@ -451,20 +451,20 @@ export default function Home() {
               <div className="flex flex-col gap-2">
                 <span className="text-xs uppercase tracking-[0.15em] text-gray-600 mb-1">Product</span>
                 <a href="/#tool" className="hover:text-gray-300 transition-colors">Try Now</a>
-                <a href="/pricing" className="hover:text-gray-300 transition-colors">Pricing</a>
-                <a href="/credits" className="hover:text-gray-300 transition-colors">Credit Packs</a>
+                <a href="/pricing/" className="hover:text-gray-300 transition-colors">Pricing</a>
+                <a href="/credits/" className="hover:text-gray-300 transition-colors">Credit Packs</a>
                 <a href="#how-it-works" className="hover:text-gray-300 transition-colors">How it works</a>
               </div>
               <div className="flex flex-col gap-2">
                 <span className="text-xs uppercase tracking-[0.15em] text-gray-600 mb-1">Support</span>
                 <a href="#faq" className="hover:text-gray-300 transition-colors">FAQ</a>
                 <a href="#use-cases" className="hover:text-gray-300 transition-colors">Use Cases</a>
-                <a href="/blog" className="hover:text-gray-300 transition-colors">Blog</a>
+                <a href="/blog/" className="hover:text-gray-300 transition-colors">Blog</a>
               </div>
               <div className="flex flex-col gap-2">
                 <span className="text-xs uppercase tracking-[0.15em] text-gray-600 mb-1">Legal</span>
-                <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
-                <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
+                <a href="/privacy/" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
+                <a href="/terms/" className="hover:text-gray-300 transition-colors">Terms of Service</a>
               </div>
             </div>
           </div>

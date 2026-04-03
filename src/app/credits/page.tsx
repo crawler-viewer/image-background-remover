@@ -107,7 +107,7 @@ export default function CreditsPage() {
       <div className="mt-8 text-center">
         <p className="text-sm text-gray-500">
           Want unlimited monthly access instead?{" "}
-          <Link href="/pricing" className="text-violet-400 hover:text-violet-300">
+          <Link href="/pricing/" className="text-violet-400 hover:text-violet-300">
             View subscription plans →
           </Link>
         </p>

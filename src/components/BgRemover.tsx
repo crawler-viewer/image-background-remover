@@ -262,7 +262,7 @@ export default function BgRemover() {
                 )}
                 {quota.loggedIn && quota.plan !== "pro" && quota.plan !== "business" && (
                   <a
-                    href="/pricing"
+                    href="/pricing/"
                     className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
                   >
                     Upgrade to Pro
@@ -499,7 +499,7 @@ export default function BgRemover() {
               {quota.loggedIn && quota.plan !== "pro" && (
                 <span>
                   {" · "}
-                  <a href="/pricing" className="text-violet-400 hover:text-violet-300">
+                  <a href="/pricing/" className="text-violet-400 hover:text-violet-300">
                     Upgrade
                   </a>
                 </span>
