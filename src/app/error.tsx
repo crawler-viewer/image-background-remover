@@ -22,13 +22,13 @@ export default function GlobalError({
         <div className="flex flex-wrap justify-center gap-3">
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-medium transition-colors"
+            className="rounded-xl bg-white px-6 py-3 font-medium text-gray-950 transition-colors hover:bg-gray-100"
           >
             Try Again
           </button>
           <Link
             href="/"
-            className="px-6 py-3 rounded-xl border border-gray-800 bg-gray-900/70 font-medium hover:bg-gray-800 transition-colors"
+            className="rounded-xl border border-white/8 bg-white/[0.03] px-6 py-3 font-medium transition-colors hover:bg-white/[0.06]"
           >
             Back to Home
           </Link>

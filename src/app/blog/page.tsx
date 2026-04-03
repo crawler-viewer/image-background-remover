@@ -48,16 +48,16 @@ const posts = [
 export default function BlogPage() {
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800/50 bg-gray-950/80 backdrop-blur-xl">
+      <header className="border-b border-white/8 bg-gray-950/75 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center group-hover:bg-violet-500 transition-colors">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] transition-colors group-hover:bg-white/[0.1]">
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <span className="text-lg font-bold tracking-tight">
-              <span className="text-violet-400">BG</span>Remover
+              <span className="text-white">BG</span>Remover
             </span>
           </a>
           <nav className="flex items-center gap-6 text-sm text-gray-400">
@@ -67,26 +67,33 @@ export default function BlogPage() {
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto px-4 py-16">
-        <h1 className="text-3xl font-bold tracking-tight">Blog</h1>
-        <p className="mt-2 text-gray-400">Tips, tutorials, and guides for background removal.</p>
+      <div className="mx-auto max-w-4xl px-4 py-16">
+        <div className="rounded-[28px] border border-white/8 bg-white/[0.03] p-8 shadow-[0_18px_50px_rgba(0,0,0,0.18)] md:p-10">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-gray-300">
+            Notes on cleaner cutouts, product photos, and image prep
+          </div>
+          <h1 className="mt-5 text-3xl font-bold tracking-tight md:text-5xl">Blog</h1>
+          <p className="mt-3 max-w-2xl text-gray-400">
+            Practical guides for product shots, transparent PNGs, and fixing ugly backgrounds without wasting time.
+          </p>
+        </div>
 
-        <div className="mt-12 space-y-8">
+        <div className="mt-10 space-y-6">
           {posts.map((post) => (
             <Link
               key={post.slug}
               href={`/blog/${post.slug}/`}
-              className="block rounded-2xl border border-gray-800 bg-gray-900/50 p-6 hover:border-gray-700 hover:bg-gray-900/80 transition-colors group"
+              className="group block rounded-[24px] border border-white/8 bg-white/[0.03] p-6 shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/14 hover:bg-white/[0.05]"
             >
               <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-violet-300">
+                <span className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-gray-200">
                   {post.tag}
                 </span>
                 <span>{post.date}</span>
                 <span>·</span>
                 <span>{post.readTime}</span>
               </div>
-              <h2 className="mt-3 text-xl font-semibold group-hover:text-violet-300 transition-colors">
+              <h2 className="mt-3 text-xl font-semibold transition-colors group-hover:text-white">
                 {post.title}
               </h2>
               <p className="mt-2 text-sm text-gray-400 leading-relaxed">{post.excerpt}</p>
@@ -95,7 +102,7 @@ export default function BlogPage() {
         </div>
       </div>
 
-      <footer className="border-t border-gray-800/50 py-8">
+      <footer className="border-t border-white/8 py-8">
         <div className="max-w-5xl mx-auto px-4 text-center text-xs text-gray-600">
           © {new Date().getFullYear()} BGRemover ·{" "}
           <a href="/privacy/" className="hover:text-gray-400">Privacy</a> ·{" "}

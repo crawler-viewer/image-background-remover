@@ -239,11 +239,11 @@ export default function BgRemover() {
     <div className="w-full max-w-3xl mx-auto">
       {/* Quota Status Bar - fixed height to prevent CLS */}
       {(stage === "idle" || stage === "error") && (
-        <div className="mb-4 flex items-center justify-between rounded-xl border border-gray-800 bg-gray-900/50 px-4 py-3 text-sm min-h-[48px]">
+        <div className="mb-4 flex min-h-[48px] items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm">
           {quota ? (
             <>
               <div className="flex items-center gap-2">
-                <span className="inline-flex rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-xs text-violet-300">
+                <span className="inline-flex rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-xs text-gray-200">
                   {quota.plan === "guest" ? "Guest" : quota.plan === "free" ? "Free" : quota.plan === "pro" ? "Pro" : "Business"}
                 </span>
                 <span className="text-gray-400">
@@ -255,7 +255,7 @@ export default function BgRemover() {
                 {!quota.loggedIn && (
                   <a
                     href="/api/auth/google/login"
-                    className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                    className="text-xs text-gray-300 transition-colors hover:text-white"
                   >
                     Sign in for {quota.plan === "guest" ? "20/mo" : "more"}
                   </a>
@@ -263,7 +263,7 @@ export default function BgRemover() {
                 {quota.loggedIn && quota.plan !== "pro" && quota.plan !== "business" && (
                   <a
                     href="/pricing/"
-                    className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                    className="text-xs text-gray-300 transition-colors hover:text-white"
                   >
                     Upgrade to Pro
                   </a>
@@ -272,7 +272,7 @@ export default function BgRemover() {
             </>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="inline-flex rounded-full border border-gray-700 bg-gray-800/50 px-2 py-0.5 text-xs text-gray-500">Loading...</span>
+              <span className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-xs text-gray-500">Loading...</span>
             </div>
           )}
         </div>
@@ -288,10 +288,10 @@ export default function BgRemover() {
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-2xl p-12 md:p-16 text-center cursor-pointer transition-all duration-300 group min-h-[280px] flex flex-col items-center justify-center ${
+          className={`relative flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-12 text-center transition-all duration-300 group md:p-16 ${
             dragOver
-              ? "border-violet-400 bg-violet-500/10 scale-[1.02]"
-              : "border-gray-600 hover:border-violet-400 hover:bg-gray-900/50"
+              ? "scale-[1.02] border-white/30 bg-white/[0.08]"
+              : "border-white/12 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
           }`}
         >
           <input
@@ -304,7 +304,7 @@ export default function BgRemover() {
 
           <div className="transition-transform duration-300 group-hover:scale-110">
             <svg
-              className="w-16 h-16 mx-auto mb-4 text-gray-500 group-hover:text-violet-400 transition-colors"
+              className="mx-auto mb-4 h-16 w-16 text-gray-500 transition-colors group-hover:text-gray-200"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -320,14 +320,14 @@ export default function BgRemover() {
 
           <p className="text-xl font-semibold mb-2">
             Drop your image here or{" "}
-            <span className="text-violet-400">browse</span>
+            <span className="text-gray-100 underline decoration-white/30 underline-offset-4">browse</span>
           </p>
           <p className="text-gray-400 text-sm">
             PNG, JPG, WebP — up to {quota?.maxFileSizeMb || 25}MB
           </p>
 
           {stage === "error" && (
-            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+            <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3">
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
@@ -346,15 +346,15 @@ export default function BgRemover() {
               />
             )}
             <div className="absolute inset-0 flex items-center justify-center backdrop-blur-sm rounded-2xl">
-              <div className="flex flex-col items-center gap-4 p-6 bg-black/40 rounded-2xl">
+              <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-md">
                 {/* Animated spinner */}
                 <div className="relative w-16 h-16">
-                  <div className="absolute inset-0 border-4 border-violet-400/20 rounded-full" />
-                  <div className="absolute inset-0 border-4 border-transparent border-t-violet-400 rounded-full animate-spin" />
-                  <div className="absolute inset-2 border-4 border-transparent border-t-violet-300 rounded-full animate-spin [animation-direction:reverse] [animation-duration:1.5s]" />
+                  <div className="absolute inset-0 rounded-full border-4 border-white/10" />
+                  <div className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-white/80" />
+                  <div className="absolute inset-2 animate-spin rounded-full border-4 border-transparent border-t-gray-300 [animation-direction:reverse] [animation-duration:1.5s]" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-violet-300">
+                  <p className="text-sm font-semibold text-white">
                     Removing background...
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
@@ -374,7 +374,7 @@ export default function BgRemover() {
           {/* Comparison Slider */}
           <div
             ref={containerRef}
-            className="relative rounded-2xl overflow-hidden select-none cursor-col-resize shadow-2xl shadow-violet-500/10"
+            className="relative cursor-col-resize select-none overflow-hidden rounded-2xl border border-white/8 shadow-2xl shadow-black/30"
             onMouseDown={(e) => {
               setIsDragging(true);
               handleSliderMove(e.clientX);
@@ -457,7 +457,7 @@ export default function BgRemover() {
           <div className="flex gap-3 justify-center flex-wrap">
             <button
               onClick={handleDownload}
-              className="px-8 py-3 bg-violet-600 hover:bg-violet-500 active:bg-violet-700 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-[1.02]"
+              className="flex items-center gap-2 rounded-xl bg-white px-8 py-3 font-semibold text-gray-950 shadow-lg shadow-black/20 transition-all duration-200 hover:scale-[1.02] hover:bg-gray-100 active:bg-gray-200"
             >
               <svg
                 className="w-5 h-5"
@@ -476,7 +476,7 @@ export default function BgRemover() {
             </button>
             <button
               onClick={reset}
-              className="px-6 py-3 bg-gray-800 hover:bg-gray-700 active:bg-gray-600 rounded-xl font-semibold transition-all duration-200 border border-gray-700 hover:border-gray-600"
+              className="rounded-xl border border-white/10 bg-white/[0.04] px-6 py-3 font-semibold text-gray-100 transition-all duration-200 hover:border-white/16 hover:bg-white/[0.08] active:bg-white/[0.12]"
             >
               New Image
             </button>
@@ -491,7 +491,7 @@ export default function BgRemover() {
               {!quota.loggedIn && (
                 <span>
                   {" · "}
-                  <a href="/api/auth/google/login" className="text-violet-400 hover:text-violet-300">
+                  <a href="/api/auth/google/login" className="text-gray-300 hover:text-white">
                     Sign in for more
                   </a>
                 </span>
@@ -499,7 +499,7 @@ export default function BgRemover() {
               {quota.loggedIn && quota.plan !== "pro" && (
                 <span>
                   {" · "}
-                  <a href="/pricing/" className="text-violet-400 hover:text-violet-300">
+                  <a href="/pricing/" className="text-gray-300 hover:text-white">
                     Upgrade
                   </a>
                 </span>

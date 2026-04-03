@@ -24,10 +24,10 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="border-b border-gray-800/50 sticky top-0 z-50 bg-gray-950/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-white/8 bg-gray-950/75 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center group-hover:bg-violet-500 transition-colors">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] transition-colors group-hover:bg-white/[0.1]">
               <svg
                 className="w-5 h-5 text-white"
                 fill="none"
@@ -43,7 +43,7 @@ export default function Home() {
               </svg>
             </div>
             <span className="text-lg font-bold tracking-tight">
-              <span className="text-violet-400">BG</span>Remover
+              <span className="text-white">BG</span>Remover
             </span>
           </a>
           <div className="flex items-center gap-4">
@@ -69,7 +69,7 @@ export default function Home() {
             </nav>
             <a
               href="/pricing/"
-              className="hidden rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-sm font-medium text-violet-200 transition-colors hover:bg-violet-500/20 sm:inline-flex"
+              className="hidden rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-gray-100 transition-colors hover:bg-white/[0.08] sm:inline-flex"
             >
               Upgrade
             </a>
@@ -79,67 +79,79 @@ export default function Home() {
       </header>
 
       {/* Hero + Tool */}
-      <section className="relative flex-1 flex flex-col items-center px-4 pt-12 md:pt-20 pb-16 overflow-hidden">
-        {/* Background glow */}
-        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] glow-violet opacity-60" />
+      <section className="relative flex-1 overflow-hidden px-4 pt-10 pb-16 md:pt-16">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_58%)]" />
+        <div className="pointer-events-none absolute inset-x-0 top-24 mx-auto h-px max-w-5xl bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-        <div className="relative text-center mb-10 max-w-2xl min-h-[220px] md:min-h-[260px]">
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `(() => {
-                const params = new URLSearchParams(window.location.search);
-                const error = params.get("auth_error");
-                const map = ${JSON.stringify({ config: "Google login is not configured yet.", state: "Login expired or became invalid. Please try again.", google: "Google login failed. Please try again." })};
-                if (!error || !map[error]) return;
-                const box = document.getElementById("auth-error-box");
-                if (!box) return;
-                box.textContent = map[error];
-                box.classList.remove("hidden");
-                params.delete("auth_error");
-                const nextQuery = params.toString();
-                const nextUrl = window.location.pathname + (nextQuery ? "?" + nextQuery : "") + window.location.hash;
-                window.history.replaceState({}, "", nextUrl);
-              })();`,
-            }}
-          />
-          <div id="auth-error-box" className="hidden mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300" />
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-violet-500/10 border border-violet-500/20 rounded-full text-violet-300 text-xs font-medium mb-6">
-            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-            Free to try · No design skills needed
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-5 bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent">
-            Image Background
-            <br />
-            Remover
-          </h1>
-          <p className="text-gray-400 text-lg md:text-xl leading-relaxed">
-            Remove image backgrounds instantly with AI.
-            <br className="hidden md:block" />
-            Free to try. Sign in for more monthly removals.
-          </p>
-        </div>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(() => {
+              const params = new URLSearchParams(window.location.search);
+              const error = params.get("auth_error");
+              const map = ${JSON.stringify({ config: "Google login is not configured yet.", state: "Login expired or became invalid. Please try again.", google: "Google login failed. Please try again." })};
+              if (!error || !map[error]) return;
+              const box = document.getElementById("auth-error-box");
+              if (!box) return;
+              box.textContent = map[error];
+              box.classList.remove("hidden");
+              params.delete("auth_error");
+              const nextQuery = params.toString();
+              const nextUrl = window.location.pathname + (nextQuery ? "?" + nextQuery : "") + window.location.hash;
+              window.history.replaceState({}, "", nextUrl);
+            })();`,
+          }}
+        />
 
-        <BgRemover />
+        <div className="relative mx-auto max-w-6xl">
+          <div id="auth-error-box" className="hidden mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300" />
 
-        {/* Trust signals */}
-        <div className="flex flex-wrap justify-center gap-8 mt-12 text-xs text-gray-500">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-900/30 border border-gray-800/30">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            Images never stored
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-900/30 border border-gray-800/30">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            Processed in seconds
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-900/30 border border-gray-800/30">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            AI-powered accuracy
+          <div className="grid items-start gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
+            <div className="pt-4 lg:pt-10">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-gray-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                Cleaner cutouts for real product work
+              </div>
+              <h1 className="mt-6 max-w-2xl text-4xl font-bold tracking-tight text-white md:text-6xl md:leading-[0.95]">
+                Remove backgrounds fast,
+                <br />
+                keep the image usable
+              </h1>
+              <p className="mt-5 max-w-xl text-lg leading-8 text-gray-400">
+                Built for product photos, portraits, logos, and everyday cleanup work — without the cheap cutout look or the bloated editor routine.
+              </p>
+
+              <div className="mt-8 flex flex-wrap items-center gap-3 text-sm">
+                <a
+                  href="#tool"
+                  className="inline-flex items-center rounded-xl bg-white px-5 py-3 font-medium text-gray-950 transition-colors hover:bg-gray-200"
+                >
+                  Start with an image
+                </a>
+                <a
+                  href="/pricing/"
+                  className="inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 font-medium text-gray-200 transition-colors hover:bg-white/[0.08]"
+                >
+                  See pricing
+                </a>
+              </div>
+
+              <div className="mt-10 grid gap-3 sm:grid-cols-3">
+                {[
+                  ["Natural edges", "Better handling for hair, shadows, and product outlines."],
+                  ["Quick workflow", "Upload, preview, download, done."],
+                  ["Made for work", "Useful for stores, docs, content, and team assets."],
+                ].map(([title, desc]) => (
+                  <div key={title} className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+                    <p className="text-sm font-semibold text-white">{title}</p>
+                    <p className="mt-2 text-sm leading-6 text-gray-400">{desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div id="tool" className="rounded-[28px] border border-white/10 bg-white/[0.03] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.35)] md:p-4">
+              <BgRemover />
+            </div>
           </div>
         </div>
 
@@ -150,10 +162,10 @@ export default function Home() {
       <section id="how-it-works" className="border-t border-gray-800/50 py-20 bg-gray-900/20">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
-            How to Remove Background from Image
+            A simple workflow that stays out of your way
           </h2>
           <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
-            Three simple steps to get a transparent background. No technical skills needed.
+            No overexplaining, no giant editor, no detours. Just upload, process, and download.
           </p>
           <div className="grid md:grid-cols-3 gap-8">
             {[
@@ -174,8 +186,8 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 00.659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M19 14.5l-2.47 4.11a2.25 2.25 0 01-1.94 1.14H9.41a2.25 2.25 0 01-1.94-1.14L5 14.5m14 0H5" />
                   </svg>
                 ),
-                title: "AI Processing",
-                desc: "Our AI automatically detects the subject and removes the background with precision.",
+                title: "Background removed",
+                desc: "The subject is separated automatically, so you can get to the usable version faster.",
               },
               {
                 step: "03",
@@ -189,10 +201,10 @@ export default function Home() {
               },
             ].map((item) => (
               <div key={item.step} className="text-center group min-h-[200px]">
-                <div className="w-16 h-16 mx-auto mb-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl flex items-center justify-center text-violet-400 group-hover:bg-violet-500/20 transition-colors">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-gray-200 transition-colors group-hover:bg-white/[0.08]">
                   {item.icon}
                 </div>
-                <div className="text-xs text-violet-400 font-mono mb-2">
+                <div className="mb-2 font-mono text-xs text-gray-500">
                   Step {item.step}
                 </div>
                 <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
@@ -209,10 +221,10 @@ export default function Home() {
       <section id="use-cases" className="border-t border-gray-800/50 py-20">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
-            Perfect For Every Use Case
+            Works well for the stuff people actually need
           </h2>
           <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
-            Whether you&apos;re selling products or creating content, clean backgrounds make all the difference.
+            Product photos, profile pictures, logos, social posts, quick mockups — the usual messy-image problems.
           </p>
           <div className="grid md:grid-cols-2 gap-4">
             {[
@@ -249,9 +261,9 @@ export default function Home() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="flex gap-4 p-5 rounded-2xl bg-gray-900/50 border border-gray-800/50 hover:border-violet-500/20 hover:bg-gray-900/80 transition-all duration-300 group/card"
+                className="group/card flex gap-4 rounded-2xl border border-white/8 bg-white/[0.03] p-5 transition-all duration-300 hover:border-white/12 hover:bg-white/[0.05]"
               >
-                <div className="text-3xl flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl bg-gray-800/50 group-hover/card:bg-violet-500/10 transition-colors">{item.icon}</div>
+                <div className="text-3xl flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl bg-white/[0.04] transition-colors group-hover/card:bg-white/[0.08]">{item.icon}</div>
                 <div>
                   <h3 className="font-semibold mb-1">{item.title}</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">
@@ -266,13 +278,13 @@ export default function Home() {
 
       {/* Pricing Preview */}
       <section className="relative border-t border-gray-800/50 py-20">
-        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] glow-violet-sm" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[400px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.08),transparent_68%)] blur-3xl" />
         <div className="relative max-w-4xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
-            Choose the plan that fits your workflow
+            Straightforward pricing
           </h2>
           <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
-            Start free. Upgrade only when you need higher limits.
+            Start free, pay only when your volume makes it worth it.
           </p>
           <div className="grid md:grid-cols-4 gap-6">
             {[
@@ -309,8 +321,8 @@ export default function Home() {
                 key={plan.name}
                 className={`rounded-2xl border p-6 text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg min-h-[220px] ${
                   plan.highlight
-                    ? "border-violet-500/30 bg-violet-500/5 hover:shadow-violet-500/10"
-                    : "border-gray-800 bg-gray-900/50 hover:border-gray-700 hover:shadow-gray-900/50"
+                    ? "border-white/14 bg-white/[0.06]"
+                    : "border-white/8 bg-white/[0.03] hover:border-white/12 hover:bg-white/[0.05]"
                 }`}
               >
                 <h3 className="text-lg font-semibold">{plan.name}</h3>
@@ -319,7 +331,7 @@ export default function Home() {
                 <ul className="mt-4 space-y-2 text-sm text-gray-300">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-center justify-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
                       {f}
                     </li>
                   ))}
@@ -330,7 +342,7 @@ export default function Home() {
           <div className="mt-8 text-center">
             <a
               href="/pricing/"
-              className="inline-flex rounded-xl border border-gray-800 bg-gray-950/70 px-6 py-3 text-sm font-medium text-gray-200 hover:bg-gray-800 transition-colors"
+              className="inline-flex rounded-xl border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-medium text-gray-200 transition-colors hover:bg-white/[0.08]"
             >
               See Full Pricing
             </a>
@@ -342,10 +354,10 @@ export default function Home() {
       <section id="faq" className="border-t border-gray-800/50 py-20 bg-gray-900/20">
         <div className="max-w-3xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
-            Frequently Asked Questions
+            Common questions
           </h2>
           <p className="text-gray-400 text-center mb-12">
-            Everything you need to know about our background remover tool.
+            The short version, without the marketing perfume.
           </p>
           <div className="space-y-4">
             {[
@@ -382,8 +394,8 @@ export default function Home() {
                 a: "Yes! The processed images are entirely yours. Use them for e-commerce, marketing, social media, print — any purpose, personal or commercial.",
               },
             ].map((faq) => (
-              <details key={faq.q} className="group bg-gray-900/50 border border-gray-800/50 rounded-xl overflow-hidden">
-                <summary className="flex items-center justify-between p-5 cursor-pointer font-semibold hover:text-violet-300 transition-colors list-none">
+              <details key={faq.q} className="group overflow-hidden rounded-xl border border-white/8 bg-white/[0.03]">
+                <summary className="flex items-center justify-between p-5 cursor-pointer font-semibold hover:text-white transition-colors list-none">
                   {faq.q}
                   <svg
                     className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
@@ -406,20 +418,20 @@ export default function Home() {
 
       {/* CTA */}
       <section className="relative border-t border-gray-800/50 py-20 overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-violet-500/5 via-transparent to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.05] via-transparent to-transparent" />
         <div className="relative max-w-2xl mx-auto px-4 text-center">
-          <div className="rounded-3xl border border-violet-500/20 bg-violet-500/5 p-10">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-10">
             <h2 className="text-3xl font-bold mb-3">
-              Ready to remove more backgrounds?
+              Need more volume?
             </h2>
             <p className="text-gray-400 mb-8">
-              Start free, sign in for more daily access, or upgrade to Pro for higher limits.
+              Start with the free tier. Upgrade when you actually have enough images to justify it.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <ScrollToTopButton />
               <a
                 href="/pricing/"
-                className="px-6 py-3 rounded-xl border border-gray-800 bg-gray-950/70 text-sm font-medium text-gray-200 hover:bg-gray-800 transition-colors"
+                className="rounded-xl border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-medium text-gray-100 transition-colors hover:bg-white/[0.08]"
               >
                 See Pricing
               </a>
@@ -429,22 +441,22 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800/50 py-12">
+      <footer className="border-t border-white/8 py-12">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
             <div>
               <a href="/" className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 bg-violet-600 rounded-lg flex items-center justify-center">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05]">
                   <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <span className="text-sm font-bold">
-                  <span className="text-violet-400">BG</span>Remover
+                <span className="text-white">BG</span>Remover
                 </span>
               </a>
               <p className="text-xs text-gray-600 max-w-xs">
-                Free online AI tool to remove backgrounds from images instantly. Built for sellers, creators, and designers.
+                A practical background remover for sellers, designers, marketers, and anyone cleaning up images in a hurry.
               </p>
             </div>
             <div className="flex gap-8 text-sm text-gray-500">

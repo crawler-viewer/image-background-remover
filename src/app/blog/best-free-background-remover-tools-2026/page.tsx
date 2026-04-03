@@ -17,16 +17,16 @@ export const metadata: Metadata = {
 export default function ComparisonPost() {
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800/50 bg-gray-950/80 backdrop-blur-xl">
+      <header className="border-b border-white/8 bg-gray-950/75 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05]">
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <span className="text-lg font-bold tracking-tight">
-              <span className="text-violet-400">BG</span>Remover
+              <span className="text-white">BG</span>Remover
             </span>
           </a>
           <nav className="flex items-center gap-6 text-sm text-gray-400">
@@ -35,19 +35,23 @@ export default function ComparisonPost() {
         </div>
       </header>
 
-      <article className="max-w-2xl mx-auto px-4 py-16">
-        <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
-          <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-violet-300">Comparison</span>
-          <span>March 31, 2026</span>
-          <span>·</span>
-          <span>6 min read</span>
-        </div>
+      <article className="mx-auto max-w-3xl px-4 py-16">
+        <div className="rounded-[28px] border border-white/8 bg-white/[0.03] p-8 shadow-[0_18px_50px_rgba(0,0,0,0.18)] md:p-10">
+          <div className="mb-4 flex items-center gap-3 text-xs text-gray-500">
+            <span className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-gray-200">Comparison</span>
+            <span>March 31, 2026</span>
+            <span>·</span>
+            <span>6 min read</span>
+          </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight">
-          Best Free Background Remover Tools in 2026 Compared
-        </h1>
+          <h1 className="text-3xl font-bold tracking-tight leading-tight md:text-5xl">
+            Best Free Background Remover Tools in 2026 Compared
+          </h1>
 
-        <div className="mt-8 prose prose-invert prose-sm max-w-none space-y-6 text-gray-300 leading-relaxed">
+          <div className="mt-8 prose prose-invert prose-sm max-w-none space-y-6 text-gray-300 leading-relaxed">
+            <p className="text-base text-gray-300/95">
+              There are plenty of tools that can strip a background. The real question is which one fits your workflow without forcing you into watermarks, logins, or a giant editor you didn&apos;t ask for.
+            </p>
           <p>
             There are dozens of background removal tools available today. We tested the most popular ones to help you pick the right one for your workflow.
           </p>
@@ -55,7 +59,7 @@ export default function ComparisonPost() {
           <h2 className="text-xl font-semibold text-white mt-8">The Contenders</h2>
 
           <div className="space-y-6">
-            <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-5">
+            <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5">
               <h3 className="font-semibold text-white">1. BGRemover (picturebackgroundremover.xyz)</h3>
               <p className="mt-2">AI-powered, runs entirely in the browser with cloud processing. No signup required for 5 free removals/month.</p>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -66,7 +70,7 @@ export default function ComparisonPost() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-5">
+            <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5">
               <h3 className="font-semibold text-white">2. remove.bg</h3>
               <p className="mt-2">One of the oldest and most well-known tools. Great quality but limited free tier — only 1 free HD download, then watermarked previews.</p>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -77,7 +81,7 @@ export default function ComparisonPost() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-5">
+            <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5">
               <h3 className="font-semibold text-white">3. Canva Background Remover</h3>
               <p className="mt-2">Built into Canva&apos;s editor. Convenient if you&apos;re already a Canva user, but requires a Pro subscription ($12.99/month).</p>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -87,7 +91,7 @@ export default function ComparisonPost() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-5">
+            <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5">
               <h3 className="font-semibold text-white">4. PhotoRoom</h3>
               <p className="mt-2">Mobile-first tool popular with e-commerce sellers. Good quality, but free tier adds watermarks.</p>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -153,20 +157,21 @@ export default function ComparisonPost() {
             For <strong>Canva power users</strong> who already pay for Pro, the built-in background remover is convenient but limited to Canva&apos;s ecosystem.
           </p>
 
-          <div className="mt-8 rounded-2xl border border-violet-500/20 bg-violet-500/5 p-6 text-center">
+          <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-center">
             <p className="text-lg font-semibold text-white">Try it yourself</p>
             <p className="mt-2 text-sm text-gray-400">See how BGRemover compares — no signup required.</p>
             <Link
               href="/#tool"
-              className="mt-4 inline-flex rounded-xl bg-violet-600 px-6 py-3 text-sm font-medium text-white hover:bg-violet-500 transition-colors"
+              className="mt-4 inline-flex rounded-xl bg-white px-6 py-3 text-sm font-medium text-gray-950 transition-colors hover:bg-gray-200"
             >
               Remove a Background Free →
             </Link>
           </div>
+          </div>
         </div>
       </article>
 
-      <footer className="border-t border-gray-800/50 py-8">
+      <footer className="border-t border-white/8 py-8">
         <div className="max-w-5xl mx-auto px-4 text-center text-xs text-gray-600">
           © {new Date().getFullYear()} BGRemover ·{" "}
           <a href="/privacy/" className="hover:text-gray-400">Privacy</a> ·{" "}

@@ -17,16 +17,16 @@ export const metadata: Metadata = {
 export default function LogoPost() {
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800/50 bg-gray-950/80 backdrop-blur-xl">
+      <header className="border-b border-white/8 bg-gray-950/75 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05]">
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <span className="text-lg font-bold tracking-tight">
-              <span className="text-violet-400">BG</span>Remover
+              <span className="text-white">BG</span>Remover
             </span>
           </a>
           <nav className="flex items-center gap-6 text-sm text-gray-400">
@@ -35,19 +35,20 @@ export default function LogoPost() {
         </div>
       </header>
 
-      <article className="max-w-2xl mx-auto px-4 py-16">
-        <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
-          <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-violet-300">Tutorial</span>
-          <span>March 31, 2026</span>
-          <span>·</span>
-          <span>3 min read</span>
-        </div>
+      <article className="mx-auto max-w-3xl px-4 py-16">
+        <div className="rounded-[28px] border border-white/8 bg-white/[0.03] p-8 shadow-[0_18px_50px_rgba(0,0,0,0.18)] md:p-10">
+          <div className="mb-4 flex items-center gap-3 text-xs text-gray-500">
+            <span className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-gray-200">Tutorial</span>
+            <span>March 31, 2026</span>
+            <span>·</span>
+            <span>3 min read</span>
+          </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight">
-          How to Make a Transparent PNG for Your Logo
-        </h1>
+          <h1 className="text-3xl font-bold tracking-tight leading-tight md:text-5xl">
+            How to Make a Transparent PNG for Your Logo
+          </h1>
 
-        <div className="mt-8 prose prose-invert prose-sm max-w-none space-y-6 text-gray-300 leading-relaxed">
+          <div className="mt-8 prose prose-invert prose-sm max-w-none space-y-6 text-gray-300 leading-relaxed">
           <p>
             A transparent logo is essential for modern branding. Whether you&apos;re placing it on your website header, social media profiles, email signatures, or printed merchandise — a logo with a transparent background looks professional and adapts to any surface.
           </p>
@@ -66,7 +67,7 @@ export default function LogoPost() {
 
           <ol className="list-decimal pl-6 space-y-3">
             <li>
-              <strong>Go to BGRemover</strong> — open <Link href="/" className="text-violet-400 hover:text-violet-300">picturebackgroundremover.xyz</Link>
+              <strong>Go to BGRemover</strong> — open <Link href="/" className="text-gray-200 underline decoration-white/20 underline-offset-4 transition-colors hover:text-white">picturebackgroundremover.xyz</Link>
             </li>
             <li>
               <strong>Upload your logo</strong> — any format works: JPG, PNG, WebP. Even a photo of your logo on paper works.
@@ -112,20 +113,21 @@ export default function LogoPost() {
             Upload the photo to BGRemover, and the AI will extract just the logo with a transparent background. It&apos;s not perfect for every case, but it works surprisingly well for clean logos.
           </p>
 
-          <div className="mt-8 rounded-2xl border border-violet-500/20 bg-violet-500/5 p-6 text-center">
+          <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-center">
             <p className="text-lg font-semibold text-white">Make your logo transparent now</p>
             <p className="mt-2 text-sm text-gray-400">No signup, no download, just upload and go.</p>
             <Link
               href="/#tool"
-              className="mt-4 inline-flex rounded-xl bg-violet-600 px-6 py-3 text-sm font-medium text-white hover:bg-violet-500 transition-colors"
+              className="mt-4 inline-flex rounded-xl bg-white px-6 py-3 text-sm font-medium text-gray-950 transition-colors hover:bg-gray-200"
             >
               Try BGRemover Free →
             </Link>
           </div>
+          </div>
         </div>
       </article>
 
-      <footer className="border-t border-gray-800/50 py-8">
+      <footer className="border-t border-white/8 py-8">
         <div className="max-w-5xl mx-auto px-4 text-center text-xs text-gray-600">
           © {new Date().getFullYear()} BGRemover ·{" "}
           <a href="/privacy/" className="hover:text-gray-400">Privacy</a> ·{" "}
