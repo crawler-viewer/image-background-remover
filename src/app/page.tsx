@@ -171,7 +171,7 @@ export default function Home() {
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="border-t border-gray-800/50 py-20 bg-gray-900/20">
+      <section id="how-it-works" className="border-t border-white/8 bg-black/10 py-20">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
             A simple workflow that stays out of your way
@@ -230,7 +230,7 @@ export default function Home() {
       </section>
 
       {/* Use Cases */}
-      <section id="use-cases" className="border-t border-gray-800/50 py-20">
+      <section id="use-cases" className="border-t border-white/8 py-20">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
             Works well for the stuff people actually need
@@ -289,7 +289,7 @@ export default function Home() {
       </section>
 
       {/* Pricing Preview */}
-      <section className="relative border-t border-gray-800/50 py-20">
+      <section className="relative border-t border-white/8 py-20">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute left-1/2 top-1/2 h-[460px] w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.11),transparent_62%)] blur-3xl" />
           <div className="absolute left-[16%] top-[30%] h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.08),transparent_72%)] blur-2xl" />
@@ -367,7 +367,7 @@ export default function Home() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="border-t border-gray-800/50 py-20 bg-gray-900/20">
+      <section id="faq" className="border-t border-white/8 bg-black/10 py-20">
         <div className="max-w-3xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
             Common questions
@@ -433,7 +433,7 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="relative border-t border-gray-800/50 py-20 overflow-hidden">
+      <section className="relative overflow-hidden border-t border-white/8 py-20">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.05] via-transparent to-transparent" />
         <div className="relative max-w-2xl mx-auto px-4 text-center">
           <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-10">
@@ -496,7 +496,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <div className="mt-8 pt-6 border-t border-gray-800/50 text-center text-xs text-gray-600">
+          <div className="mt-8 border-t border-white/8 pt-6 text-center text-xs text-gray-600">
             © {new Date().getFullYear()} BGRemover — Free Online Image Background Remover
           </div>
         </div>

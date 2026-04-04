@@ -45,6 +45,14 @@ export default function PricingPage() {
       <PlanComparison />
       <PricingFAQ />
       <PricingCTA />
+
+      <footer className="border-t border-white/8 py-8">
+        <div className="max-w-5xl mx-auto px-4 text-center text-xs text-gray-600">
+          © {new Date().getFullYear()} BGRemover ·{" "}
+          <a href="/privacy/" className="hover:text-gray-400">Privacy</a> ·{" "}
+          <a href="/terms/" className="hover:text-gray-400">Terms</a>
+        </div>
+      </footer>
     </main>
   );
 }

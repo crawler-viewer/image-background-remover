@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import BlogArticleLayout from "@/components/blog/BlogArticleLayout";
 
 export const metadata: Metadata = {
   title: "How to Make a Transparent PNG for Your Logo | BGRemover",
@@ -16,124 +17,83 @@ export const metadata: Metadata = {
 
 export default function LogoPost() {
   return (
-    <main className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-white/8 bg-gray-950/75 backdrop-blur-xl">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05]">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <span className="text-lg font-bold tracking-tight">
-              <span className="text-white">BG</span>Remover
-            </span>
-          </a>
-          <nav className="flex items-center gap-6 text-sm text-gray-400">
-            <a href="/blog/" className="hover:text-white transition-colors">← Blog</a>
-          </nav>
-        </div>
-      </header>
+    <BlogArticleLayout
+      category="Tutorial"
+      date="March 31, 2026"
+      readTime="3 min read"
+      title="How to Make a Transparent PNG for Your Logo"
+      intro={
+        <p>
+          A transparent logo should be boringly easy to get. If you still need to fight an editor just to kill the white box, the workflow is the problem.
+        </p>
+      }
+      ctaTitle="Make your logo transparent now"
+      ctaDescription="No signup, no detour, just upload and go."
+      ctaLabel="Try BGRemover Free →"
+    >
+      <p>
+        A transparent logo is essential for modern branding. Whether you&apos;re placing it on your website header, social media profiles, email signatures, or printed merchandise — a logo with a transparent background looks professional and adapts to any surface.
+      </p>
 
-      <article className="mx-auto max-w-3xl px-4 py-16">
-        <div className="rounded-[28px] border border-white/8 bg-white/[0.03] p-8 shadow-[0_18px_50px_rgba(0,0,0,0.18)] md:p-10">
-          <div className="mb-4 flex items-center gap-3 text-xs text-gray-500">
-            <span className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-gray-200">Tutorial</span>
-            <span>March 31, 2026</span>
-            <span>·</span>
-            <span>3 min read</span>
-          </div>
+      <h2 className="mt-8 text-xl font-semibold text-white">Why You Need a Transparent Logo</h2>
 
-          <h1 className="text-3xl font-bold tracking-tight leading-tight md:text-5xl">
-            How to Make a Transparent PNG for Your Logo
-          </h1>
+      <ul className="list-disc space-y-2 pl-6">
+        <li><strong>Website headers</strong> — your logo blends seamlessly with any background color or image.</li>
+        <li><strong>Social media</strong> — overlay your logo on posts and stories without an ugly white box.</li>
+        <li><strong>Business cards & merch</strong> — print shops require transparent PNGs for clean printing.</li>
+        <li><strong>Video watermarks</strong> — place your logo on videos without blocking content.</li>
+        <li><strong>Presentations</strong> — slides look cleaner with transparent logos.</li>
+      </ul>
 
-          <div className="mt-8 prose prose-invert prose-sm max-w-none space-y-6 text-gray-300 leading-relaxed">
-          <p>
-            A transparent logo is essential for modern branding. Whether you&apos;re placing it on your website header, social media profiles, email signatures, or printed merchandise — a logo with a transparent background looks professional and adapts to any surface.
-          </p>
+      <h2 className="mt-8 text-xl font-semibold text-white">The Quick Method (30 Seconds)</h2>
 
-          <h2 className="text-xl font-semibold text-white mt-8">Why You Need a Transparent Logo</h2>
+      <ol className="list-decimal space-y-3 pl-6">
+        <li>
+          <strong>Go to BGRemover</strong> — open <Link href="/" className="text-gray-200 underline decoration-white/20 underline-offset-4 transition-colors hover:text-white">picturebackgroundremover.xyz</Link>
+        </li>
+        <li>
+          <strong>Upload your logo</strong> — any format works: JPG, PNG, WebP. Even a photo of your logo on paper works.
+        </li>
+        <li>
+          <strong>Wait 2-3 seconds</strong> — the AI detects your logo and removes everything else.
+        </li>
+        <li>
+          <strong>Download</strong> — you get a transparent PNG ready to use anywhere.
+        </li>
+      </ol>
 
-          <ul className="list-disc pl-6 space-y-2">
-            <li><strong>Website headers</strong> — your logo blends seamlessly with any background color or image.</li>
-            <li><strong>Social media</strong> — overlay your logo on posts and stories without an ugly white box.</li>
-            <li><strong>Business cards & merch</strong> — print shops require transparent PNGs for clean printing.</li>
-            <li><strong>Video watermarks</strong> — place your logo on videos without blocking content.</li>
-            <li><strong>Presentations</strong> — slides look cleaner with transparent logos.</li>
-          </ul>
+      <h2 className="mt-8 text-xl font-semibold text-white">Tips for Best Results</h2>
 
-          <h2 className="text-xl font-semibold text-white mt-8">The Quick Method (30 Seconds)</h2>
+      <ul className="list-disc space-y-2 pl-6">
+        <li><strong>Use the highest resolution source</strong> — the bigger the input, the cleaner the output. Avoid tiny thumbnails.</li>
+        <li><strong>Solid color logos work best</strong> — if your logo has gradients or semi-transparent elements, check the edges carefully.</li>
+        <li><strong>Text logos</strong> — AI handles text logos well, but very thin fonts may lose some detail. Use a high-contrast source.</li>
+        <li><strong>Multi-color backgrounds</strong> — the AI handles complex backgrounds (photos, patterns) surprisingly well.</li>
+      </ul>
 
-          <ol className="list-decimal pl-6 space-y-3">
-            <li>
-              <strong>Go to BGRemover</strong> — open <Link href="/" className="text-gray-200 underline decoration-white/20 underline-offset-4 transition-colors hover:text-white">picturebackgroundremover.xyz</Link>
-            </li>
-            <li>
-              <strong>Upload your logo</strong> — any format works: JPG, PNG, WebP. Even a photo of your logo on paper works.
-            </li>
-            <li>
-              <strong>Wait 2-3 seconds</strong> — the AI detects your logo and removes everything else.
-            </li>
-            <li>
-              <strong>Download</strong> — you get a transparent PNG ready to use anywhere.
-            </li>
-          </ol>
+      <h2 className="mt-8 text-xl font-semibold text-white">Common Mistakes to Avoid</h2>
 
-          <h2 className="text-xl font-semibold text-white mt-8">Tips for Best Results</h2>
+      <ul className="list-disc space-y-2 pl-6">
+        <li><strong>Saving as JPEG</strong> — JPEG doesn&apos;t support transparency. Always save/download as PNG.</li>
+        <li><strong>Using a low-res source</strong> — upscaling a 100×100 logo will look blurry. Start with at least 500×500.</li>
+        <li><strong>Not checking the edges</strong> — zoom in to 100% and look for stray pixels, especially on curved edges.</li>
+      </ul>
 
-          <ul className="list-disc pl-6 space-y-2">
-            <li><strong>Use the highest resolution source</strong> — the bigger the input, the cleaner the output. Avoid tiny thumbnails.</li>
-            <li><strong>Solid color logos work best</strong> — if your logo has gradients or semi-transparent elements, check the edges carefully.</li>
-            <li><strong>Text logos</strong> — AI handles text logos well, but very thin fonts may lose some detail. Use a high-contrast source.</li>
-            <li><strong>Multi-color backgrounds</strong> — the AI handles complex backgrounds (photos, patterns) surprisingly well.</li>
-          </ul>
+      <h2 className="mt-8 text-xl font-semibold text-white">What If I Don&apos;t Have a Digital Logo?</h2>
 
-          <h2 className="text-xl font-semibold text-white mt-8">Common Mistakes to Avoid</h2>
+      <p>
+        No problem. Take a clear photo of your physical logo (on paper, a sign, or a product) with your phone. Make sure:
+      </p>
 
-          <ul className="list-disc pl-6 space-y-2">
-            <li><strong>Saving as JPEG</strong> — JPEG doesn&apos;t support transparency. Always save/download as PNG.</li>
-            <li><strong>Using a low-res source</strong> — upscaling a 100×100 logo will look blurry. Start with at least 500×500.</li>
-            <li><strong>Not checking the edges</strong> — zoom in to 100% and look for stray pixels, especially on curved edges.</li>
-          </ul>
+      <ul className="list-disc space-y-2 pl-6">
+        <li>Good lighting, no shadows</li>
+        <li>Camera is straight-on, not at an angle</li>
+        <li>The logo fills most of the frame</li>
+      </ul>
 
-          <h2 className="text-xl font-semibold text-white mt-8">What If I Don&apos;t Have a Digital Logo?</h2>
-
-          <p>
-            No problem. Take a clear photo of your physical logo (on paper, a sign, or a product) with your phone. Make sure:
-          </p>
-
-          <ul className="list-disc pl-6 space-y-2">
-            <li>Good lighting, no shadows</li>
-            <li>Camera is straight-on, not at an angle</li>
-            <li>The logo fills most of the frame</li>
-          </ul>
-
-          <p>
-            Upload the photo to BGRemover, and the AI will extract just the logo with a transparent background. It&apos;s not perfect for every case, but it works surprisingly well for clean logos.
-          </p>
-
-          <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-center">
-            <p className="text-lg font-semibold text-white">Make your logo transparent now</p>
-            <p className="mt-2 text-sm text-gray-400">No signup, no download, just upload and go.</p>
-            <Link
-              href="/#tool"
-              className="mt-4 inline-flex rounded-xl bg-white px-6 py-3 text-sm font-medium text-gray-950 transition-colors hover:bg-gray-200"
-            >
-              Try BGRemover Free →
-            </Link>
-          </div>
-          </div>
-        </div>
-      </article>
-
-      <footer className="border-t border-white/8 py-8">
-        <div className="max-w-5xl mx-auto px-4 text-center text-xs text-gray-600">
-          © {new Date().getFullYear()} BGRemover ·{" "}
-          <a href="/privacy/" className="hover:text-gray-400">Privacy</a> ·{" "}
-          <a href="/terms/" className="hover:text-gray-400">Terms</a>
-        </div>
-      </footer>
-    </main>
+      <p>
+        Upload the photo to BGRemover, and the AI will extract just the logo with a transparent background. It&apos;s not perfect for every case, but it works surprisingly well for clean logos.
+      </p>
+    </BlogArticleLayout>
   );
 }

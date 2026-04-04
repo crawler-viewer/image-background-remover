@@ -1,7 +1,11 @@
 export function PricingHero() {
   return (
-    <section className="border-b border-white/8 px-4 py-20">
-      <div className="mx-auto max-w-5xl text-center">
+    <section className="relative overflow-hidden border-b border-white/8 px-4 py-20">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[340px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.11),transparent_60%)]" />
+      <div className="pointer-events-none absolute left-[16%] top-14 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.08),transparent_72%)] blur-3xl" />
+      <div className="pointer-events-none absolute right-[18%] top-20 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(148,163,184,0.1),transparent_72%)] blur-3xl" />
+
+      <div className="relative mx-auto max-w-5xl text-center">
         <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-gray-300">
           No credit card needed to try it
         </div>

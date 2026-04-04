@@ -2,7 +2,7 @@ import { pricingFaqs } from "@/lib/pricing";
 
 export function PricingFAQ() {
   return (
-    <section className="border-t border-white/8 bg-gray-900/20 px-4 py-20">
+    <section className="border-t border-white/8 bg-black/10 px-4 py-20">
       <div className="mx-auto max-w-3xl">
         <h2 className="text-center text-3xl font-bold">Pricing FAQ</h2>
         <p className="mt-3 text-center text-gray-400">

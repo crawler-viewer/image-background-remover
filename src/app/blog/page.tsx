@@ -67,8 +67,13 @@ export default function BlogPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-4xl px-4 py-16">
-        <div className="rounded-[28px] border border-white/8 bg-white/[0.03] p-8 shadow-[0_18px_50px_rgba(0,0,0,0.18)] md:p-10">
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[360px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.11),transparent_58%)]" />
+        <div className="pointer-events-none absolute left-[18%] top-16 h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.08),transparent_72%)] blur-3xl" />
+        <div className="pointer-events-none absolute right-[14%] top-24 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(148,163,184,0.1),transparent_72%)] blur-3xl" />
+
+        <div className="mx-auto max-w-4xl px-4 py-16">
+          <div className="rounded-[28px] border border-white/8 bg-white/[0.03] p-8 shadow-[0_18px_50px_rgba(0,0,0,0.18)] md:p-10">
           <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-gray-300">
             Notes on cleaner cutouts, product photos, and image prep
           </div>
@@ -78,27 +83,28 @@ export default function BlogPage() {
           </p>
         </div>
 
-        <div className="mt-10 space-y-6">
-          {posts.map((post) => (
-            <Link
-              key={post.slug}
-              href={`/blog/${post.slug}/`}
-              className="group block rounded-[24px] border border-white/8 bg-white/[0.03] p-6 shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/14 hover:bg-white/[0.05]"
-            >
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-gray-200">
-                  {post.tag}
-                </span>
-                <span>{post.date}</span>
-                <span>·</span>
-                <span>{post.readTime}</span>
-              </div>
-              <h2 className="mt-3 text-xl font-semibold transition-colors group-hover:text-white">
-                {post.title}
-              </h2>
-              <p className="mt-2 text-sm text-gray-400 leading-relaxed">{post.excerpt}</p>
-            </Link>
-          ))}
+          <div className="mt-10 space-y-6">
+            {posts.map((post) => (
+              <Link
+                key={post.slug}
+                href={`/blog/${post.slug}/`}
+                className="group block rounded-[24px] border border-white/8 bg-white/[0.03] p-6 shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/14 hover:bg-white/[0.05]"
+              >
+                <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <span className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-gray-200">
+                    {post.tag}
+                  </span>
+                  <span>{post.date}</span>
+                  <span>·</span>
+                  <span>{post.readTime}</span>
+                </div>
+                <h2 className="mt-3 text-xl font-semibold transition-colors group-hover:text-white">
+                  {post.title}
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-gray-400">{post.excerpt}</p>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 
