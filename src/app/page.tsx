@@ -22,14 +22,14 @@ export default function Home() {
   } as const;
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <main className="min-h-screen flex flex-col bg-stone-50 text-neutral-950">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/8 bg-gray-950/75 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-black/8 bg-stone-50/88 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] transition-colors group-hover:bg-white/[0.1]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-black/10 bg-white transition-colors group-hover:bg-stone-100">
               <svg
-                className="w-5 h-5 text-white"
+                className="w-5 h-5 text-neutral-900"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -43,33 +43,33 @@ export default function Home() {
               </svg>
             </div>
             <span className="text-lg font-bold tracking-tight">
-              <span className="text-white">BG</span>Remover
+              <span className="text-neutral-950">BG</span>Remover
             </span>
           </a>
           <div className="flex items-center gap-4">
-            <nav className="flex gap-6 text-sm text-gray-400">
-              <a href="/pricing/" className="hover:text-white transition-colors hidden sm:block">
+            <nav className="flex gap-6 text-sm text-neutral-500">
+              <a href="/pricing/" className="hover:text-neutral-900 transition-colors hidden sm:block">
                 Pricing
               </a>
               <a
                 href="#how-it-works"
-                className="hover:text-white transition-colors hidden sm:block"
+                className="hover:text-neutral-900 transition-colors hidden sm:block"
               >
                 How it works
               </a>
               <a
                 href="#use-cases"
-                className="hover:text-white transition-colors hidden sm:block"
+                className="hover:text-neutral-900 transition-colors hidden sm:block"
               >
                 Use Cases
               </a>
-              <a href="#faq" className="hover:text-white transition-colors">
+              <a href="#faq" className="hover:text-neutral-900 transition-colors">
                 FAQ
               </a>
             </nav>
             <a
               href="/pricing/"
-              className="hidden rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-gray-100 transition-colors hover:bg-white/[0.08] sm:inline-flex"
+              className="hidden rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100 sm:inline-flex"
             >
               Upgrade
             </a>
@@ -81,14 +81,13 @@ export default function Home() {
       {/* Hero + Tool */}
       <section className="relative flex-1 overflow-hidden px-4 pt-10 pb-16 md:pt-16">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-[-8%] top-[-72px] h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.18),rgba(255,255,255,0.08)_32%,transparent_72%)] blur-3xl" />
-          <div className="absolute right-[-6%] top-[18px] h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,rgba(148,163,184,0.18),rgba(148,163,184,0.08)_34%,transparent_74%)] blur-3xl" />
-          <div className="absolute left-[28%] top-[180px] h-[240px] w-[520px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.08),transparent_72%)] blur-[90px]" />
-          <div className="ambient-grid absolute inset-x-0 top-0 h-[460px] opacity-55" />
-          <div className="ambient-noise absolute inset-0 opacity-100" />
-          <div className="ambient-vignette absolute inset-0" />
+          <div className="absolute left-[-8%] top-[-72px] h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.72),rgba(255,255,255,0.28)_32%,transparent_72%)] blur-3xl" />
+          <div className="absolute right-[-6%] top-[18px] h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,rgba(214,211,209,0.38),rgba(214,211,209,0.14)_34%,transparent_74%)] blur-3xl" />
+          <div className="absolute left-[28%] top-[180px] h-[240px] w-[520px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.22),transparent_72%)] blur-[90px]" />
+          <div className="ambient-grid absolute inset-x-0 top-0 h-[460px] opacity-[0.06]" />
+          <div className="ambient-noise absolute inset-0 opacity-[0.08]" />
         </div>
-        <div className="pointer-events-none absolute inset-x-0 top-24 mx-auto h-px max-w-5xl bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-24 mx-auto h-px max-w-5xl bg-gradient-to-r from-transparent via-black/10 to-transparent" />
 
         <script
           dangerouslySetInnerHTML={{
@@ -110,33 +109,31 @@ export default function Home() {
         />
 
         <div className="relative mx-auto max-w-6xl">
-          <div id="auth-error-box" className="hidden mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300" />
+          <div id="auth-error-box" className="hidden mb-6 rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700" />
 
           <div className="grid items-start gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
             <div className="pt-4 lg:pt-10">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-gray-300">
+              <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-neutral-600 shadow-sm">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                Cleaner cutouts for real product work
+                Free online background remover
               </div>
-              <h1 className="mt-6 max-w-2xl text-4xl font-bold tracking-tight text-white md:text-6xl md:leading-[0.95]">
-                Remove backgrounds fast,
-                <br />
-                keep the image usable
+              <h1 className="mt-6 max-w-2xl text-4xl font-bold tracking-tight text-neutral-950 md:text-6xl md:leading-[0.95]">
+                Remove image backgrounds in seconds
               </h1>
-              <p className="mt-5 max-w-xl text-lg leading-8 text-gray-400">
-                Built for product photos, portraits, logos, and everyday cleanup work — without the cheap cutout look or the bloated editor routine.
+              <p className="mt-5 max-w-xl text-lg leading-8 text-neutral-600">
+                Upload a photo and get a clean transparent background in seconds. Great for product photos, portraits, and everyday image cleanup.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center gap-3 text-sm">
                 <a
                   href="#tool"
-                  className="inline-flex items-center rounded-xl bg-white px-5 py-3 font-medium text-gray-950 transition-colors hover:bg-gray-200"
+                  className="inline-flex items-center rounded-xl bg-neutral-950 px-5 py-3 font-medium text-white transition-colors hover:bg-neutral-800"
                 >
-                  Start with an image
+                  Upload an image
                 </a>
                 <a
                   href="/pricing/"
-                  className="inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 font-medium text-gray-200 transition-colors hover:bg-white/[0.08]"
+                  className="inline-flex items-center rounded-xl border border-black/10 bg-white px-5 py-3 font-medium text-neutral-800 transition-colors hover:bg-stone-100"
                 >
                   See pricing
                 </a>
@@ -144,23 +141,23 @@ export default function Home() {
 
               <div className="mt-10 grid gap-3 sm:grid-cols-3">
                 {[
-                  ["Natural edges", "Better handling for hair, shadows, and product outlines."],
-                  ["Quick workflow", "Upload, preview, download, done."],
-                  ["Made for work", "Useful for stores, docs, content, and team assets."],
+                  ["Cleaner cutouts", "Better handling for product edges, hair, and detailed outlines."],
+                  ["Faster workflow", "Upload, preview, and download without getting stuck in a bloated editor."],
+                  ["For everyday tasks", "Useful for stores, social posts, presentations, documents, and quick design work."],
                 ].map(([title, desc]) => (
-                  <div key={title} className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                    <p className="text-sm font-semibold text-white">{title}</p>
-                    <p className="mt-2 text-sm leading-6 text-gray-400">{desc}</p>
+                  <div key={title} className="rounded-2xl border border-black/8 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+                    <p className="text-sm font-semibold text-neutral-900">{title}</p>
+                    <p className="mt-2 text-sm leading-6 text-neutral-600">{desc}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="relative">
-              <div className="pointer-events-none absolute left-1/2 top-[-34px] h-36 w-[78%] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.18),transparent_66%)] blur-3xl" />
-              <div className="pointer-events-none absolute left-1/2 top-[24%] h-[62%] w-[92%] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(148,163,184,0.14),transparent_68%)] blur-[90px]" />
-              <div className="pointer-events-none absolute left-1/2 bottom-[-34px] h-28 w-[82%] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.12),transparent_70%)] blur-3xl" />
-              <div id="tool" className="relative rounded-[28px] border border-white/10 bg-white/[0.035] p-3 shadow-[0_32px_100px_rgba(0,0,0,0.42)] backdrop-blur-[3px] md:p-4">
+              <div className="pointer-events-none absolute left-1/2 top-[-34px] h-36 w-[78%] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.58),transparent_66%)] blur-3xl" />
+              <div className="pointer-events-none absolute left-1/2 top-[24%] h-[62%] w-[92%] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(214,211,209,0.12),transparent_68%)] blur-[90px]" />
+              <div className="pointer-events-none absolute left-1/2 bottom-[-34px] h-28 w-[82%] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.42),transparent_70%)] blur-3xl" />
+              <div id="tool" className="relative rounded-[28px] border border-black/10 bg-white p-3 shadow-[0_24px_70px_rgba(15,23,42,0.10)] md:p-4">
               <BgRemover />
               </div>
             </div>
@@ -171,13 +168,13 @@ export default function Home() {
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="border-t border-white/8 bg-black/10 py-20">
+      <section id="how-it-works" className="border-t border-black/8 bg-white py-20">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
-            A simple workflow that stays out of your way
+            A simple workflow from upload to download
           </h2>
-          <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
-            No overexplaining, no giant editor, no detours. Just upload, process, and download.
+          <p className="text-neutral-600 text-center mb-12 max-w-xl mx-auto">
+            Upload your image, let BGRemover remove the background, and download the result in seconds.
           </p>
           <div className="grid md:grid-cols-3 gap-8">
             {[
@@ -188,7 +185,7 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                   </svg>
                 ),
-                title: "Upload Image",
+                title: "Upload image",
                 desc: "Drag and drop or click to upload your photo. Supports PNG, JPG, and WebP.",
               },
               {
@@ -198,8 +195,8 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 00.659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M19 14.5l-2.47 4.11a2.25 2.25 0 01-1.94 1.14H9.41a2.25 2.25 0 01-1.94-1.14L5 14.5m14 0H5" />
                   </svg>
                 ),
-                title: "Background removed",
-                desc: "The subject is separated automatically, so you can get to the usable version faster.",
+                title: "Automatic cutout",
+                desc: "The background is removed automatically so you can get a clean result faster.",
               },
               {
                 step: "03",
@@ -208,19 +205,19 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                 ),
-                title: "Download Result",
-                desc: "Preview with the comparison slider and download your transparent PNG for free.",
+                title: "Download PNG",
+                desc: "Preview the result and download your transparent PNG in seconds.",
               },
             ].map((item) => (
               <div key={item.step} className="text-center group min-h-[200px]">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-gray-200 transition-colors group-hover:bg-white/[0.08]">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-black/8 bg-stone-50 text-neutral-700 transition-colors group-hover:bg-stone-100">
                   {item.icon}
                 </div>
-                <div className="mb-2 font-mono text-xs text-gray-500">
+                <div className="mb-2 font-mono text-xs text-neutral-400">
                   Step {item.step}
                 </div>
                 <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">
+                <p className="text-neutral-600 text-sm leading-relaxed">
                   {item.desc}
                 </p>
               </div>
@@ -230,55 +227,55 @@ export default function Home() {
       </section>
 
       {/* Use Cases */}
-      <section id="use-cases" className="border-t border-white/8 py-20">
+      <section id="use-cases" className="border-t border-black/8 py-20 bg-stone-50">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
-            Works well for the stuff people actually need
+            One tool, many everyday uses
           </h2>
-          <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
-            Product photos, profile pictures, logos, social posts, quick mockups — the usual messy-image problems.
+          <p className="text-neutral-600 text-center mb-12 max-w-xl mx-auto">
+            Create cleaner images for stores, profiles, marketing, and day-to-day content work without extra editing overhead.
           </p>
           <div className="grid md:grid-cols-2 gap-4">
             {[
               {
                 icon: "🛍️",
-                title: "E-commerce Product Photos",
-                desc: "Clean white or transparent backgrounds for your online store listings. Boost conversion with professional product images.",
+                title: "Product photos",
+                desc: "Create cleaner listing images with white or transparent backgrounds for stores, marketplaces, and ads.",
               },
               {
                 icon: "📸",
-                title: "Portrait & Profile Pictures",
-                desc: "Remove messy backgrounds from portraits and headshots. Perfect for LinkedIn, resumes, and social profiles.",
-              },
-              {
-                icon: "🎨",
-                title: "Graphic Design",
-                desc: "Extract subjects for use in designs, presentations, marketing materials, and creative compositions.",
+                title: "Profile pictures",
+                desc: "Remove distracting backgrounds from portraits and headshots for resumes, LinkedIn, and social profiles.",
               },
               {
                 icon: "📱",
-                title: "Social Media Content",
-                desc: "Create eye-catching posts, stories, and thumbnails with clean, professional-looking images.",
+                title: "Social media images",
+                desc: "Clean up photos for stories, thumbnails, and quick content production that needs a sharper final look.",
               },
               {
                 icon: "🏷️",
-                title: "Marketing & Ads",
-                desc: "Prepare product images for banners, flyers, and ad campaigns without expensive photo editing.",
+                title: "Marketing content",
+                desc: "Prepare cleaner visuals for posts, banners, flyers, and campaigns without opening a full design tool.",
               },
               {
                 icon: "📋",
-                title: "Documents & Presentations",
-                desc: "Insert clean images into slides, reports, and documents. No more awkward white boxes.",
+                title: "Slides and documents",
+                desc: "Insert cleaner images into presentations, reports, and documents without awkward white boxes.",
+              },
+              {
+                icon: "🎨",
+                title: "Quick design work",
+                desc: "Cut products or subjects out for layouts, mockups, comparisons, and lightweight creative tasks.",
               },
             ].map((item) => (
               <div
                 key={item.title}
-                className="group/card flex gap-4 rounded-2xl border border-white/8 bg-white/[0.03] p-5 transition-all duration-300 hover:border-white/12 hover:bg-white/[0.05]"
+                className="group/card flex gap-4 rounded-2xl border border-black/8 bg-white p-5 transition-all duration-300 hover:border-black/12 hover:bg-stone-50 hover:shadow-[0_10px_24px_rgba(15,23,42,0.05)]"
               >
-                <div className="text-3xl flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl bg-white/[0.04] transition-colors group-hover/card:bg-white/[0.08]">{item.icon}</div>
+                <div className="text-3xl flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl bg-stone-50 transition-colors group-hover/card:bg-stone-100">{item.icon}</div>
                 <div>
                   <h3 className="font-semibold mb-1">{item.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">
+                  <p className="text-neutral-600 text-sm leading-relaxed">
                     {item.desc}
                   </p>
                 </div>
@@ -289,18 +286,18 @@ export default function Home() {
       </section>
 
       {/* Pricing Preview */}
-      <section className="relative border-t border-white/8 py-20">
+      <section className="relative border-t border-black/8 py-20 bg-white">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-1/2 h-[460px] w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.11),transparent_62%)] blur-3xl" />
-          <div className="absolute left-[16%] top-[30%] h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.08),transparent_72%)] blur-2xl" />
-          <div className="absolute right-[12%] top-[18%] h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(148,163,184,0.1),transparent_72%)] blur-2xl" />
+          <div className="absolute left-1/2 top-1/2 h-[460px] w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(245,245,244,0.95),transparent_62%)] blur-3xl" />
+          <div className="absolute left-[16%] top-[30%] h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(245,245,244,0.7),transparent_72%)] blur-2xl" />
+          <div className="absolute right-[12%] top-[18%] h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(214,211,209,0.3),transparent_72%)] blur-2xl" />
         </div>
         <div className="relative max-w-4xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
-            Straightforward pricing
+            Simple pricing for different needs
           </h2>
-          <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
-            Start free, pay only when your volume makes it worth it.
+          <p className="text-neutral-600 text-center mb-12 max-w-xl mx-auto">
+            Start for free and upgrade only when your image volume makes it worth it.
           </p>
           <div className="grid md:grid-cols-4 gap-6">
             {[
@@ -337,17 +334,17 @@ export default function Home() {
                 key={plan.name}
                 className={`rounded-2xl border p-6 text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg min-h-[220px] ${
                   plan.highlight
-                    ? "border-white/14 bg-white/[0.06]"
-                    : "border-white/8 bg-white/[0.03] hover:border-white/12 hover:bg-white/[0.05]"
+                    ? "border-black/12 bg-stone-50 shadow-[0_12px_28px_rgba(15,23,42,0.05)]"
+                    : "border-black/8 bg-white hover:border-black/12 hover:bg-stone-50 hover:shadow-[0_10px_24px_rgba(15,23,42,0.05)]"
                 }`}
               >
                 <h3 className="text-lg font-semibold">{plan.name}</h3>
                 <p className="mt-1 text-2xl font-bold">{plan.price}</p>
-                <p className="mt-1 text-sm text-gray-400">{plan.desc}</p>
-                <ul className="mt-4 space-y-2 text-sm text-gray-300">
+                <p className="mt-1 text-sm text-neutral-600">{plan.desc}</p>
+                <ul className="mt-4 space-y-2 text-sm text-neutral-700">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-center justify-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-neutral-900/70" />
                       {f}
                     </li>
                   ))}
@@ -358,7 +355,7 @@ export default function Home() {
           <div className="mt-8 text-center">
             <a
               href="/pricing/"
-              className="inline-flex rounded-xl border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-medium text-gray-200 transition-colors hover:bg-white/[0.08]"
+              className="inline-flex rounded-xl border border-black/10 bg-white px-6 py-3 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100"
             >
               See Full Pricing
             </a>
@@ -367,13 +364,13 @@ export default function Home() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="border-t border-white/8 bg-black/10 py-20">
+      <section id="faq" className="border-t border-black/8 bg-stone-50 py-20">
         <div className="max-w-3xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
             Common questions
           </h2>
-          <p className="text-gray-400 text-center mb-12">
-            The short version, without the marketing perfume.
+          <p className="text-neutral-600 text-center mb-12">
+            Questions about pricing, file limits, formats, and privacy.
           </p>
           <div className="space-y-4">
             {[
@@ -438,10 +435,10 @@ export default function Home() {
         <div className="relative max-w-2xl mx-auto px-4 text-center">
           <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-10">
             <h2 className="text-3xl font-bold mb-3">
-              Need more volume?
+              Need more removals?
             </h2>
             <p className="text-gray-400 mb-8">
-              Start with the free tier. Upgrade when you actually have enough images to justify it.
+              Start with the free plan and upgrade when you have enough images to make it worthwhile.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <ScrollToTopButton />
@@ -472,7 +469,7 @@ export default function Home() {
                 </span>
               </a>
               <p className="text-xs text-gray-600 max-w-xs">
-                A practical background remover for sellers, designers, marketers, and anyone cleaning up images in a hurry.
+                A practical background remover for stores, content work, documents, and everyday image cleanup.
               </p>
             </div>
             <div className="flex gap-8 text-sm text-gray-500">
