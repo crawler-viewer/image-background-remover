@@ -11,12 +11,12 @@ export function PricingCards() {
     <section className="px-4 py-16">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex justify-center">
-          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1">
+          <div className="inline-flex rounded-full border border-black/10 bg-white p-1 shadow-sm">
             <button
               className={`rounded-full px-4 py-2 text-sm transition-colors ${
                 billingCycle === "monthly"
-                  ? "bg-white text-gray-950"
-                  : "text-gray-400 hover:text-white"
+                  ? "bg-neutral-950 text-white"
+                  : "text-neutral-500 hover:text-neutral-900"
               }`}
               onClick={() => setBillingCycle("monthly")}
             >
@@ -25,8 +25,8 @@ export function PricingCards() {
             <button
               className={`rounded-full px-4 py-2 text-sm transition-colors ${
                 billingCycle === "yearly"
-                  ? "bg-white text-gray-950"
-                  : "text-gray-400 hover:text-white"
+                  ? "bg-neutral-950 text-white"
+                  : "text-neutral-500 hover:text-neutral-900"
               }`}
               onClick={() => setBillingCycle("yearly")}
             >
@@ -42,9 +42,9 @@ export function PricingCards() {
         </div>
 
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-neutral-500">
             Need extra removals without a subscription?{" "}
-            <a href="/credits/" className="text-gray-200 underline decoration-white/20 underline-offset-4 hover:text-white">
+            <a href="/credits/" className="text-neutral-800 underline decoration-black/20 underline-offset-4 hover:text-neutral-950">
               Buy credit packs →
             </a>
           </p>

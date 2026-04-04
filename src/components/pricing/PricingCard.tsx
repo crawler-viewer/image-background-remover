@@ -52,19 +52,19 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
 
   return (
     <div
-      className={`rounded-[28px] border p-6 shadow-[0_18px_50px_rgba(0,0,0,0.18)] transition-all duration-300 ${
+      className={`rounded-[28px] border p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] transition-all duration-300 ${
         plan.highlight
-          ? "border-white/14 bg-white/[0.06]"
-          : "border-white/8 bg-white/[0.03] hover:border-white/12 hover:bg-white/[0.045]"
+          ? "border-black/12 bg-stone-50"
+          : "border-black/8 bg-white hover:border-black/12 hover:bg-stone-50"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-2xl font-semibold">{plan.name}</h3>
-          <p className="mt-2 text-sm text-gray-400">{plan.description}</p>
+          <p className="mt-2 text-sm text-neutral-600">{plan.description}</p>
         </div>
         {plan.badge ? (
-          <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-gray-200">
+          <span className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-neutral-700">
             {plan.badge}
           </span>
         ) : null}
@@ -73,14 +73,14 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
       <div className="mt-6">
         <div className="text-4xl font-bold tracking-tight">{priceLabel}</div>
         {(plan.code === "pro" || plan.code === "business") && billingCycle === "yearly" ? (
-          <p className="mt-2 text-sm text-gray-400">Save with yearly billing</p>
+          <p className="mt-2 text-sm text-neutral-500">Save with yearly billing</p>
         ) : null}
       </div>
 
-      <ul className="mt-6 space-y-3 text-sm text-gray-300">
+      <ul className="mt-6 space-y-3 text-sm text-neutral-700">
         {plan.features.map((feature) => (
           <li key={feature} className="flex items-start gap-3">
-            <span className="mt-1 h-1.5 w-1.5 rounded-full bg-white/70" />
+            <span className="mt-1 h-1.5 w-1.5 rounded-full bg-neutral-900/70" />
             <span>{feature}</span>
           </li>
         ))}
@@ -92,8 +92,8 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
           disabled={loading}
           className={`mt-8 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
             plan.highlight
-              ? "bg-white text-gray-950 hover:bg-gray-200 disabled:bg-gray-400"
-              : "border border-white/10 bg-white/[0.04] text-gray-100 hover:bg-white/[0.08]"
+              ? "bg-neutral-950 text-white hover:bg-neutral-800 disabled:bg-neutral-400"
+              : "border border-black/10 bg-white text-neutral-800 hover:bg-stone-100"
           }`}
         >
           {loading ? "Redirecting to PayPal..." : plan.ctaLabel}
@@ -101,7 +101,7 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
       ) : (
         <a
           href={plan.ctaHref}
-          className={`mt-8 inline-flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-gray-100 transition-colors hover:bg-white/[0.08]`}
+          className={`mt-8 inline-flex w-full items-center justify-center rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100`}
         >
           {plan.ctaLabel}
         </a>
