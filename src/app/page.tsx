@@ -407,11 +407,11 @@ export default function Home() {
                 a: "Yes! The processed images are entirely yours. Use them for e-commerce, marketing, social media, print — any purpose, personal or commercial.",
               },
             ].map((faq) => (
-              <details key={faq.q} className="group overflow-hidden rounded-xl border border-white/8 bg-white/[0.03]">
-                <summary className="flex items-center justify-between p-5 cursor-pointer font-semibold hover:text-white transition-colors list-none">
+              <details key={faq.q} className="group overflow-hidden rounded-xl border border-black/8 bg-white shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+                <summary className="flex items-center justify-between p-5 cursor-pointer font-semibold text-neutral-900 hover:text-neutral-700 transition-colors list-none">
                   {faq.q}
                   <svg
-                    className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
+                    className="w-5 h-5 text-neutral-400 group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -420,7 +420,7 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                <p className="px-5 pb-5 text-gray-400 text-sm leading-relaxed -mt-1">
+                <p className="px-5 pb-5 text-neutral-600 text-sm leading-relaxed -mt-1">
                   {faq.a}
                 </p>
               </details>
@@ -430,21 +430,21 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="relative overflow-hidden border-t border-white/8 py-20">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.05] via-transparent to-transparent" />
+      <section className="relative overflow-hidden border-t border-black/8 bg-white py-20">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-stone-100/60 via-transparent to-transparent" />
         <div className="relative max-w-2xl mx-auto px-4 text-center">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-10">
+          <div className="rounded-3xl border border-black/8 bg-stone-50 p-10 shadow-[0_14px_36px_rgba(15,23,42,0.05)]">
             <h2 className="text-3xl font-bold mb-3">
               Need more removals?
             </h2>
-            <p className="text-gray-400 mb-8">
+            <p className="text-neutral-600 mb-8">
               Start with the free plan and upgrade when you have enough images to make it worthwhile.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <ScrollToTopButton />
               <a
                 href="/pricing/"
-                className="rounded-xl border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-medium text-gray-100 transition-colors hover:bg-white/[0.08]"
+                className="rounded-xl border border-black/10 bg-white px-6 py-3 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100"
               >
                 See Pricing
               </a>
@@ -454,46 +454,46 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/8 py-12">
+      <footer className="border-t border-black/8 bg-stone-50 py-12">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
             <div>
               <a href="/" className="flex items-center gap-2 mb-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05]">
-                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-black/10 bg-white">
+                  <svg className="w-4 h-4 text-neutral-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <span className="text-sm font-bold">
-                <span className="text-white">BG</span>Remover
+                <span className="text-neutral-950">BG</span>Remover
                 </span>
               </a>
-              <p className="text-xs text-gray-600 max-w-xs">
+              <p className="text-xs text-neutral-600 max-w-xs">
                 A practical background remover for stores, content work, documents, and everyday image cleanup.
               </p>
             </div>
-            <div className="flex gap-8 text-sm text-gray-500">
+            <div className="flex gap-8 text-sm text-neutral-500">
               <div className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.15em] text-gray-600 mb-1">Product</span>
-                <a href="/#tool" className="hover:text-gray-300 transition-colors">Try Now</a>
-                <a href="/pricing/" className="hover:text-gray-300 transition-colors">Pricing</a>
-                <a href="/credits/" className="hover:text-gray-300 transition-colors">Credit Packs</a>
-                <a href="#how-it-works" className="hover:text-gray-300 transition-colors">How it works</a>
+                <span className="text-xs uppercase tracking-[0.15em] text-neutral-400 mb-1">Product</span>
+                <a href="/#tool" className="hover:text-neutral-900 transition-colors">Try Now</a>
+                <a href="/pricing/" className="hover:text-neutral-900 transition-colors">Pricing</a>
+                <a href="/credits/" className="hover:text-neutral-900 transition-colors">Credit Packs</a>
+                <a href="#how-it-works" className="hover:text-neutral-900 transition-colors">How it works</a>
               </div>
               <div className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.15em] text-gray-600 mb-1">Support</span>
-                <a href="#faq" className="hover:text-gray-300 transition-colors">FAQ</a>
-                <a href="#use-cases" className="hover:text-gray-300 transition-colors">Use Cases</a>
-                <a href="/blog/" className="hover:text-gray-300 transition-colors">Blog</a>
+                <span className="text-xs uppercase tracking-[0.15em] text-neutral-400 mb-1">Support</span>
+                <a href="#faq" className="hover:text-neutral-900 transition-colors">FAQ</a>
+                <a href="#use-cases" className="hover:text-neutral-900 transition-colors">Use Cases</a>
+                <a href="/blog/" className="hover:text-neutral-900 transition-colors">Blog</a>
               </div>
               <div className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.15em] text-gray-600 mb-1">Legal</span>
-                <a href="/privacy/" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
-                <a href="/terms/" className="hover:text-gray-300 transition-colors">Terms of Service</a>
+                <span className="text-xs uppercase tracking-[0.15em] text-neutral-400 mb-1">Legal</span>
+                <a href="/privacy/" className="hover:text-neutral-900 transition-colors">Privacy Policy</a>
+                <a href="/terms/" className="hover:text-neutral-900 transition-colors">Terms of Service</a>
               </div>
             </div>
           </div>
-          <div className="mt-8 border-t border-white/8 pt-6 text-center text-xs text-gray-600">
+          <div className="mt-8 border-t border-black/8 pt-6 text-center text-xs text-neutral-500">
             © {new Date().getFullYear()} BGRemover — Free Online Image Background Remover
           </div>
         </div>
