@@ -30,6 +30,8 @@ jobs:
 
       - name: Build static export
         run: pnpm run build
+        env:
+          NEXT_PUBLIC_SITE_ENV: production
 
       - name: Install Wrangler
         run: pnpm add -D wrangler

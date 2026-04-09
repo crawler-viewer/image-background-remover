@@ -1,21 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const isProduction = process.env.NEXT_PUBLIC_SITE_ENV === "production";
+
 export const metadata: Metadata = {
   title: "Image Background Remover - Remove Background from Photos Online Free",
   description:
     "Remove image backgrounds instantly with AI. Free online background remover tool. No signup required. Get transparent PNG backgrounds in seconds.",
-  keywords: [
-    "image background remover",
-    "remove background from photo",
-    "remove background from image",
-    "transparent background maker",
-    "png background remover",
-    "background eraser online",
-    "free background remover",
-    "photo background remover",
-    "product photo background remover",
-  ],
   metadataBase: new URL("https://picturebackgroundremover.xyz/"),
   alternates: { canonical: "/" },
   openGraph: {
@@ -40,7 +31,9 @@ export const metadata: Metadata = {
     description: "Remove backgrounds from images instantly with AI.",
     images: ["/og-image.png"],
   },
-  robots: { index: true, follow: true },
+  robots: isProduction
+    ? { index: true, follow: true }
+    : { index: false, follow: false },
 };
 
 export default function RootLayout({
