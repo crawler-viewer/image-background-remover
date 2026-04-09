@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_NAME="image-background-remover"
+PROJECT_NAME="image-background-remover-git"
 
 require_var() {
   local name="$1"

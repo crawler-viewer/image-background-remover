@@ -4,7 +4,7 @@ AI-powered background removal tool built with Next.js and deployed on Cloudflare
 
 ## Live Site
 
-- `https://image-background-remover-bbk.pages.dev/`
+- `https://image-background-remover-git.pages.dev/`
 
 ## Tech Stack
 
@@ -69,10 +69,10 @@ Set these in Google Cloud Console:
 
 - **Authorized JavaScript origins**
   - `https://picturebackgroundremover.xyz`
-  - `https://image-background-remover-bbk.pages.dev`
+  - `https://image-background-remover-git.pages.dev`
 - **Authorized redirect URIs**
   - `https://picturebackgroundremover.xyz/api/auth/google/callback`
-  - `https://image-background-remover-bbk.pages.dev/api/auth/google/callback`
+  - `https://image-background-remover-git.pages.dev/api/auth/google/callback`
 
 ## D1 Database
 
