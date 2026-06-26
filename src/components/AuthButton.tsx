@@ -51,7 +51,7 @@ export default function AuthButton() {
 
   if (loading) {
     return (
-      <div className="h-10 w-28 animate-pulse rounded-xl border border-white/8 bg-white/[0.03]" />
+      <div className="h-10 w-28 animate-pulse rounded-xl border border-black/8 bg-stone-100" />
     );
   }
 
@@ -59,7 +59,7 @@ export default function AuthButton() {
     return (
       <a
         href="/api/auth/google/login"
-        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-gray-100 transition-colors hover:bg-white/[0.08]"
+        className="inline-flex items-center gap-2 rounded-xl bg-neutral-950 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
           <path fill="currentColor" d="M21.8 12.23c0-.68-.06-1.34-.17-1.97H12v3.73h5.5a4.7 4.7 0 0 1-2.04 3.09v2.56h3.3c1.93-1.78 3.04-4.4 3.04-7.4Z"/>
@@ -74,7 +74,7 @@ export default function AuthButton() {
 
   return (
     <div className="flex items-center gap-3">
-      <div className="hidden items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 sm:flex">
+      <div className="hidden items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 sm:flex">
         {user.picture ? (
           <img
             src={user.picture}
@@ -83,21 +83,21 @@ export default function AuthButton() {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.08] text-xs font-semibold text-gray-100">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-black/10 bg-stone-100 text-xs font-semibold text-neutral-800">
             {initials}
           </div>
         )}
-        <div className="max-w-32 truncate text-sm text-gray-200">{user.name || user.email}</div>
+        <div className="max-w-32 truncate text-sm text-neutral-800">{user.name || user.email}</div>
       </div>
       <Link
         href="/account"
-        className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-white/[0.06]"
+        className="rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100"
       >
         Account
       </Link>
       <button
         onClick={handleLogout}
-        className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-white/[0.06]"
+        className="rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100"
       >
         Logout
       </button>

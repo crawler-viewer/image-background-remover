@@ -43,7 +43,6 @@ export default function AccountPageClient() {
   const [paymentMsg, setPaymentMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for payment status in URL
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
     if (payment === "success") {
@@ -87,14 +86,14 @@ export default function AccountPageClient() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-950 px-4 py-16 text-white">
+      <main className="min-h-screen bg-stone-50 px-4 py-16 text-neutral-950">
         <div className="mx-auto max-w-5xl animate-pulse space-y-6">
-          <div className="h-10 w-56 rounded-xl bg-white/[0.06]" />
+          <div className="h-10 w-56 rounded-xl bg-black/[0.06]" />
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="h-72 rounded-3xl bg-white/[0.04]" />
-            <div className="h-72 rounded-3xl bg-white/[0.04]" />
+            <div className="h-72 rounded-3xl bg-black/[0.04]" />
+            <div className="h-72 rounded-3xl bg-black/[0.04]" />
           </div>
-          <div className="h-72 rounded-3xl bg-white/[0.04]" />
+          <div className="h-72 rounded-3xl bg-black/[0.04]" />
         </div>
       </main>
     );
@@ -102,11 +101,14 @@ export default function AccountPageClient() {
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-gray-950 px-4 py-16 text-white">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-white/8 bg-white/[0.03] p-8 text-center shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
+      <main className="min-h-screen bg-stone-50 px-4 py-16 text-neutral-950">
+        <div className="mx-auto max-w-3xl rounded-3xl border border-black/8 bg-white p-8 text-center shadow-[0_14px_36px_rgba(15,23,42,0.05)]">
           <h1 className="mb-3 text-3xl font-bold">Account</h1>
-          <p className="mb-6 text-gray-400">Please sign in first to view your account center.</p>
-          <Link href="/" className="inline-flex rounded-xl bg-white px-5 py-3 font-medium text-gray-950 transition-colors hover:bg-gray-200">
+          <p className="mb-6 text-neutral-600">Please sign in first to view your account center.</p>
+          <Link
+            href="/"
+            className="inline-flex rounded-xl bg-neutral-950 px-5 py-3 font-medium text-white transition-colors hover:bg-neutral-800"
+          >
             Back to Home
           </Link>
         </div>
@@ -115,111 +117,113 @@ export default function AccountPageClient() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-950 px-4 py-10 text-white">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[360px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.11),transparent_60%)]" />
-      <div className="pointer-events-none absolute left-[12%] top-24 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.08),transparent_72%)] blur-3xl" />
-      <div className="pointer-events-none absolute right-[14%] top-32 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(148,163,184,0.1),transparent_72%)] blur-3xl" />
+    <main className="relative min-h-screen overflow-hidden bg-stone-50 px-4 py-10 text-neutral-950">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[360px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.85),transparent_62%)]" />
+      <div className="pointer-events-none absolute left-[12%] top-24 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.6),transparent_72%)] blur-3xl" />
+      <div className="pointer-events-none absolute right-[14%] top-32 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(214,211,209,0.45),transparent_72%)] blur-3xl" />
 
       <div className="relative mx-auto max-w-5xl space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-gray-400">Account Center</p>
+            <p className="text-sm uppercase tracking-[0.2em] text-neutral-500">Account Center</p>
             <h1 className="text-3xl font-bold tracking-tight">Your Profile</h1>
           </div>
-          <Link href="/" className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-white/[0.08]">
+          <Link
+            href="/"
+            className="rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100"
+          >
             Back to Home
           </Link>
         </div>
 
         {paymentMsg && (
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             ✓ {paymentMsg}
           </div>
         )}
 
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.16)]">
+          <div className="rounded-3xl border border-black/8 bg-white p-6 shadow-[0_14px_36px_rgba(15,23,42,0.05)]">
             <div className="flex items-center gap-4">
               {user.avatar_url ? (
                 <img src={user.avatar_url} alt={user.name || "Avatar"} className="h-16 w-16 rounded-full" referrerPolicy="no-referrer" />
               ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-xl font-semibold text-white">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-black/10 bg-stone-100 text-xl font-semibold text-neutral-900">
                   {(user.name || user.email || "U").slice(0, 1).toUpperCase()}
                 </div>
               )}
               <div>
                 <h2 className="text-2xl font-semibold">{user.name || "Unnamed user"}</h2>
-                <p className="text-gray-400">{user.email || "No email"}</p>
+                <p className="text-neutral-500">{user.email || "No email"}</p>
               </div>
             </div>
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-white/8 bg-black/10 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Plan</p>
+              <div className="rounded-2xl border border-black/8 bg-stone-50 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Plan</p>
                 <div className="mt-2 flex items-center gap-2">
                   <p className="text-xl font-semibold capitalize">{user.plan}</p>
                   {user.plan === "pro" && (
-                    <span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-xs text-gray-100">Pro</span>
+                    <span className="rounded-full border border-black/10 bg-white px-2 py-0.5 text-xs text-neutral-700">Pro</span>
                   )}
                 </div>
               </div>
-              <div className="rounded-2xl border border-white/8 bg-black/10 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Status</p>
+              <div className="rounded-2xl border border-black/8 bg-stone-50 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Status</p>
                 <p className="mt-2 text-xl font-semibold capitalize">{user.status}</p>
               </div>
-              <div className="rounded-2xl border border-white/8 bg-black/10 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Created</p>
-                <p className="mt-2 text-sm text-gray-300">{formatDate(user.created_at)}</p>
+              <div className="rounded-2xl border border-black/8 bg-stone-50 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Created</p>
+                <p className="mt-2 text-sm text-neutral-700">{formatDate(user.created_at)}</p>
               </div>
-              <div className="rounded-2xl border border-white/8 bg-black/10 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Last Login</p>
-                <p className="mt-2 text-sm text-gray-300">{formatDate(user.last_login_at)}</p>
+              <div className="rounded-2xl border border-black/8 bg-stone-50 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Last Login</p>
+                <p className="mt-2 text-sm text-neutral-700">{formatDate(user.last_login_at)}</p>
               </div>
-              <div className="rounded-2xl border border-white/8 bg-black/10 p-4 md:col-span-2">
-                <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Plan Limits</p>
-                <p className="mt-2 text-sm text-gray-300">
+              <div className="rounded-2xl border border-black/8 bg-stone-50 p-4 md:col-span-2">
+                <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Plan Limits</p>
+                <p className="mt-2 text-sm text-neutral-700">
                   Up to {user.max_file_size_mb}MB per image · {user.daily_limit} removals per month
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.16)]">
-            <p className="text-xs uppercase tracking-[0.18em] text-gray-500">This Month&apos;s Quota</p>
+          <div className="rounded-3xl border border-black/8 bg-white p-6 shadow-[0_14px_36px_rgba(15,23,42,0.05)]">
+            <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">This Month&apos;s Quota</p>
             <div className="mt-4 flex items-end justify-between">
               <div>
                 <p className="text-4xl font-bold">{user.remaining}</p>
-                <p className="mt-1 text-sm text-gray-400">remaining this month</p>
+                <p className="mt-1 text-sm text-neutral-500">remaining this month</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-400">Used</p>
+                <p className="text-sm text-neutral-500">Used</p>
                 <p className="text-xl font-semibold">{user.today_used} / {user.daily_limit}</p>
               </div>
             </div>
             {(() => {
               const pct = Math.min(100, (user.today_used / user.daily_limit) * 100);
-              const barColor = pct >= 90 ? "bg-red-500" : pct >= 60 ? "bg-amber-500" : "bg-white";
+              const barColor = pct >= 90 ? "bg-red-500" : pct >= 60 ? "bg-amber-500" : "bg-neutral-900";
               return (
-                <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/[0.08]">
+                <div className="mt-5 h-3 overflow-hidden rounded-full bg-stone-200">
                   <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
                 </div>
               );
             })()}
             {user.remaining === 0 && (
-              <p className="mt-3 text-sm text-red-400">
+              <p className="mt-3 text-sm text-red-600">
                 Monthly limit reached. {user.credits > 0 ? "Using credits for additional removals." : "Resets on the 1st."}
               </p>
             )}
 
-            {/* Credits balance */}
-            <div className="mt-4 flex items-center justify-between rounded-xl border border-white/8 bg-black/10 px-4 py-3">
+            <div className="mt-4 flex items-center justify-between rounded-xl border border-black/8 bg-stone-50 px-4 py-3">
               <div>
-                <p className="text-sm text-gray-400">Credit Balance</p>
+                <p className="text-sm text-neutral-500">Credit Balance</p>
                 <p className="text-lg font-semibold">{user.credits || 0} credits</p>
               </div>
               <Link
                 href="/credits"
-                className="rounded-lg border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-gray-100 transition-colors hover:bg-white/[0.08]"
+                className="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-neutral-800 transition-colors hover:bg-stone-100"
               >
                 Buy Credits
               </Link>
@@ -228,46 +232,46 @@ export default function AccountPageClient() {
             {user.plan !== "pro" && user.plan !== "business" ? (
               <Link
                 href="/pricing/"
-                className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-medium text-gray-950 transition-colors hover:bg-gray-200"
+                className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-neutral-950 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
               >
                 Upgrade to Pro — 200 removals/month
               </Link>
             ) : (
-              <div className="mt-6 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-300">
+              <div className="mt-6 rounded-xl border border-emerald-500/30 bg-emerald-50 px-4 py-3 text-center text-sm text-emerald-700">
                 You&apos;re on the Pro plan ✓
               </div>
             )}
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/8 bg-white/[0.03] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.16)]">
+        <section className="rounded-3xl border border-black/8 bg-white p-6 shadow-[0_14px_36px_rgba(15,23,42,0.05)]">
           <div className="mb-4 flex items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold">Recent Activity</h2>
-              <p className="text-sm text-gray-400">Your latest background removal jobs.</p>
+              <p className="text-sm text-neutral-500">Your latest background removal jobs.</p>
             </div>
           </div>
 
           {items.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/10 bg-black/10 p-8 text-center text-gray-400">
+            <div className="rounded-2xl border border-dashed border-black/10 bg-stone-50 p-8 text-center text-neutral-500">
               No recent activity yet.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-white/8">
-              <div className="grid grid-cols-[1.2fr_0.7fr_0.9fr] gap-4 border-b border-white/8 bg-black/20 px-4 py-3 text-xs uppercase tracking-[0.18em] text-gray-500">
+            <div className="overflow-hidden rounded-2xl border border-black/8">
+              <div className="grid grid-cols-[1.2fr_0.7fr_0.9fr] gap-4 border-b border-black/8 bg-stone-100 px-4 py-3 text-xs uppercase tracking-[0.18em] text-neutral-500">
                 <div>File</div>
                 <div>Status</div>
                 <div>Time</div>
               </div>
               {items.map((item) => (
-                <div key={item.id} className="grid grid-cols-[1.2fr_0.7fr_0.9fr] gap-4 border-b border-white/8 px-4 py-4 text-sm last:border-b-0">
-                  <div className="truncate text-gray-200">{item.source_filename || "Untitled image"}</div>
+                <div key={item.id} className="grid grid-cols-[1.2fr_0.7fr_0.9fr] gap-4 border-b border-black/8 px-4 py-4 text-sm last:border-b-0">
+                  <div className="truncate text-neutral-800">{item.source_filename || "Untitled image"}</div>
                   <div>
-                    <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300">
+                    <span className="rounded-full border border-emerald-500/30 bg-emerald-50 px-2.5 py-1 text-xs text-emerald-700">
                       {item.status}
                     </span>
                   </div>
-                  <div className="text-gray-400">{formatDate(item.created_at)}</div>
+                  <div className="text-neutral-500">{formatDate(item.created_at)}</div>
                 </div>
               ))}
             </div>
