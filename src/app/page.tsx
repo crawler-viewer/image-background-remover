@@ -115,7 +115,7 @@ export default function Home() {
             <div className="pt-4 lg:pt-10">
               <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-neutral-600 shadow-sm">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                Free online background remover
+                Try 5 times free · No signup required
               </div>
               <h1 className="mt-6 max-w-2xl text-4xl font-bold tracking-tight text-neutral-950 md:text-6xl md:leading-[0.95]">
                 Remove image backgrounds in seconds
@@ -127,7 +127,7 @@ export default function Home() {
               <div className="mt-8 flex flex-wrap items-center gap-3 text-sm">
                 <a
                   href="#tool"
-                  className="inline-flex items-center rounded-xl bg-neutral-950 px-5 py-3 font-medium text-white transition-colors hover:bg-neutral-800"
+                  className="inline-flex items-center rounded-xl bg-emerald-600 px-5 py-3 font-medium text-white transition-colors hover:bg-emerald-700 shadow-lg shadow-emerald-600/20"
                 >
                   Upload an image
                 </a>

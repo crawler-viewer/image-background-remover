@@ -239,39 +239,48 @@ export default function BgRemover() {
     <div className="w-full max-w-3xl mx-auto">
       {/* Quota Status Bar - fixed height to prevent CLS */}
       {(stage === "idle" || stage === "error") && (
-        <div className="mb-4 flex min-h-[48px] items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm">
+        <div className="mb-4 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3">
           {quota ? (
             <>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-xs text-gray-200">
-                  {quota.plan === "guest" ? "Guest" : quota.plan === "free" ? "Free" : quota.plan === "pro" ? "Pro" : "Business"}
-                </span>
-                <span className="text-gray-400">
-                  {quota.remaining}/{quota.limit} removals left this month
-                  {quota.credits ? ` · ${quota.credits} credits` : ""}
-                </span>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-xs text-gray-200">
+                    {quota.plan === "guest" ? "Guest" : quota.plan === "free" ? "Free" : quota.plan === "pro" ? "Pro" : "Business"}
+                  </span>
+                  <span className="text-gray-400">
+                    {quota.remaining}/{quota.limit} removals left this month
+                    {quota.credits ? ` · ${quota.credits} credits` : ""}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!quota.loggedIn && (
+                    <a
+                      href="/api/auth/google/login"
+                      className="text-xs text-gray-300 transition-colors hover:text-white"
+                    >
+                      Sign in for {quota.plan === "guest" ? "20/mo" : "more"}
+                    </a>
+                  )}
+                  {quota.loggedIn && quota.plan !== "pro" && quota.plan !== "business" && (
+                    <a
+                      href="/pricing/"
+                      className="text-xs text-gray-300 transition-colors hover:text-white"
+                    >
+                      Upgrade to Pro
+                    </a>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                {!quota.loggedIn && (
-                  <a
-                    href="/api/auth/google/login"
-                    className="text-xs text-gray-300 transition-colors hover:text-white"
-                  >
-                    Sign in for {quota.plan === "guest" ? "20/mo" : "more"}
-                  </a>
-                )}
-                {quota.loggedIn && quota.plan !== "pro" && quota.plan !== "business" && (
-                  <a
-                    href="/pricing/"
-                    className="text-xs text-gray-300 transition-colors hover:text-white"
-                  >
-                    Upgrade to Pro
-                  </a>
-                )}
+              {/* Progress bar */}
+              <div className="mt-3 h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-300"
+                  style={{width: `${Math.max(0, Math.min(100, (quota.used / quota.limit) * 100))}%`}}
+                />
               </div>
             </>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-sm">
               <span className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-xs text-gray-500">Loading...</span>
             </div>
           )}
@@ -457,7 +466,7 @@ export default function BgRemover() {
           <div className="flex gap-3 justify-center flex-wrap">
             <button
               onClick={handleDownload}
-              className="flex items-center gap-2 rounded-xl bg-white px-8 py-3 font-semibold text-gray-950 shadow-lg shadow-black/20 transition-all duration-200 hover:scale-[1.02] hover:bg-gray-100 active:bg-gray-200"
+              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-8 py-3 font-semibold text-white shadow-lg shadow-emerald-600/25 transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700"
             >
               <svg
                 className="w-5 h-5"
