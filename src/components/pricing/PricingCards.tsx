@@ -1,11 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { pricingPlans, type BillingCycle } from "@/lib/pricing";
 import { PricingCard } from "./PricingCard";
 
+type UserInfo = {
+  plan: string;
+  status: string;
+} | null;
+
 export function PricingCards() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
+  const [userInfo, setUserInfo] = useState<UserInfo>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/account/me", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (active && data.user) {
+            setUserInfo({ plan: data.user.plan, status: data.user.status });
+          }
+        }
+      } catch {
+        // silently fail - user not logged in
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    loadUser();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <section className="px-4 py-16">
@@ -37,7 +67,13 @@ export function PricingCards() {
 
         <div className="grid gap-6 lg:grid-cols-4">
           {pricingPlans.map((plan) => (
-            <PricingCard key={plan.code} plan={plan} billingCycle={billingCycle} />
+            <PricingCard
+              key={plan.code}
+              plan={plan}
+              billingCycle={billingCycle}
+              currentPlan={userInfo?.plan}
+              userStatus={userInfo?.status}
+            />
           ))}
         </div>
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AuthButton from "@/components/AuthButton";
 import { PricingCTA } from "@/components/pricing/PricingCTA";
 import { PricingCards } from "@/components/pricing/PricingCards";
 import { PricingFAQ } from "@/components/pricing/PricingFAQ";
@@ -33,11 +34,14 @@ export default function PricingPage() {
               <span className="text-neutral-950">BG</span>Remover
             </span>
           </a>
-          <nav className="flex items-center gap-6 text-sm text-neutral-500">
-            <a href="/" className="hover:text-neutral-900 transition-colors">Home</a>
-            <a href="/credits/" className="hover:text-neutral-900 transition-colors">Credits</a>
-            <a href="/#faq" className="hover:text-neutral-900 transition-colors">FAQ</a>
-          </nav>
+          <div className="flex items-center gap-4">
+            <nav className="flex gap-6 text-sm text-neutral-500">
+              <a href="/" className="hover:text-neutral-900 transition-colors">Home</a>
+              <a href="/credits/" className="hover:text-neutral-900 transition-colors">Credits</a>
+              <a href="/#faq" className="hover:text-neutral-900 transition-colors">FAQ</a>
+            </nav>
+            <AuthButton />
+          </div>
         </div>
       </header>
       <PricingHero />

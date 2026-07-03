@@ -6,6 +6,8 @@ import { useState } from "react";
 type PricingCardProps = {
   plan: PricingPlan;
   billingCycle: BillingCycle;
+  currentPlan?: string;
+  userStatus?: string;
 };
 
 function getProductId(planCode: string, billingCycle: BillingCycle): string | null {
@@ -14,7 +16,7 @@ function getProductId(planCode: string, billingCycle: BillingCycle): string | nu
   return null;
 }
 
-export function PricingCard({ plan, billingCycle }: PricingCardProps) {
+export function PricingCard({ plan, billingCycle, currentPlan, userStatus }: PricingCardProps) {
   const [loading, setLoading] = useState(false);
 
   const priceLabel =
@@ -25,6 +27,12 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
         : plan.monthlyPriceLabel;
 
   const productId = getProductId(plan.code, billingCycle);
+
+  const isCurrentPlan = currentPlan === plan.code;
+  const isDowngrade = Boolean(currentPlan && (
+    (currentPlan === "business" && plan.code !== "business") ||
+    (currentPlan === "pro" && (plan.code === "free" || plan.code === "guest"))
+  ));
 
   const handleBuy = async () => {
     if (!productId) return;
@@ -67,6 +75,10 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
           <span className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-neutral-700">
             {plan.badge}
           </span>
+        ) : isCurrentPlan ? (
+          <span className="rounded-full border border-emerald-500/30 bg-emerald-50 px-3 py-1 text-xs text-emerald-700">
+            Current Plan
+          </span>
         ) : null}
       </div>
 
@@ -86,17 +98,21 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
         ))}
       </ul>
 
-      {isPayable ? (
+      {isCurrentPlan ? (
+        <div className="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+          Your Current Plan
+        </div>
+      ) : isPayable ? (
         <button
           onClick={handleBuy}
-          disabled={loading}
+          disabled={loading || isDowngrade}
           className={`mt-8 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
             plan.highlight
               ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:bg-neutral-400"
-              : "border border-black/10 bg-white text-neutral-800 hover:bg-stone-100"
+              : "border border-black/10 bg-white text-neutral-800 hover:bg-stone-100 disabled:bg-neutral-100 disabled:text-neutral-400"
           }`}
         >
-          {loading ? "Redirecting to PayPal..." : plan.ctaLabel}
+          {loading ? "Redirecting to PayPal..." : isDowngrade ? "Contact Support" : plan.ctaLabel}
         </button>
       ) : (
         <a
