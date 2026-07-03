@@ -13,8 +13,8 @@ type AccountResponse = {
     status: string;
     created_at: string | null;
     last_login_at: string | null;
-    today_used: number;
-    daily_limit: number;
+    month_used: number;
+    monthly_limit: number;
     remaining: number;
     credits: number;
     max_file_size_mb: number;
@@ -107,7 +107,7 @@ export default function AccountPageClient() {
           <p className="mb-6 text-neutral-600">Please sign in first to view your account center.</p>
           <Link
             href="/"
-            className="inline-flex rounded-xl bg-neutral-950 px-5 py-3 font-medium text-white transition-colors hover:bg-neutral-800"
+            className="inline-flex rounded-xl border border-black/10 bg-white px-5 py-3 font-medium text-neutral-800 transition-colors hover:bg-stone-100"
           >
             Back to Home
           </Link>
@@ -183,7 +183,7 @@ export default function AccountPageClient() {
               <div className="rounded-2xl border border-black/8 bg-stone-50 p-4 md:col-span-2">
                 <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Plan Limits</p>
                 <p className="mt-2 text-sm text-neutral-700">
-                  Up to {user.max_file_size_mb}MB per image · {user.daily_limit} removals per month
+                  Up to {user.max_file_size_mb}MB per image · {user.monthly_limit} removals per month
                 </p>
               </div>
             </div>
@@ -198,12 +198,12 @@ export default function AccountPageClient() {
               </div>
               <div className="text-right">
                 <p className="text-sm text-neutral-500">Used</p>
-                <p className="text-xl font-semibold">{user.today_used} / {user.daily_limit}</p>
+                <p className="text-xl font-semibold">{user.month_used} / {user.monthly_limit}</p>
               </div>
             </div>
             {(() => {
-              const pct = Math.min(100, (user.today_used / user.daily_limit) * 100);
-              const barColor = pct >= 90 ? "bg-red-500" : pct >= 60 ? "bg-amber-500" : "bg-neutral-900";
+              const pct = Math.min(100, (user.month_used / user.monthly_limit) * 100);
+              const barColor = pct >= 90 ? "bg-red-500" : pct >= 60 ? "bg-amber-500" : "bg-emerald-500";
               return (
                 <div className="mt-5 h-3 overflow-hidden rounded-full bg-stone-200">
                   <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
@@ -232,7 +232,7 @@ export default function AccountPageClient() {
             {user.plan !== "pro" && user.plan !== "business" ? (
               <Link
                 href="/pricing/"
-                className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-neutral-950 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
+                className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700"
               >
                 Upgrade to Pro — 200 removals/month
               </Link>

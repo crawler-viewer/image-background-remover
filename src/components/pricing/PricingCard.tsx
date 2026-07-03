@@ -92,7 +92,7 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
           disabled={loading}
           className={`mt-8 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
             plan.highlight
-              ? "bg-neutral-950 text-white hover:bg-neutral-800 disabled:bg-neutral-400"
+              ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:bg-neutral-400"
               : "border border-black/10 bg-white text-neutral-800 hover:bg-stone-100"
           }`}
         >

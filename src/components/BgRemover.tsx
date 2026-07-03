@@ -274,7 +274,11 @@ export default function BgRemover() {
               {/* Progress bar */}
               <div className="mt-3 h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
                 <div
-                  className="h-full bg-emerald-500 transition-all duration-300"
+                  className={`h-full transition-all duration-300 ${
+                    (quota.used / quota.limit) >= 0.9 ? "bg-red-500" :
+                    (quota.used / quota.limit) >= 0.6 ? "bg-amber-500" :
+                    "bg-emerald-500"
+                  }`}
                   style={{width: `${Math.max(0, Math.min(100, (quota.used / quota.limit) * 100))}%`}}
                 />
               </div>
