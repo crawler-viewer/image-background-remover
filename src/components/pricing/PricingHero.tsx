@@ -22,7 +22,7 @@ export function PricingHero() {
           <span>•</span>
           <span>Pro: 200/mo</span>
           <span>•</span>
-          <span>Business: 800/mo</span>
+          <span>Business: 500/mo</span>
         </div>
       </div>
     </section>

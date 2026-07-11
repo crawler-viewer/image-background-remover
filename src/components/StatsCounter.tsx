@@ -18,30 +18,28 @@ export function StatsCounter() {
       .catch(() => {});
   }, []);
 
-  // Don't render until we have data, and show minimum thresholds for social proof
   const processed = stats?.totalProcessed || 0;
   const users = stats?.totalUsers || 0;
 
-  // Only show if we have meaningful numbers
   if (processed < 10 && users < 5) return null;
 
   return (
-    <div className="flex flex-wrap justify-center gap-12 mt-16 mb-4">
+    <div className="mt-16 mb-4 flex flex-wrap justify-center gap-8 sm:gap-12">
       <div className="text-center">
-        <div className="text-3xl font-bold text-white">{formatNumber(processed)}+</div>
-        <div className="text-xs text-gray-500 mt-1">Images Processed</div>
+        <div className="text-3xl font-bold text-neutral-950">{formatNumber(processed)}+</div>
+        <div className="mt-1 text-xs text-neutral-500">Images Processed</div>
       </div>
       <div className="text-center">
-        <div className="text-3xl font-bold text-white">{formatNumber(users)}+</div>
-        <div className="text-xs text-gray-500 mt-1">Registered Users</div>
+        <div className="text-3xl font-bold text-neutral-950">{formatNumber(users)}+</div>
+        <div className="mt-1 text-xs text-neutral-500">Registered Users</div>
       </div>
       <div className="text-center">
-        <div className="text-3xl font-bold text-white">&lt;3s</div>
-        <div className="text-xs text-gray-500 mt-1">Average Processing</div>
+        <div className="text-3xl font-bold text-neutral-950">&lt;3s</div>
+        <div className="mt-1 text-xs text-neutral-500">Average Processing</div>
       </div>
       <div className="text-center">
-        <div className="text-3xl font-bold text-white">100%</div>
-        <div className="text-xs text-gray-500 mt-1">Free to Try</div>
+        <div className="text-3xl font-bold text-neutral-950">100%</div>
+        <div className="mt-1 text-xs text-neutral-500">Free to Try</div>
       </div>
     </div>
   );

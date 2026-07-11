@@ -16,7 +16,8 @@ export const PLAN_CONFIG = {
   },
   business: {
     code: "business",
-    monthlyLimit: 800,
+    // 500 × ~$0.04 API ≈ $20 cost vs $29.90 price → positive full-use margin
+    monthlyLimit: 500,
     maxFileSizeBytes: 50 * 1024 * 1024,
   },
 };

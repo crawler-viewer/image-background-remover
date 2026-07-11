@@ -1,6 +1,14 @@
 import { readSession } from "./auth/_lib";
 import { getPlanConfig } from "./plan-config";
 
+/** Soft ceiling across all guest cookies on the same network (UTC month). */
+export const GUEST_IP_MONTHLY_LIMIT = 15;
+
+/** Short-window anti-burst limits for /api/remove-bg (per IP). */
+export const RATE_LIMIT_WINDOW_MS = 60_000;
+export const RATE_LIMIT_MAX_PER_WINDOW = 12;
+export const RATE_LIMIT_ACTION = "remove_bg";
+
 function ensureDb(env) {
   if (!env.DB) {
     throw new Error("Missing D1 binding: DB");
@@ -21,6 +29,23 @@ export async function getCurrentUser(request, env) {
   return session;
 }
 
+export function getClientIp(request) {
+  const cfIp = request.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp.trim();
+
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
+  }
+
+  return "unknown";
+}
+
+export function ipGuestKey(ip) {
+  return `ip:${ip || "unknown"}`;
+}
+
 export function getGuestKey(request) {
   // Prefer cookie-based guest ID for persistence
   const cookieHeader = request.headers.get("cookie") || "";
@@ -28,7 +53,7 @@ export function getGuestKey(request) {
   if (match) return match[1];
 
   // Fallback to IP+UA
-  const ip = request.headers.get("cf-connecting-ip") || "unknown";
+  const ip = getClientIp(request);
   const userAgent = request.headers.get("user-agent") || "unknown";
   return `${ip}:${userAgent.slice(0, 80)}`;
 }
@@ -54,7 +79,7 @@ export function getOrCreateGuestId(request) {
 export function guestCookieString(guestId) {
   // 1 year expiry, SameSite=Lax, HttpOnly
   const maxAge = 365 * 24 * 60 * 60;
-  return `__bg_gid=${guestId}; Path=/; Max-Age=${maxAge}; SameSite=Lax; Secure`;
+  return `__bg_gid=${guestId}; Path=/; Max-Age=${maxAge}; SameSite=Lax; Secure; HttpOnly`;
 }
 
 export async function getMonthlyUsage(env, googleSub) {
@@ -115,6 +140,127 @@ export async function assertGuestMonthlyLimit(env, guestKey) {
   };
 }
 
+/**
+ * Guest cookie quota + IP anti-abuse ceiling.
+ * Clearing cookies cannot exceed GUEST_IP_MONTHLY_LIMIT removals per UTC month.
+ */
+export async function assertGuestAccess(env, guestId, clientIp) {
+  const guestQuota = await assertGuestMonthlyLimit(env, guestId);
+  const ipKey = ipGuestKey(clientIp);
+  const ipUsed = await getGuestMonthlyUsage(env, ipKey);
+  const ipLimit = GUEST_IP_MONTHLY_LIMIT;
+  const ipRemaining = Math.max(0, ipLimit - ipUsed);
+
+  if (!guestQuota.allowed) {
+    return {
+      allowed: false,
+      reason: "guest_cookie",
+      code: "GUEST_MONTHLY_LIMIT_REACHED",
+      error: "Guest monthly limit reached. Sign in to unlock more removals.",
+      used: guestQuota.used,
+      limit: guestQuota.limit,
+      remaining: 0,
+      ipUsed,
+      ipLimit,
+    };
+  }
+
+  if (ipUsed >= ipLimit) {
+    return {
+      allowed: false,
+      reason: "guest_ip",
+      code: "GUEST_IP_LIMIT_REACHED",
+      error: "Too many free removals from this network this month. Sign in to continue.",
+      used: ipUsed,
+      limit: ipLimit,
+      remaining: 0,
+      ipUsed,
+      ipLimit,
+    };
+  }
+
+  return {
+    allowed: true,
+    reason: null,
+    code: null,
+    error: null,
+    used: guestQuota.used,
+    limit: guestQuota.limit,
+    // Surface the tighter remaining so the UI does not over-promise.
+    remaining: Math.min(guestQuota.remaining, ipRemaining),
+    ipUsed,
+    ipLimit,
+  };
+}
+
+/**
+ * Sliding 60s window rate limit by IP (and optional user key).
+ * Fail-open if the rate_limit_logs table is missing (pre-migration).
+ */
+export async function assertRateLimit(env, { clientIp, identityKey = null }) {
+  const ip = clientIp || "unknown";
+  if (ip === "unknown") {
+    return { allowed: true, used: 0, limit: RATE_LIMIT_MAX_PER_WINDOW, retryAfterSec: 0 };
+  }
+
+  try {
+    const db = ensureDb(env);
+    const now = Date.now();
+    const windowStart = new Date(now - RATE_LIMIT_WINDOW_MS).toISOString();
+    const bucketKey = identityKey ? `id:${identityKey}` : `ip:${ip}`;
+
+    const row = await db
+      .prepare(
+        `SELECT COUNT(*) AS count
+         FROM rate_limit_logs
+         WHERE bucket_key = ?
+           AND action = ?
+           AND created_at >= ?`
+      )
+      .bind(bucketKey, RATE_LIMIT_ACTION, windowStart)
+      .first();
+
+    const used = Number(row?.count || 0);
+    if (used >= RATE_LIMIT_MAX_PER_WINDOW) {
+      return {
+        allowed: false,
+        used,
+        limit: RATE_LIMIT_MAX_PER_WINDOW,
+        retryAfterSec: Math.ceil(RATE_LIMIT_WINDOW_MS / 1000),
+      };
+    }
+
+    await db
+      .prepare(
+        `INSERT INTO rate_limit_logs (bucket_key, action, created_at)
+         VALUES (?, ?, ?)`
+      )
+      .bind(bucketKey, RATE_LIMIT_ACTION, new Date(now).toISOString())
+      .run();
+
+    // Best-effort cleanup of old rows (keep table small)
+    if (used === 0 || used % 20 === 0) {
+      const pruneBefore = new Date(now - RATE_LIMIT_WINDOW_MS * 10).toISOString();
+      await db
+        .prepare(`DELETE FROM rate_limit_logs WHERE created_at < ?`)
+        .bind(pruneBefore)
+        .run()
+        .catch(() => {});
+    }
+
+    return {
+      allowed: true,
+      used: used + 1,
+      limit: RATE_LIMIT_MAX_PER_WINDOW,
+      retryAfterSec: 0,
+    };
+  } catch (err) {
+    // Table may not exist yet — do not block legitimate traffic
+    console.error("Rate limit check failed (fail-open):", err);
+    return { allowed: true, used: 0, limit: RATE_LIMIT_MAX_PER_WINDOW, retryAfterSec: 0 };
+  }
+}
+
 export async function recordUsage(env, { googleSub, userId = null, sourceFilename = null }) {
   const db = ensureDb(env);
   const now = new Date().toISOString();
@@ -129,10 +275,11 @@ export async function recordUsage(env, { googleSub, userId = null, sourceFilenam
   return result;
 }
 
-export async function recordGuestUsage(env, { guestKey, sourceFilename = null }) {
+export async function recordGuestUsage(env, { guestKey, sourceFilename = null, clientIp = null }) {
   const db = ensureDb(env);
   const now = new Date().toISOString();
-  const result = await db
+
+  await db
     .prepare(
       `INSERT INTO guest_usage_logs (guest_key, action, source_filename, created_at)
        VALUES (?, 'remove_bg', ?, ?)`
@@ -140,5 +287,16 @@ export async function recordGuestUsage(env, { guestKey, sourceFilename = null })
     .bind(guestKey, sourceFilename, now)
     .run();
 
-  return result;
+  // Parallel IP bucket for anti-abuse (same table, prefixed key).
+  if (clientIp && clientIp !== "unknown") {
+    await db
+      .prepare(
+        `INSERT INTO guest_usage_logs (guest_key, action, source_filename, created_at)
+         VALUES (?, 'remove_bg', ?, ?)`
+      )
+      .bind(ipGuestKey(clientIp), sourceFilename, now)
+      .run();
+  }
+
+  return true;
 }

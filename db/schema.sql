@@ -72,3 +72,14 @@ CREATE TABLE IF NOT EXISTS user_credits (
   updated_at TEXT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+-- Short-window rate limit hits (e.g. per-IP /api/remove-bg)
+CREATE TABLE IF NOT EXISTS rate_limit_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  bucket_key TEXT NOT NULL,
+  action TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limit_logs_bucket_created
+  ON rate_limit_logs(bucket_key, created_at);

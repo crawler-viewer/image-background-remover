@@ -39,7 +39,7 @@
   background: radial-gradient(circle at center, transparent 34%, rgba(3, 7, 18, 0.42) 100%);
 }
 
-/* Smooth scrollbar */
+/* Smooth scrollbar (light theme) */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -49,12 +49,18 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: #d6d3d1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+  background: #a8a29e;
+}
+
+/* Focus visibility for interactive controls */
+:focus-visible {
+  outline: 2px solid #059669;
+  outline-offset: 2px;
 }
 
 /* Remove details marker in Safari */

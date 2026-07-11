@@ -3,7 +3,9 @@ import { json, readSession } from "./auth/_lib";
 import { getPlanConfig } from "./plan-config";
 import {
   assertMonthlyLimit,
-  assertGuestMonthlyLimit,
+  assertGuestAccess,
+  assertRateLimit,
+  getClientIp,
   getOrCreateGuestId,
   guestCookieString,
   recordGuestUsage,
@@ -24,6 +26,26 @@ export async function onRequestPost(context) {
   }
 
   try {
+    const clientIp = getClientIp(request);
+    const rate = await assertRateLimit(env, { clientIp });
+    if (!rate.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Too many requests. Please wait a moment and try again.",
+          code: "RATE_LIMITED",
+          limit: rate.limit,
+          retryAfterSec: rate.retryAfterSec,
+        }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": String(rate.retryAfterSec || 60),
+          },
+        }
+      );
+    }
+
     const session = await readSession(request, env);
     const user = await getUserWithSession(env, session);
     let planCode = user?.plan || (user ? "free" : "guest");
@@ -74,7 +96,8 @@ export async function onRequestPost(context) {
       }
     } else {
       guestInfo = getOrCreateGuestId(request);
-      const quota = await assertGuestMonthlyLimit(env, guestInfo.guestId);
+      guestInfo.clientIp = clientIp;
+      const quota = await assertGuestAccess(env, guestInfo.guestId, clientIp);
       if (!quota.allowed) {
         const headers = { "Content-Type": "application/json" };
         if (guestInfo.isNew) {
@@ -82,8 +105,8 @@ export async function onRequestPost(context) {
         }
         return new Response(
           JSON.stringify({
-            error: "Guest monthly limit reached. Sign in to unlock more removals.",
-            code: "GUEST_MONTHLY_LIMIT_REACHED",
+            error: quota.error || "Guest monthly limit reached. Sign in to unlock more removals.",
+            code: quota.code || "GUEST_MONTHLY_LIMIT_REACHED",
             used: quota.used,
             limit: quota.limit,
             plan: "guest",
@@ -188,6 +211,7 @@ export async function onRequestPost(context) {
         await recordGuestUsage(env, {
           guestKey: guestInfo.guestId,
           sourceFilename: file?.name || null,
+          clientIp: guestInfo.clientIp || getClientIp(request),
         });
       }
     } catch (usageError) {

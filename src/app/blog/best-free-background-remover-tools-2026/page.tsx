@@ -37,11 +37,11 @@ export default function ComparisonPost() {
         There are dozens of background removal tools available today. We tested the most popular ones to help you pick the right one for your workflow.
       </p>
 
-      <h2 className="mt-8 text-xl font-semibold text-white">The Contenders</h2>
+      <h2 className="mt-8 text-xl font-semibold text-neutral-950">The Contenders</h2>
 
       <div className="space-y-6">
         <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5">
-          <h3 className="font-semibold text-white">1. BGRemover (picturebackgroundremover.xyz)</h3>
+          <h3 className="font-semibold text-neutral-950">1. BGRemover (picturebackgroundremover.xyz)</h3>
           <p className="mt-2">AI-powered, runs entirely in the browser with cloud processing. No signup required for 5 free removals/month.</p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">✓ No signup needed</span>
@@ -52,7 +52,7 @@ export default function ComparisonPost() {
         </div>
 
         <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5">
-          <h3 className="font-semibold text-white">2. remove.bg</h3>
+          <h3 className="font-semibold text-neutral-950">2. remove.bg</h3>
           <p className="mt-2">One of the oldest and most well-known tools. Great quality but limited free tier — only 1 free HD download, then watermarked previews.</p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">✓ Excellent quality</span>
@@ -63,7 +63,7 @@ export default function ComparisonPost() {
         </div>
 
         <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5">
-          <h3 className="font-semibold text-white">3. Canva Background Remover</h3>
+          <h3 className="font-semibold text-neutral-950">3. Canva Background Remover</h3>
           <p className="mt-2">Built into Canva&apos;s editor. Convenient if you&apos;re already a Canva user, but requires a Pro subscription ($12.99/month).</p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">✓ Integrated editor</span>
@@ -73,7 +73,7 @@ export default function ComparisonPost() {
         </div>
 
         <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5">
-          <h3 className="font-semibold text-white">4. PhotoRoom</h3>
+          <h3 className="font-semibold text-neutral-950">4. PhotoRoom</h3>
           <p className="mt-2">Mobile-first tool popular with e-commerce sellers. Good quality, but free tier adds watermarks.</p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">✓ Great mobile app</span>
@@ -83,7 +83,7 @@ export default function ComparisonPost() {
         </div>
       </div>
 
-      <h2 className="mt-8 text-xl font-semibold text-white">Quick Comparison</h2>
+      <h2 className="mt-8 text-xl font-semibold text-neutral-950">Quick Comparison</h2>
 
       <div className="overflow-x-auto rounded-2xl border border-white/8 bg-black/10">
         <table className="w-full border-collapse text-sm">
@@ -97,7 +97,7 @@ export default function ComparisonPost() {
           </thead>
           <tbody className="text-gray-300">
             <tr className="border-b border-white/8">
-              <td className="py-3 pr-4 pl-4 font-medium text-white">BGRemover</td>
+              <td className="py-3 pr-4 pl-4 font-medium text-neutral-950">BGRemover</td>
               <td className="py-3 pr-4">5/mo (guest), 20/mo (free account)</td>
               <td className="py-3 pr-4">$9.90/mo</td>
               <td className="py-3 pr-4">No</td>
@@ -124,7 +124,7 @@ export default function ComparisonPost() {
         </table>
       </div>
 
-      <h2 className="mt-8 text-xl font-semibold text-white">Our Verdict</h2>
+      <h2 className="mt-8 text-xl font-semibold text-neutral-950">Our Verdict</h2>
 
       <p>
         For <strong>casual users</strong> who need a quick background removal without signing up, <strong>BGRemover</strong> is the easiest option — just upload and go.

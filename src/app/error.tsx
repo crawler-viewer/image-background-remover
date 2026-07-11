@@ -4,31 +4,34 @@ import Link from "next/link";
 
 export default function GlobalError({
   error,
+  reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 bg-gray-950 text-white">
-      <div className="text-center max-w-md">
-        <div className="text-6xl mb-6">⚠️</div>
-        <h1 className="text-2xl font-bold mb-3">Something went wrong</h1>
-        <p className="text-gray-400 mb-2">
+    <main className="flex min-h-screen items-center justify-center bg-stone-50 px-4 text-neutral-950">
+      <div className="max-w-md text-center">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-black/8 bg-white text-2xl shadow-sm">
+          !
+        </div>
+        <h1 className="mb-3 text-2xl font-bold">Something went wrong</h1>
+        <p className="mb-2 text-neutral-600">
           {error?.message || "An unexpected error occurred. Please try again."}
         </p>
         {error?.digest && (
-          <p className="text-xs text-gray-600 mb-6">Error ID: {error.digest}</p>
+          <p className="mb-6 text-xs text-neutral-400">Error ID: {error.digest}</p>
         )}
         <div className="flex flex-wrap justify-center gap-3">
           <button
-            onClick={() => window.location.reload()}
-            className="rounded-xl bg-white px-6 py-3 font-medium text-gray-950 transition-colors hover:bg-gray-100"
+            onClick={() => reset()}
+            className="rounded-xl bg-emerald-600 px-6 py-3 font-medium text-white transition-colors hover:bg-emerald-700"
           >
             Try Again
           </button>
           <Link
             href="/"
-            className="rounded-xl border border-white/8 bg-white/[0.03] px-6 py-3 font-medium transition-colors hover:bg-white/[0.06]"
+            className="rounded-xl border border-black/10 bg-white px-6 py-3 font-medium text-neutral-800 transition-colors hover:bg-stone-100"
           >
             Back to Home
           </Link>

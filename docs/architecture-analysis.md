@@ -130,7 +130,7 @@ D1 中的核心表：
 - guest: 5/月，10MB
 - free: 20/月，15MB
 - pro: 200/月，25MB
-- business: 800/月，50MB
+- business: 500/月，50MB
 
 这是按月配额，不是按天。
 

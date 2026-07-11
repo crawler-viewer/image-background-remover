@@ -1,82 +1,25 @@
-import AuthButton from "@/components/AuthButton";
 import dynamic from "next/dynamic";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
 import { StatsCounter } from "@/components/StatsCounter";
+import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
+import HeroDemo from "@/components/HeroDemo";
 
 const BgRemover = dynamic(() => import("@/components/BgRemover"), {
   loading: () => (
-    <div className="w-full max-w-3xl mx-auto">
-      <div className="border-2 border-dashed border-gray-600 rounded-2xl p-12 md:p-16 text-center animate-pulse">
-        <div className="w-16 h-16 mx-auto mb-4 bg-gray-800 rounded-full" />
-        <div className="h-6 w-48 mx-auto bg-gray-800 rounded-lg" />
+    <div className="mx-auto w-full max-w-3xl">
+      <div className="animate-pulse rounded-2xl border-2 border-dashed border-neutral-300 bg-stone-50 p-12 text-center md:p-16">
+        <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-stone-200" />
+        <div className="mx-auto h-6 w-48 rounded-lg bg-stone-200" />
       </div>
     </div>
   ),
 });
 
 export default function Home() {
-  const authErrorMessage = {
-    config: "Google login is not configured yet.",
-    state: "Login expired or became invalid. Please try again.",
-    google: "Google login failed. Please try again.",
-  } as const;
-
   return (
-    <main className="min-h-screen flex flex-col bg-stone-50 text-neutral-950">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-black/8 bg-stone-50/88 backdrop-blur-xl">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-black/10 bg-white transition-colors group-hover:bg-stone-100">
-              <svg
-                className="w-5 h-5 text-neutral-900"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-            </div>
-            <span className="text-lg font-bold tracking-tight">
-              <span className="text-neutral-950">BG</span>Remover
-            </span>
-          </a>
-          <div className="flex items-center gap-4">
-            <nav className="flex gap-6 text-sm text-neutral-500">
-              <a href="/pricing/" className="hover:text-neutral-900 transition-colors hidden sm:block">
-                Pricing
-              </a>
-              <a
-                href="#how-it-works"
-                className="hover:text-neutral-900 transition-colors hidden sm:block"
-              >
-                How it works
-              </a>
-              <a
-                href="#use-cases"
-                className="hover:text-neutral-900 transition-colors hidden sm:block"
-              >
-                Use Cases
-              </a>
-              <a href="#faq" className="hover:text-neutral-900 transition-colors">
-                FAQ
-              </a>
-            </nav>
-            <a
-              href="/pricing/"
-              className="hidden rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100 sm:inline-flex"
-            >
-              Upgrade
-            </a>
-            <AuthButton />
-          </div>
-        </div>
-      </header>
+    <div className="flex min-h-screen flex-col bg-stone-50 text-neutral-950">
+      <SiteHeader active="home" />
 
       {/* Hero + Tool */}
       <section className="relative flex-1 overflow-hidden px-4 pt-10 pb-16 md:pt-16">
@@ -114,14 +57,14 @@ export default function Home() {
           <div className="grid items-start gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
             <div className="pt-4 lg:pt-10">
               <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-neutral-600 shadow-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                Try 5 times free · No signup required
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Free online · No signup · PNG &amp; white JPG
               </div>
-              <h1 className="mt-6 max-w-2xl text-4xl font-bold tracking-tight text-neutral-950 md:text-6xl md:leading-[0.95]">
-                Remove image backgrounds in seconds
+              <h1 className="mt-6 max-w-2xl text-4xl font-bold tracking-tight text-neutral-950 md:text-5xl md:leading-[1.05] lg:text-6xl lg:leading-[0.95]">
+                Remove background from photo online — free
               </h1>
               <p className="mt-5 max-w-xl text-lg leading-8 text-neutral-600">
-                Upload a photo and get a clean transparent background in seconds. Great for product photos, portraits, and everyday image cleanup.
+                Free photo background remover for transparent PNG or pure white JPG. Paste, drop, or batch up to 20 images — no account needed to start. Great for product photos, portraits, and listings.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center gap-3 text-sm">
@@ -138,6 +81,17 @@ export default function Home() {
                   See pricing
                 </a>
               </div>
+              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-neutral-500">
+                <a href="/white-background/" className="underline-offset-4 hover:text-neutral-900 hover:underline">
+                  White background export
+                </a>
+                <a href="/batch-remove-background/" className="underline-offset-4 hover:text-neutral-900 hover:underline">
+                  Batch remove (up to 20)
+                </a>
+                <a href="/blog/" className="underline-offset-4 hover:text-neutral-900 hover:underline">
+                  Guides
+                </a>
+              </div>
 
               <div className="mt-10 grid gap-3 sm:grid-cols-3">
                 {[
@@ -150,6 +104,10 @@ export default function Home() {
                     <p className="mt-2 text-sm leading-6 text-neutral-600">{desc}</p>
                   </div>
                 ))}
+              </div>
+
+              <div className="mt-8 hidden lg:block">
+                <HeroDemo />
               </div>
             </div>
 
@@ -171,10 +129,10 @@ export default function Home() {
       <section id="how-it-works" className="border-t border-black/8 bg-white py-20">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-4">
-            A simple workflow from upload to download
+            How to remove a photo background online
           </h2>
           <p className="text-neutral-600 text-center mb-12 max-w-xl mx-auto">
-            Upload your image, let BGRemover remove the background, and download the result in seconds.
+            Upload a JPG or PNG, let BGRemover remove the background free, then download a transparent PNG or white-background image.
           </p>
           <div className="grid md:grid-cols-3 gap-8">
             {[
@@ -185,8 +143,8 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                   </svg>
                 ),
-                title: "Upload image",
-                desc: "Drag and drop or click to upload your photo. Supports PNG, JPG, and WebP.",
+                title: "Upload your photo",
+                desc: "Drop, browse, or paste a photo. Supports PNG, JPG/JPEG, and WebP — free online, no signup to start.",
               },
               {
                 step: "02",
@@ -195,8 +153,8 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 00.659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M19 14.5l-2.47 4.11a2.25 2.25 0 01-1.94 1.14H9.41a2.25 2.25 0 01-1.94-1.14L5 14.5m14 0H5" />
                   </svg>
                 ),
-                title: "Automatic cutout",
-                desc: "The background is removed automatically so you can get a clean result faster.",
+                title: "AI removes the background",
+                desc: "Get a clean transparent cutout in seconds. Drag the slider to compare original vs removed.",
               },
               {
                 step: "03",
@@ -205,8 +163,8 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                 ),
-                title: "Download PNG",
-                desc: "Preview the result and download your transparent PNG in seconds.",
+                title: "Download PNG or white JPG",
+                desc: "Transparent PNG for design, pure white JPG for listings — or batch up to 20 and ZIP download.",
               },
             ].map((item) => (
               <div key={item.step} className="text-center group min-h-[200px]">
@@ -240,7 +198,7 @@ export default function Home() {
               {
                 icon: "🛍️",
                 title: "Product photos",
-                desc: "Create cleaner listing images with white or transparent backgrounds for stores, marketplaces, and ads.",
+                desc: "Batch-clean listing images with white or transparent backgrounds for stores, marketplaces, and ads.",
               },
               {
                 icon: "📸",
@@ -327,7 +285,7 @@ export default function Home() {
                 price: "$29.9/mo",
                 desc: "Teams & high volume",
                 highlight: false,
-                features: ["800 removals/month", "Up to 50MB"],
+                features: ["500 removals/month", "Up to 50MB"],
               },
             ].map((plan) => (
               <div
@@ -370,13 +328,21 @@ export default function Home() {
             Common questions
           </h2>
           <p className="text-neutral-600 text-center mb-12">
-            Questions about pricing, file limits, formats, and privacy.
+            Free photo background remover FAQ — formats, privacy, and limits.
           </p>
           <div className="space-y-4">
             {[
               {
-                q: "Is this tool free to try?",
-                a: "Yes! Guests get 5 free removals per month. Sign in for a free account to unlock 20 removals per month. Upgrade for even higher limits.",
+                q: "Can I remove background from a photo online for free?",
+                a: "Yes. Guests get free removals every month with no signup. Sign in for a free account to unlock more monthly removals, or upgrade for higher volume.",
+              },
+              {
+                q: "Do you support transparent PNG and white JPG?",
+                a: "Yes. Download a transparent PNG for design tools, or export a pure white background JPG (RGB 255) for product listings and marketplaces.",
+              },
+              {
+                q: "Can I remove the background from JPG or JPEG photos?",
+                a: "Yes. JPG, JPEG, PNG, and WebP are supported. Max file size depends on your plan (from 10MB for guests up to 50MB for Business).",
               },
               {
                 q: "Why should I create an account?",
@@ -384,11 +350,7 @@ export default function Home() {
               },
               {
                 q: "What does Pro include?",
-                a: "Pro gives you 200 removals per month, larger upload sizes (up to 25MB), priority processing, and expanded usage history.",
-              },
-              {
-                q: "What image formats and sizes are supported?",
-                a: "We support PNG, JPG, JPEG, and WebP formats. Maximum file size depends on your plan: 10MB for guests, 15MB for free accounts, 25MB for Pro, and 50MB for Business.",
+                a: "Pro gives you 200 removals per month, larger upload sizes (up to 25MB), transparent PNG and Amazon-ready white JPG export, and expanded usage history.",
               },
               {
                 q: "Is my image data safe and private?",
@@ -397,10 +359,6 @@ export default function Home() {
               {
                 q: "Do unused removals roll over?",
                 a: "No. Monthly limits reset on the 1st of each month.",
-              },
-              {
-                q: "Can I cancel anytime?",
-                a: "Yes. You can cancel your Pro subscription anytime with no questions asked.",
               },
               {
                 q: "Can I use the results for commercial purposes?",
@@ -435,10 +393,10 @@ export default function Home() {
         <div className="relative max-w-2xl mx-auto px-4 text-center">
           <div className="rounded-3xl border border-black/8 bg-stone-50 p-10 shadow-[0_14px_36px_rgba(15,23,42,0.05)]">
             <h2 className="text-3xl font-bold mb-3">
-              Need more removals?
+              Free online photo background remover
             </h2>
             <p className="text-neutral-600 mb-8">
-              Start with the free plan and upgrade when you have enough images to make it worthwhile.
+              Start free — no signup required. Upgrade only when you need more monthly removals.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <ScrollToTopButton />
@@ -453,51 +411,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-black/8 bg-stone-50 py-12">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-            <div>
-              <a href="/" className="flex items-center gap-2 mb-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-black/10 bg-white">
-                  <svg className="w-4 h-4 text-neutral-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <span className="text-sm font-bold">
-                <span className="text-neutral-950">BG</span>Remover
-                </span>
-              </a>
-              <p className="text-xs text-neutral-600 max-w-xs">
-                A practical background remover for stores, content work, documents, and everyday image cleanup.
-              </p>
-            </div>
-            <div className="flex gap-8 text-sm text-neutral-500">
-              <div className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.15em] text-neutral-400 mb-1">Product</span>
-                <a href="/#tool" className="hover:text-neutral-900 transition-colors">Try Now</a>
-                <a href="/pricing/" className="hover:text-neutral-900 transition-colors">Pricing</a>
-                <a href="/credits/" className="hover:text-neutral-900 transition-colors">Credit Packs</a>
-                <a href="#how-it-works" className="hover:text-neutral-900 transition-colors">How it works</a>
-              </div>
-              <div className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.15em] text-neutral-400 mb-1">Support</span>
-                <a href="#faq" className="hover:text-neutral-900 transition-colors">FAQ</a>
-                <a href="#use-cases" className="hover:text-neutral-900 transition-colors">Use Cases</a>
-                <a href="/blog/" className="hover:text-neutral-900 transition-colors">Blog</a>
-              </div>
-              <div className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.15em] text-neutral-400 mb-1">Legal</span>
-                <a href="/privacy/" className="hover:text-neutral-900 transition-colors">Privacy Policy</a>
-                <a href="/terms/" className="hover:text-neutral-900 transition-colors">Terms of Service</a>
-              </div>
-            </div>
-          </div>
-          <div className="mt-8 border-t border-black/8 pt-6 text-center text-xs text-neutral-500">
-            © {new Date().getFullYear()} BGRemover — Free Online Image Background Remover
-          </div>
-        </div>
-      </footer>
-    </main>
+      <SiteFooter />
+    </div>
   );
 }

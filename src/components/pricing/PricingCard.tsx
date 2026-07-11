@@ -2,6 +2,7 @@
 
 import type { BillingCycle, PricingPlan } from "@/lib/pricing";
 import { useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 type PricingCardProps = {
   plan: PricingPlan;
@@ -18,6 +19,7 @@ function getProductId(planCode: string, billingCycle: BillingCycle): string | nu
 
 export function PricingCard({ plan, billingCycle, currentPlan, userStatus }: PricingCardProps) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const priceLabel =
     plan.code === "pro" && billingCycle === "yearly" && plan.yearlyPriceLabel
@@ -37,6 +39,13 @@ export function PricingCard({ plan, billingCycle, currentPlan, userStatus }: Pri
   const handleBuy = async () => {
     if (!productId) return;
     setLoading(true);
+    setError(null);
+    trackEvent("checkout_start", {
+      product_id: productId,
+      product_type: "subscription",
+      plan: plan.code,
+      billing_cycle: billingCycle,
+    });
     try {
       const res = await fetch("/api/payment/create-checkout", {
         method: "POST",
@@ -47,10 +56,15 @@ export function PricingCard({ plan, billingCycle, currentPlan, userStatus }: Pri
       if (data.approvalUrl) {
         window.location.href = data.approvalUrl;
       } else {
-        alert(data.error || "Failed to create checkout");
+        trackEvent("checkout_error", {
+          product_id: productId,
+          reason: data.error || "unknown",
+        });
+        setError(data.error || "Failed to create checkout");
       }
     } catch {
-      alert("Payment error. Please try again.");
+      trackEvent("checkout_error", { product_id: productId, reason: "network" });
+      setError("Payment error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -97,6 +111,12 @@ export function PricingCard({ plan, billingCycle, currentPlan, userStatus }: Pri
           </li>
         ))}
       </ul>
+
+      {error ? (
+        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {error}
+        </p>
+      ) : null}
 
       {isCurrentPlan ? (
         <div className="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">

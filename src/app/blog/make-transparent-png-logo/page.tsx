@@ -35,7 +35,7 @@ export default function LogoPost() {
         A transparent logo is essential for modern branding. Whether you&apos;re placing it on your website header, social media profiles, email signatures, or printed merchandise — a logo with a transparent background looks professional and adapts to any surface.
       </p>
 
-      <h2 className="mt-8 text-xl font-semibold text-white">Why You Need a Transparent Logo</h2>
+      <h2 className="mt-8 text-xl font-semibold text-neutral-950">Why You Need a Transparent Logo</h2>
 
       <ul className="list-disc space-y-2 pl-6">
         <li><strong>Website headers</strong> — your logo blends seamlessly with any background color or image.</li>
@@ -45,11 +45,11 @@ export default function LogoPost() {
         <li><strong>Presentations</strong> — slides look cleaner with transparent logos.</li>
       </ul>
 
-      <h2 className="mt-8 text-xl font-semibold text-white">The Quick Method (30 Seconds)</h2>
+      <h2 className="mt-8 text-xl font-semibold text-neutral-950">The Quick Method (30 Seconds)</h2>
 
       <ol className="list-decimal space-y-3 pl-6">
         <li>
-          <strong>Go to BGRemover</strong> — open <Link href="/" className="text-gray-200 underline decoration-white/20 underline-offset-4 transition-colors hover:text-white">picturebackgroundremover.xyz</Link>
+          <strong>Go to BGRemover</strong> — open <Link href="/" className="text-emerald-700 underline decoration-emerald-700/30 underline-offset-4 transition-colors hover:text-emerald-800">picturebackgroundremover.xyz</Link>
         </li>
         <li>
           <strong>Upload your logo</strong> — any format works: JPG, PNG, WebP. Even a photo of your logo on paper works.
@@ -62,7 +62,7 @@ export default function LogoPost() {
         </li>
       </ol>
 
-      <h2 className="mt-8 text-xl font-semibold text-white">Tips for Best Results</h2>
+      <h2 className="mt-8 text-xl font-semibold text-neutral-950">Tips for Best Results</h2>
 
       <ul className="list-disc space-y-2 pl-6">
         <li><strong>Use the highest resolution source</strong> — the bigger the input, the cleaner the output. Avoid tiny thumbnails.</li>
@@ -71,7 +71,7 @@ export default function LogoPost() {
         <li><strong>Multi-color backgrounds</strong> — the AI handles complex backgrounds (photos, patterns) surprisingly well.</li>
       </ul>
 
-      <h2 className="mt-8 text-xl font-semibold text-white">Common Mistakes to Avoid</h2>
+      <h2 className="mt-8 text-xl font-semibold text-neutral-950">Common Mistakes to Avoid</h2>
 
       <ul className="list-disc space-y-2 pl-6">
         <li><strong>Saving as JPEG</strong> — JPEG doesn&apos;t support transparency. Always save/download as PNG.</li>
@@ -79,7 +79,7 @@ export default function LogoPost() {
         <li><strong>Not checking the edges</strong> — zoom in to 100% and look for stray pixels, especially on curved edges.</li>
       </ul>
 
-      <h2 className="mt-8 text-xl font-semibold text-white">What If I Don&apos;t Have a Digital Logo?</h2>
+      <h2 className="mt-8 text-xl font-semibold text-neutral-950">What If I Don&apos;t Have a Digital Logo?</h2>
 
       <p>
         No problem. Take a clear photo of your physical logo (on paper, a sign, or a product) with your phone. Make sure:

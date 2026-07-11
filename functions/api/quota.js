@@ -1,7 +1,13 @@
 import { readSession } from "./auth/_lib";
 import { getUserWithSession } from "./auth/db";
 import { getPlanConfig } from "./plan-config";
-import { assertMonthlyLimit, assertGuestMonthlyLimit, getOrCreateGuestId, guestCookieString } from "./usage";
+import {
+  assertMonthlyLimit,
+  assertGuestAccess,
+  getClientIp,
+  getOrCreateGuestId,
+  guestCookieString,
+} from "./usage";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -39,10 +45,11 @@ export async function onRequestGet(context) {
 
     const { guestId, isNew } = getOrCreateGuestId(request);
     const plan = getPlanConfig("guest");
+    const clientIp = getClientIp(request);
 
     let quota;
     try {
-      quota = await assertGuestMonthlyLimit(env, guestId);
+      quota = await assertGuestAccess(env, guestId, clientIp);
     } catch {
       quota = { used: 0, limit: plan.monthlyLimit, remaining: plan.monthlyLimit };
     }

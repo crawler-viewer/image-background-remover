@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import BlogArticleLayout from "@/components/blog/BlogArticleLayout";
 
 export const metadata: Metadata = {
@@ -38,7 +39,7 @@ export default function AmazonPost() {
         Traditionally, sellers either shoot on a white backdrop (expensive lighting setup) or hire a photo editor ($3-10 per image). Both are slow and costly, especially when you have dozens of SKUs.
       </p>
 
-      <h2 className="mt-8 text-xl font-semibold text-white">The AI Alternative</h2>
+      <h2 className="mt-8 text-xl font-semibold text-neutral-950">The AI Alternative</h2>
 
       <p>
         AI-powered background removal tools have gotten incredibly good. They can detect your product, remove the background, and output a clean transparent PNG — all in under 3 seconds.
@@ -54,14 +55,22 @@ export default function AmazonPost() {
           <strong>Upload to BGRemover</strong> — drag and drop your image. The AI processes it in seconds.
         </li>
         <li>
-          <strong>Download the transparent PNG</strong> — the background is completely removed.
+          <strong>Download transparent PNG</strong> — keep this for design tools, social posts, or further edits.
         </li>
         <li>
-          <strong>Add white background</strong> — open the PNG in any image editor (even free ones like Canva) and place it on a white canvas. Save as JPEG.
+          <strong>Or click &quot;White background JPG&quot;</strong> — BGRemover composites your cutout onto a pure white canvas (RGB 255, 255, 255) and exports a marketplace-ready JPEG. No Canva step required for the main image. See the{" "}
+          <Link href="/white-background/" className="text-emerald-700 underline decoration-emerald-700/30 underline-offset-4 hover:text-emerald-800">
+            white background guide
+          </Link>{" "}
+          and{" "}
+          <Link href="/batch-remove-background/" className="text-emerald-700 underline decoration-emerald-700/30 underline-offset-4 hover:text-emerald-800">
+            batch remover
+          </Link>{" "}
+          for catalog workflows.
         </li>
       </ol>
 
-      <h2 className="mt-8 text-xl font-semibold text-white">Amazon Image Requirements Checklist</h2>
+      <h2 className="mt-8 text-xl font-semibold text-neutral-950">Amazon Image Requirements Checklist</h2>
 
       <ul className="list-disc space-y-2 pl-6">
         <li>Pure white background (RGB 255, 255, 255)</li>
@@ -72,7 +81,7 @@ export default function AmazonPost() {
         <li>No props, accessories, or lifestyle elements in the main image</li>
       </ul>
 
-      <h2 className="mt-8 text-xl font-semibold text-white">Pro Tips for Better Results</h2>
+      <h2 className="mt-8 text-xl font-semibold text-neutral-950">Pro Tips for Better Results</h2>
 
       <ul className="list-disc space-y-2 pl-6">
         <li><strong>Shoot in good lighting</strong> — natural daylight or a lightbox gives the AI cleaner edges to work with.</li>
@@ -81,7 +90,7 @@ export default function AmazonPost() {
         <li><strong>Check edges at 100% zoom</strong> — look for any remaining background pixels, especially around hair, fur, or translucent materials.</li>
       </ul>
 
-      <h2 className="mt-8 text-xl font-semibold text-white">How Much Does It Cost?</h2>
+      <h2 className="mt-8 text-xl font-semibold text-neutral-950">How Much Does It Cost?</h2>
 
       <p>
         BGRemover offers 5 free removals per month without even signing up. Create a free account for 20/month. If you&apos;re a serious seller processing dozens of images, the Pro plan at $9.90/month gives you 200 removals — that&apos;s less than $0.05 per image.

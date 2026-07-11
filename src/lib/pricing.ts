@@ -25,8 +25,8 @@ export const pricingPlans: PricingPlan[] = [
     features: [
       "5 removals per month",
       "Up to 10MB per image",
-      "Transparent PNG downloads",
-      "No account required",
+      "Batch up to 20 images",
+      "Transparent PNG + white JPG",
     ],
   },
   {
@@ -39,8 +39,8 @@ export const pricingPlans: PricingPlan[] = [
     features: [
       "20 removals per month",
       "Up to 15MB per image",
-      "Personal account center",
-      "Usage tracking",
+      "Batch up to 20 images",
+      "Transparent PNG + white JPG",
     ],
   },
   {
@@ -56,7 +56,7 @@ export const pricingPlans: PricingPlan[] = [
     features: [
       "200 removals per month",
       "Up to 25MB per image",
-      "Priority processing",
+      "Batch processing + white JPG",
       "Expanded usage history",
     ],
   },
@@ -69,9 +69,9 @@ export const pricingPlans: PricingPlan[] = [
     ctaLabel: "Go Business",
     ctaHref: "/pricing#upgrade",
     features: [
-      "800 removals per month",
+      "500 removals per month",
       "Up to 50MB per image",
-      "Everything in Pro",
+      "Batch processing + white JPG",
       "Future API access",
     ],
   },
@@ -83,7 +83,7 @@ export const comparisonRows = [
     guest: "5/mo",
     free: "20/mo",
     pro: "200/mo",
-    business: "800/mo",
+    business: "500/mo",
   },
   {
     label: "Max upload size",
@@ -107,11 +107,18 @@ export const comparisonRows = [
     business: "Expanded",
   },
   {
-    label: "Priority processing",
-    guest: "—",
-    free: "—",
+    label: "White background JPG export",
+    guest: "Yes",
+    free: "Yes",
     pro: "Yes",
     business: "Yes",
+  },
+  {
+    label: "Batch upload (max per run)",
+    guest: "20",
+    free: "20",
+    pro: "20",
+    business: "20",
   },
 ];
 
@@ -126,7 +133,7 @@ export const pricingFaqs = [
   },
   {
     q: "What do I get with Pro?",
-    a: "Pro gives you 200 removals per month, larger upload sizes (up to 25MB), priority processing, and expanded usage history.",
+    a: "Pro gives you 200 removals per month, larger upload sizes (up to 25MB), transparent PNG and Amazon-ready white JPG export, and expanded usage history.",
   },
   {
     q: "Do unused removals roll over?",

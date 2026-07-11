@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { trackEvent } from "@/lib/analytics";
+import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 
 type AccountResponse = {
   user: {
@@ -47,6 +50,7 @@ export default function AccountPageClient() {
     const payment = params.get("payment");
     if (payment === "success") {
       setPaymentMsg("Payment successful! Your plan has been upgraded.");
+      trackEvent("purchase", { status: "success" });
       params.delete("payment");
       const next = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
       window.history.replaceState({}, "", next);
@@ -86,38 +90,50 @@ export default function AccountPageClient() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-stone-50 px-4 py-16 text-neutral-950">
-        <div className="mx-auto max-w-5xl animate-pulse space-y-6">
-          <div className="h-10 w-56 rounded-xl bg-black/[0.06]" />
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="h-72 rounded-3xl bg-black/[0.04]" />
+      <div className="flex min-h-screen flex-col bg-stone-50 text-neutral-950">
+        <SiteHeader active="account" />
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-16">
+          <div className="animate-pulse space-y-6">
+            <div className="h-10 w-56 rounded-xl bg-black/[0.06]" />
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="h-72 rounded-3xl bg-black/[0.04]" />
+              <div className="h-72 rounded-3xl bg-black/[0.04]" />
+            </div>
             <div className="h-72 rounded-3xl bg-black/[0.04]" />
           </div>
-          <div className="h-72 rounded-3xl bg-black/[0.04]" />
-        </div>
-      </main>
+        </main>
+        <SiteFooter />
+      </div>
     );
   }
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-stone-50 px-4 py-16 text-neutral-950">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-black/8 bg-white p-8 text-center shadow-[0_14px_36px_rgba(15,23,42,0.05)]">
-          <h1 className="mb-3 text-3xl font-bold">Account</h1>
-          <p className="mb-6 text-neutral-600">Please sign in first to view your account center.</p>
-          <Link
-            href="/"
-            className="inline-flex rounded-xl border border-black/10 bg-white px-5 py-3 font-medium text-neutral-800 transition-colors hover:bg-stone-100"
-          >
-            Back to Home
-          </Link>
-        </div>
-      </main>
+      <div className="flex min-h-screen flex-col bg-stone-50 text-neutral-950">
+        <SiteHeader active="account" />
+        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-16">
+          <div className="rounded-3xl border border-black/8 bg-white p-8 text-center shadow-[0_14px_36px_rgba(15,23,42,0.05)]">
+            <h1 className="mb-3 text-3xl font-bold">Account</h1>
+            <p className="mb-6 text-neutral-600">
+              Please sign in first to view your account center.
+            </p>
+            <a
+              href="/api/auth/google/login"
+              className="inline-flex rounded-xl bg-neutral-950 px-5 py-3 font-medium text-white transition-colors hover:bg-neutral-800"
+            >
+              Sign in with Google
+            </a>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
     );
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-stone-50 px-4 py-10 text-neutral-950">
+    <div className="flex min-h-screen flex-col bg-stone-50 text-neutral-950">
+      <SiteHeader active="account" />
+      <main className="relative flex-1 overflow-hidden px-4 py-10">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[360px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.85),transparent_62%)]" />
       <div className="pointer-events-none absolute left-[12%] top-24 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.6),transparent_72%)] blur-3xl" />
       <div className="pointer-events-none absolute right-[14%] top-32 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(214,211,209,0.45),transparent_72%)] blur-3xl" />
@@ -129,10 +145,10 @@ export default function AccountPageClient() {
             <h1 className="text-3xl font-bold tracking-tight">Your Profile</h1>
           </div>
           <Link
-            href="/"
+            href="/#tool"
             className="rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100"
           >
-            Back to Home
+            Open tool
           </Link>
         </div>
 
@@ -232,13 +248,14 @@ export default function AccountPageClient() {
             {user.plan !== "pro" && user.plan !== "business" ? (
               <Link
                 href="/pricing/"
+                onClick={() => trackEvent("upgrade_click", { source: "account", plan: user.plan })}
                 className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700"
               >
                 Upgrade to Pro — 200 removals/month
               </Link>
             ) : (
               <div className="mt-6 rounded-xl border border-emerald-500/30 bg-emerald-50 px-4 py-3 text-center text-sm text-emerald-700">
-                You&apos;re on the Pro plan ✓
+                You&apos;re on the {user.plan === "business" ? "Business" : "Pro"} plan ✓
               </div>
             )}
           </div>
@@ -278,6 +295,8 @@ export default function AccountPageClient() {
           )}
         </section>
       </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </div>
   );
 }

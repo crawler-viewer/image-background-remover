@@ -47,6 +47,9 @@ This deploys:
 - static files from `out`
 - Pages Functions from `functions/`
 
+Full production checklist (D1 schema, env, PayPal, rate limits, SEO smoke tests):  
+see **`docs/deploy-checklist.md`**. Rate limit ops: **`docs/rate-limiting.md`**.
+
 ## Automate Cloudflare Environment Variables
 
 You can update Google OAuth variables for both `preview` and `production` via API:
@@ -92,8 +95,11 @@ npx wrangler d1 execute bg-remover-db --remote --file=db/schema.sql
 - Google login with secure HttpOnly session cookie
 - D1-backed user storage
 - Personal account center with profile, quota, and recent activity
-- Guest / Free / Pro plan rules with different daily limits and file sizes
-- Daily usage limit enforcement based on successful removals
+- Guest / Free / Pro / Business plan rules with monthly limits and file sizes
+- Monthly usage limit enforcement based on successful removals
+- Transparent PNG download + pure white (RGB 255) JPG export for marketplaces
+- Batch upload (up to 20 images) with ZIP download of all results
+- Guest IP monthly cap + short-window rate limit (see `docs/rate-limiting.md`)
 - SEO optimized (structured data, meta tags)
 - Mobile responsive
 - Dark theme UI
