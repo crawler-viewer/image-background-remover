@@ -64,10 +64,25 @@ export default function SiteFooter() {
                 Blog
               </a>
               <a
+                href="/blog/remove-bg-alternative-free/"
+                className="transition-colors hover:text-neutral-900"
+              >
+                remove.bg alternative
+              </a>
+              <a
+                href="/blog/shopify-product-white-background/"
+                className="transition-colors hover:text-neutral-900"
+              >
+                Shopify guide
+              </a>
+              <a
                 href="/blog/remove-background-amazon-product-photos/"
                 className="transition-colors hover:text-neutral-900"
               >
-                Amazon Guide
+                Amazon guide
+              </a>
+              <a href="/site-map/" className="transition-colors hover:text-neutral-900">
+                Site map
               </a>
               <a href="/#faq" className="transition-colors hover:text-neutral-900">
                 FAQ
@@ -82,6 +97,9 @@ export default function SiteFooter() {
               </a>
               <a href="/terms/" className="transition-colors hover:text-neutral-900">
                 Terms
+              </a>
+              <a href="/sitemap.xml" className="transition-colors hover:text-neutral-900">
+                XML sitemap
               </a>
             </div>
           </div>

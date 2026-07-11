@@ -1,6 +1,15 @@
+# https://picturebackgroundremover.xyz/robots.txt
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /account/
 Disallow: /account
 
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /account/
+Disallow: /account
+
+# Primary sitemap (also listed in Search Console)
 Sitemap: https://picturebackgroundremover.xyz/sitemap.xml

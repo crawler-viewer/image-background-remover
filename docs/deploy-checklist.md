@@ -130,10 +130,16 @@ Cloudflare WAF (manual — see `docs/rate-limiting.md`):
 ## 8. SEO / Search Console
 
 - [ ] `https://picturebackgroundremover.xyz/robots.txt` allows `/`, disallows `/api/`, `/account`
-- [ ] Sitemap includes new use-case URLs
-- [ ] Search Console property for production domain
-- [ ] Submit `sitemap.xml`
+- [ ] Open `https://picturebackgroundremover.xyz/sitemap.xml` in browser (must show XML, HTTP 200)
+- [ ] Search Console → **Sitemaps** → submit `sitemap.xml` (if status is "Couldn't fetch", wait 1–6h and resubmit)
+- [ ] **URL inspection** → request indexing for:
+  - `https://picturebackgroundremover.xyz/`
+  - `/pricing/`, `/blog/`, `/white-background/`, `/batch-remove-background/`
+  - key blog posts (max ~10/day)
+- [ ] Confirm **Indexed pages** grows beyond homepage + terms over 1–2 weeks
+- [ ] Prefer canonical host only: `https://picturebackgroundremover.xyz` (no www / no http)
 - [ ] Preview host `*.pages.dev` remains noindex if `NEXT_PUBLIC_SITE_ENV` ≠ production
+- [ ] Optional HTML crawl aid: `/site-map/`
 
 ## 9. Analytics
 
