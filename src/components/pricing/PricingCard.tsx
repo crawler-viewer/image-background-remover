@@ -42,7 +42,7 @@ export function PricingCard({ plan, billingCycle, currentPlan, userStatus }: Pri
     setError(null);
     trackEvent("checkout_start", {
       product_id: productId,
-      product_type: "subscription",
+      product_type: "prepaid_plan",
       plan: plan.code,
       billing_cycle: billingCycle,
     });
@@ -99,7 +99,9 @@ export function PricingCard({ plan, billingCycle, currentPlan, userStatus }: Pri
       <div className="mt-6">
         <div className="text-4xl font-bold tracking-tight">{priceLabel}</div>
         {(plan.code === "pro" || plan.code === "business") && billingCycle === "yearly" ? (
-          <p className="mt-2 text-sm text-neutral-500">Save with yearly billing</p>
+          <p className="mt-2 text-sm text-neutral-500">Save ~17% · pay once for 12 months</p>
+        ) : (plan.code === "pro" || plan.code === "business") ? (
+          <p className="mt-2 text-sm text-neutral-500">Prepaid · no auto-renew</p>
         ) : null}
       </div>
 

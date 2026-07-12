@@ -49,7 +49,9 @@ export default function AccountPageClient() {
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
     if (payment === "success") {
-      setPaymentMsg("Payment successful! Your plan has been upgraded.");
+      setPaymentMsg(
+        "Payment successful! Prepaid plan access or credits are active. Limits apply for the paid period; plans do not auto-renew."
+      );
       trackEvent("purchase", { status: "success" });
       params.delete("payment");
       const next = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
@@ -251,7 +253,7 @@ export default function AccountPageClient() {
                 onClick={() => trackEvent("upgrade_click", { source: "account", plan: user.plan })}
                 className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700"
               >
-                Upgrade to Pro — 200 removals/month
+                Buy Pro prepaid — 200 removals/month
               </Link>
             ) : (
               <div className="mt-6 rounded-xl border border-emerald-500/30 bg-emerald-50 px-4 py-3 text-center text-sm text-emerald-700">

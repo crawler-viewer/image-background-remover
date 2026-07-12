@@ -95,12 +95,18 @@ Smoke:
 
 ## 5. PayPal (if selling)
 
-- [ ] Live credentials (not sandbox) when `PAYPAL_SANDBOX=false`
+Plans are **prepaid one-time Checkout** (not PayPal Subscriptions). Env:
+
+- [ ] `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` = **Live** app
+- [ ] `PAYPAL_SANDBOX=false` (required on production; otherwise checkout returns 503)
+- [ ] `SITE_URL=https://picturebackgroundremover.xyz`
+- [ ] `PAYPAL_WEBHOOK_ID` set (recommended)
 - [ ] Webhook URL: `https://picturebackgroundremover.xyz/api/payment/paypal/webhook`
-- [ ] Events: at least `PAYMENT.CAPTURE.COMPLETED` (and approve if you use them)
-- [ ] `PAYPAL_WEBHOOK_ID` set
-- [ ] Test: $1-ish credit pack or sandbox first, then live small amount
-- [ ] Capture redirect → `/account?payment=success` and plan/credits updated
+- [ ] Events: `PAYMENT.CAPTURE.COMPLETED` (and denied/reversed if available)
+- [ ] D1: re-run `db/schema.sql` or rely on runtime `ALTER` for `product_id` / `billing_period`
+- [ ] Test: credit pack first, then prepaid Pro month
+- [ ] Capture redirect → `/account/?payment=success` and plan/credits updated
+- [ ] Optional: `ALLOW_PAYPAL_SANDBOX=true` only for intentional sandbox tests on prod host
 
 ## 6. Rate limiting
 

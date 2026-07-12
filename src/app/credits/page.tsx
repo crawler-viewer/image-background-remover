@@ -50,7 +50,8 @@ export default function CreditsPage() {
           <p className="text-sm uppercase tracking-[0.2em] text-neutral-500">Credits</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-5xl">Buy Credit Packs</h1>
           <p className="mt-3 text-neutral-600">
-            Need more removals without a subscription? Buy credits that never expire.
+            Need more removals without a prepaid plan? Buy credits that never expire. Used after your
+            monthly free/plan limit is reached.
           </p>
         </div>
 

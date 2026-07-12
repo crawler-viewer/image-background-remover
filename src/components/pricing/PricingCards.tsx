@@ -77,12 +77,21 @@ export function PricingCards() {
           ))}
         </div>
 
-        <div className="mt-8 text-center">
+        <div className="mt-8 space-y-2 text-center">
           <p className="text-sm text-neutral-500">
-            Need extra removals without a subscription?{" "}
-            <a href="/credits/" className="text-neutral-800 underline decoration-black/20 underline-offset-4 hover:text-neutral-950">
+            Paid plans are{" "}
+            <strong className="font-medium text-neutral-700">one-time prepaid periods</strong> via
+            PayPal — not auto-renewing subscriptions.
+          </p>
+          <p className="text-sm text-neutral-500">
+            Need extra removals without a plan?{" "}
+            <a
+              href="/credits/"
+              className="text-neutral-800 underline decoration-black/20 underline-offset-4 hover:text-neutral-950"
+            >
               Buy credit packs →
-            </a>
+            </a>{" "}
+            ($9.90 = 100 credits vs Pro 200/mo prepaid)
           </p>
         </div>
       </div>

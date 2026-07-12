@@ -1,9 +1,11 @@
 // PayPal API helper for Cloudflare Workers
-// Supports both sandbox and live environments
+// One-time Checkout (CAPTURE) used for prepaid plan periods + credit packs.
+// This is NOT PayPal Subscriptions auto-renewal.
 
 export function getPayPalConfig(env) {
   const clientId = env.PAYPAL_CLIENT_ID;
   const clientSecret = env.PAYPAL_CLIENT_SECRET;
+  // Production only when explicitly set to "false"
   const isSandbox = env.PAYPAL_SANDBOX !== "false";
 
   const baseUrl = isSandbox
@@ -11,6 +13,37 @@ export function getPayPalConfig(env) {
     : "https://api-m.paypal.com";
 
   return { clientId, clientSecret, baseUrl, isSandbox };
+}
+
+/**
+ * Fail loud when PayPal is misconfigured for production traffic.
+ * Call before creating orders.
+ */
+export function assertPayPalReady(env) {
+  const { clientId, clientSecret, isSandbox } = getPayPalConfig(env);
+
+  if (!clientId || !clientSecret) {
+    const err = new Error("PayPal is not configured (missing client credentials).");
+    err.code = "PAYPAL_NOT_CONFIGURED";
+    throw err;
+  }
+
+  // Block accidental live site → sandbox unless ALLOW_PAYPAL_SANDBOX=true
+  const siteUrl = env.SITE_URL || "";
+  const isProdSite =
+    siteUrl.includes("picturebackgroundremover.xyz") ||
+    env.NEXT_PUBLIC_SITE_ENV === "production" ||
+    env.CF_PAGES_BRANCH === "main";
+
+  if (isSandbox && isProdSite && env.ALLOW_PAYPAL_SANDBOX !== "true") {
+    const err = new Error(
+      "PayPal is still in sandbox mode. Set PAYPAL_SANDBOX=false and use live credentials."
+    );
+    err.code = "PAYPAL_SANDBOX_ON_PROD";
+    throw err;
+  }
+
+  return getPayPalConfig(env);
 }
 
 export async function getPayPalAccessToken(env) {
@@ -36,8 +69,10 @@ export async function getPayPalAccessToken(env) {
 }
 
 export async function createPayPalOrder(env, { amount, currency = "USD", description, customId }) {
+  assertPayPalReady(env);
   const { baseUrl } = getPayPalConfig(env);
   const token = await getPayPalAccessToken(env);
+  const siteUrl = env.SITE_URL || "https://picturebackgroundremover.xyz";
 
   const res = await fetch(`${baseUrl}/v2/checkout/orders`, {
     method: "POST",
@@ -58,8 +93,8 @@ export async function createPayPalOrder(env, { amount, currency = "USD", descrip
         brand_name: "BGRemover",
         landing_page: "NO_PREFERENCE",
         user_action: "PAY_NOW",
-        return_url: `${env.SITE_URL || "https://picturebackgroundremover.xyz"}/api/payment/paypal/capture`,
-        cancel_url: `${env.SITE_URL || "https://picturebackgroundremover.xyz"}/pricing?payment=cancelled`,
+        return_url: `${siteUrl}/api/payment/paypal/capture`,
+        cancel_url: `${siteUrl}/pricing/?payment=cancelled`,
       },
     }),
   });
@@ -74,6 +109,7 @@ export async function createPayPalOrder(env, { amount, currency = "USD", descrip
 }
 
 export async function capturePayPalOrder(env, orderId) {
+  assertPayPalReady(env);
   const { baseUrl } = getPayPalConfig(env);
   const token = await getPayPalAccessToken(env);
 
@@ -94,38 +130,36 @@ export async function capturePayPalOrder(env, orderId) {
   return await res.json();
 }
 
-// Product definitions
+// Product definitions — prepaid plan access + credit packs
 export const PRODUCTS = {
-  // Subscription plans
   pro_monthly: {
     type: "subscription",
     planCode: "pro",
     amount: "9.90",
     period: "monthly",
-    label: "Pro Monthly",
+    label: "Pro — 1 month prepaid",
   },
   pro_yearly: {
     type: "subscription",
     planCode: "pro",
     amount: "99.00",
     period: "yearly",
-    label: "Pro Yearly",
+    label: "Pro — 1 year prepaid",
   },
   business_monthly: {
     type: "subscription",
     planCode: "business",
     amount: "29.90",
     period: "monthly",
-    label: "Business Monthly",
+    label: "Business — 1 month prepaid",
   },
   business_yearly: {
     type: "subscription",
     planCode: "business",
     amount: "299.00",
     period: "yearly",
-    label: "Business Yearly",
+    label: "Business — 1 year prepaid",
   },
-  // Credit packs
   credits_20: {
     type: "credits",
     credits: 20,
@@ -152,10 +186,9 @@ export const PRODUCTS = {
   },
 };
 
-// Calculate plan expiry date from now
 export function calcPlanExpiry(product) {
   const now = new Date();
-  if (product.period === "yearly") {
+  if (product?.period === "yearly") {
     now.setFullYear(now.getFullYear() + 1);
   } else {
     now.setMonth(now.getMonth() + 1);

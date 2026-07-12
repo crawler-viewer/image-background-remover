@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS guest_usage_logs (
 CREATE INDEX IF NOT EXISTS idx_guest_usage_logs_guest_key_created_at ON guest_usage_logs(guest_key, created_at);
 CREATE INDEX IF NOT EXISTS idx_guest_usage_logs_action_created_at ON guest_usage_logs(action, created_at);
 
--- Payment orders
+-- Payment orders (one-time PayPal Checkout = prepaid plan period or credits)
 CREATE TABLE IF NOT EXISTS payment_orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS payment_orders (
   currency TEXT NOT NULL DEFAULT 'USD',
   paypal_order_id TEXT,
   paypal_subscription_id TEXT,
+  product_id TEXT,
+  billing_period TEXT,
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL,
   paid_at TEXT,
@@ -62,6 +64,7 @@ CREATE TABLE IF NOT EXISTS payment_orders (
 CREATE INDEX IF NOT EXISTS idx_payment_orders_user_id ON payment_orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_payment_orders_paypal_order_id ON payment_orders(paypal_order_id);
 CREATE INDEX IF NOT EXISTS idx_payment_orders_status ON payment_orders(status);
+CREATE INDEX IF NOT EXISTS idx_payment_orders_product_id ON payment_orders(product_id);
 
 -- Credit balance for credit pack purchases
 CREATE TABLE IF NOT EXISTS user_credits (

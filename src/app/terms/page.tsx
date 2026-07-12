@@ -46,9 +46,9 @@ export default function Page() {
               <section>
                 <h2 className="text-lg font-semibold">5. Payments and Subscriptions</h2>
                 <ul className="mt-2 list-disc space-y-2 pl-6">
-                  <li>Paid plans (Pro, Business) are billed monthly or yearly via PayPal.</li>
+                  <li>Paid plans (Pro, Business) are prepaid access periods purchased once via PayPal (not auto-renewing subscriptions).</li>
                   <li>All prices are in USD.</li>
-                  <li>You may cancel your subscription at any time. Access continues until the end of the paid period.</li>
+                  <li>Plan access continues until the prepaid period ends; buy again to extend. Credit packs never expire.</li>
                   <li>Refunds are handled on a case-by-case basis. Contact us within 7 days of purchase for refund requests.</li>
                   <li>We reserve the right to change pricing with 30 days&apos; notice.</li>
                 </ul>
