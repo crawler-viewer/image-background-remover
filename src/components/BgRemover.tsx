@@ -68,8 +68,12 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Composite transparent PNG onto pure white (RGB 255,255,255) and export JPEG. */
-async function exportWhiteBackgroundJpeg(pngUrl: string, quality = 0.92): Promise<Blob> {
+/** Composite transparent PNG onto a solid background and export JPEG. */
+async function exportSolidBackgroundJpeg(
+  pngUrl: string,
+  fillStyle = "#FFFFFF",
+  quality = 0.92
+): Promise<Blob> {
   const img = await new Promise<HTMLImageElement>((resolve, reject) => {
     const el = new Image();
     el.onload = () => resolve(el);
@@ -83,15 +87,19 @@ async function exportWhiteBackgroundJpeg(pngUrl: string, quality = 0.92): Promis
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas not supported in this browser.");
 
-  ctx.fillStyle = "#FFFFFF";
+  ctx.fillStyle = fillStyle;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0);
 
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, "image/jpeg", quality)
   );
-  if (!blob) throw new Error("Failed to export white-background JPEG.");
+  if (!blob) throw new Error("Failed to export solid-background JPEG.");
   return blob;
+}
+
+function colorSlug(hex: string): string {
+  return hex.replace("#", "").toLowerCase() || "custom";
 }
 
 async function fetchResultBlob(pngUrl: string): Promise<Blob> {
@@ -134,9 +142,12 @@ export default function BgRemover() {
   const [isDragging, setIsDragging] = useState(false);
   const [processingTime, setProcessingTime] = useState(0);
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
-  const [exportingWhite, setExportingWhite] = useState(false);
+  const [exportingSolid, setExportingSolid] = useState(false);
+  const [bgColor, setBgColor] = useState("#FFFFFF");
+  const [copyState, setCopyState] = useState<"idle" | "ok" | "err">("idle");
   const [batchDownloading, setBatchDownloading] = useState(false);
   const [showBatchMenu, setShowBatchMenu] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [zipProgress, setZipProgress] = useState<ZipProgress>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -146,6 +157,9 @@ export default function BgRemover() {
   const activeItem = items.find((i) => i.id === activeId) || null;
   const doneCount = items.filter((i) => i.status === "done").length;
   const failCount = items.filter((i) => i.status === "error" || i.status === "skipped").length;
+  const retryableCount = items.filter(
+    (i) => (i.status === "error" || i.status === "skipped") && !i.resultUrl
+  ).length;
   const isBatch = items.length > 1;
 
   const fetchQuota = useCallback(async () => {
@@ -203,9 +217,11 @@ export default function BgRemover() {
     setLimitError(null);
     setSliderPos(50);
     setProcessingTime(0);
-    setExportingWhite(false);
+    setExportingSolid(false);
+    setCopyState("idle");
     setBatchDownloading(false);
     setShowBatchMenu(false);
+    setShowExportMenu(false);
     setZipProgress(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     fetchQuota();
@@ -662,23 +678,75 @@ export default function BgRemover() {
     trackEvent("download", { format: "png", plan: quota?.plan || "unknown", batch: isBatch });
   };
 
-  const handleDownloadWhiteJpeg = async () => {
+  const handleDownloadSolidJpeg = async (color = bgColor) => {
     if (!activeItem?.resultUrl) return;
-    setExportingWhite(true);
+    setExportingSolid(true);
     try {
-      const blob = await exportWhiteBackgroundJpeg(activeItem.resultUrl);
-      downloadBlob(blob, `${baseName(activeItem.file)}-white-bg.jpg`);
+      const blob = await exportSolidBackgroundJpeg(activeItem.resultUrl, color);
+      const slug =
+        color.toUpperCase() === "#FFFFFF"
+          ? "white"
+          : color.toUpperCase() === "#000000"
+            ? "black"
+            : colorSlug(color);
+      downloadBlob(blob, `${baseName(activeItem.file)}-${slug}-bg.jpg`);
       trackEvent("download", {
-        format: "white_jpeg",
+        format: "solid_jpeg",
+        color: slug,
         plan: quota?.plan || "unknown",
         batch: isBatch,
       });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to export white background.");
-      trackEvent("remove_error", { reason: "white_export" });
+      setError(err instanceof Error ? err.message : "Failed to export solid background.");
+      trackEvent("remove_error", { reason: "solid_export" });
     } finally {
-      setExportingWhite(false);
+      setExportingSolid(false);
     }
+  };
+
+  const handleCopyPng = async () => {
+    if (!activeItem?.resultUrl) return;
+    try {
+      if (!navigator.clipboard || typeof ClipboardItem === "undefined") {
+        throw new Error("Clipboard image copy is not supported in this browser.");
+      }
+      const blob = await fetchResultBlob(activeItem.resultUrl);
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      setCopyState("ok");
+      trackEvent("copy_result", { format: "png", plan: quota?.plan || "unknown" });
+      window.setTimeout(() => setCopyState("idle"), 2000);
+    } catch (err: unknown) {
+      setCopyState("err");
+      setError(err instanceof Error ? err.message : "Could not copy image.");
+      window.setTimeout(() => setCopyState("idle"), 2500);
+    }
+  };
+
+  const handleRetryFailed = async () => {
+    const failed = items.filter(
+      (i) => (i.status === "error" || i.status === "skipped") && !i.resultUrl
+    );
+    if (failed.length === 0 || stage === "processing") return;
+
+    trackEvent("batch_retry", { count: failed.length, plan: quota?.plan || "unknown" });
+
+    const retryBatch: BatchItem[] = failed.map((item) => ({
+      ...item,
+      status: "queued" as const,
+      error: undefined,
+      resultUrl: null,
+    }));
+
+    setItems((prev) =>
+      prev.map((row) => {
+        const hit = retryBatch.find((r) => r.id === row.id);
+        return hit || row;
+      })
+    );
+    setLimitError(null);
+    setError("");
+    setActiveId(retryBatch[0].id);
+    await runBatch(retryBatch);
   };
 
   const handleDownloadAllPng = async () => {
@@ -726,13 +794,19 @@ export default function BgRemover() {
       for (let i = 0; i < done.length; i++) {
         const item = done[i];
         setZipProgress({
-          label: "Exporting white JPG",
+          label: "Exporting solid JPG",
           current: i + 1,
           total: done.length,
         });
-        const blob = await exportWhiteBackgroundJpeg(item.resultUrl!);
+        const blob = await exportSolidBackgroundJpeg(item.resultUrl!, bgColor);
+        const slug =
+          bgColor.toUpperCase() === "#FFFFFF"
+            ? "white"
+            : bgColor.toUpperCase() === "#000000"
+              ? "black"
+              : colorSlug(bgColor);
         entries.push({
-          name: `${baseName(item.file)}-white-bg.jpg`,
+          name: `${baseName(item.file)}-${slug}-bg.jpg`,
           data: await blobToUint8Array(blob),
         });
         await sleep(0);
@@ -740,14 +814,21 @@ export default function BgRemover() {
       setZipProgress({ label: "Creating ZIP", current: done.length, total: done.length });
       await sleep(0);
       const zip = createZipBlob(entries);
-      downloadZipBlob(zip, `bg-removed-white-${done.length}.zip`);
+      const zipSlug =
+        bgColor.toUpperCase() === "#FFFFFF"
+          ? "white"
+          : bgColor.toUpperCase() === "#000000"
+            ? "black"
+            : colorSlug(bgColor);
+      downloadZipBlob(zip, `bg-removed-${zipSlug}-${done.length}.zip`);
       trackEvent("batch_download", {
-        format: "white_jpeg_zip",
+        format: "solid_jpeg_zip",
+        color: zipSlug,
         count: done.length,
         plan: quota?.plan || "unknown",
       });
     } catch {
-      setError("Failed to build white-background zip. Try one image at a time.");
+      setError("Failed to build solid-background zip. Try one image at a time.");
     } finally {
       setBatchDownloading(false);
       setZipProgress(null);
@@ -1193,11 +1274,17 @@ export default function BgRemover() {
                   Download PNG
                 </button>
                 <button
-                  onClick={handleDownloadWhiteJpeg}
-                  disabled={exportingWhite}
+                  onClick={() => handleDownloadSolidJpeg("#FFFFFF")}
+                  disabled={exportingSolid}
                   className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 transition-all hover:bg-stone-50 disabled:opacity-70 sm:px-6"
                 >
-                  {exportingWhite ? "Exporting…" : "White JPG"}
+                  {exportingSolid ? "Exporting…" : "White JPG"}
+                </button>
+                <button
+                  onClick={handleCopyPng}
+                  className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 transition-all hover:bg-stone-50 sm:px-6"
+                >
+                  {copyState === "ok" ? "Copied!" : copyState === "err" ? "Copy failed" : "Copy PNG"}
                 </button>
                 <button
                   onClick={reset}
@@ -1206,6 +1293,75 @@ export default function BgRemover() {
                   New images
                 </button>
               </div>
+
+              {/* Solid background options */}
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowExportMenu((v) => !v)}
+                  className="text-sm font-medium text-neutral-600 underline-offset-2 hover:text-neutral-900 hover:underline"
+                >
+                  {showExportMenu ? "Hide background colors" : "More backgrounds ▾"}
+                </button>
+              </div>
+              {showExportMenu && (
+                <div className="mx-auto flex max-w-md flex-wrap items-center justify-center gap-3 rounded-2xl border border-black/8 bg-stone-50 px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBgColor("#FFFFFF");
+                      void handleDownloadSolidJpeg("#FFFFFF");
+                    }}
+                    disabled={exportingSolid}
+                    className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-medium text-neutral-800"
+                  >
+                    <span className="h-4 w-4 rounded border border-black/15 bg-white" />
+                    White
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBgColor("#000000");
+                      void handleDownloadSolidJpeg("#000000");
+                    }}
+                    disabled={exportingSolid}
+                    className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-medium text-neutral-800"
+                  >
+                    <span className="h-4 w-4 rounded border border-black/15 bg-black" />
+                    Black
+                  </button>
+                  <label className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-medium text-neutral-800">
+                    <input
+                      type="color"
+                      value={bgColor}
+                      onChange={(e) => setBgColor(e.target.value)}
+                      className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
+                    />
+                    Custom
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void handleDownloadSolidJpeg(bgColor)}
+                    disabled={exportingSolid}
+                    className="rounded-lg bg-neutral-950 px-3 py-2 text-xs font-medium text-white disabled:opacity-60"
+                  >
+                    Export JPG
+                  </button>
+                </div>
+              )}
+
+              {/* Retry failed (only shown in done/error result UI) */}
+              {retryableCount > 0 && (
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => void handleRetryFailed()}
+                    className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100"
+                  >
+                    Retry failed ({retryableCount})
+                  </button>
+                </div>
+              )}
 
               {/* Secondary batch actions */}
               {doneCount > 1 && (
@@ -1234,11 +1390,16 @@ export default function BgRemover() {
                           disabled={batchDownloading}
                           className="rounded-lg border border-black/10 bg-white px-4 py-2 text-xs font-medium text-neutral-800 hover:bg-stone-50 disabled:opacity-60"
                         >
-                          {batchDownloading && zipProgress?.label.includes("white")
+                          {batchDownloading && zipProgress?.label.includes("solid")
                             ? "Building…"
-                            : "ZIP all white JPG"}
+                            : "ZIP solid JPG"}
                         </button>
                       </div>
+                      {showBatchMenu && (
+                        <p className="text-center text-[11px] text-neutral-500">
+                          Solid ZIP uses the color from “More backgrounds” (default white).
+                        </p>
+                      )}
                       {zipProgress && (
                         <div className="w-full max-w-xs">
                           <div className="mb-1 flex justify-between text-[11px] text-neutral-500">
@@ -1268,7 +1429,7 @@ export default function BgRemover() {
               )}
 
               <p className="text-center text-xs text-neutral-500">
-                Transparent PNG for design · Pure white JPG (RGB 255) for listings
+                Transparent PNG · solid JPG (white / black / custom) · copy for paste into docs
                 {isBatch ? " · Tap thumbnails to switch" : ""}
               </p>
 
