@@ -68,10 +68,25 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Composite transparent PNG onto a solid background and export JPEG. */
+/** Canvas size for solid-background product exports. */
+type CanvasSize = "original" | "1000" | "1600" | "2000";
+
+const CANVAS_PRESETS: Array<{ id: CanvasSize; label: string; edge: number | null }> = [
+  { id: "original", label: "Original", edge: null },
+  { id: "1000", label: "1000²", edge: 1000 },
+  { id: "1600", label: "1600²", edge: 1600 },
+  { id: "2000", label: "2000²", edge: 2000 },
+];
+
+/**
+ * Composite transparent PNG onto a solid background.
+ * When edge is set, outputs a square canvas (marketplace-friendly) with the
+ * subject centered and scaled to fill ~85% of the shorter side.
+ */
 async function exportSolidBackgroundJpeg(
   pngUrl: string,
   fillStyle = "#FFFFFF",
+  canvasSize: CanvasSize = "original",
   quality = 0.92
 ): Promise<Blob> {
   const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -81,15 +96,35 @@ async function exportSolidBackgroundJpeg(
     el.src = pngUrl;
   });
 
+  const srcW = img.naturalWidth || img.width;
+  const srcH = img.naturalHeight || img.height;
+  const preset = CANVAS_PRESETS.find((p) => p.id === canvasSize);
+  const edge = preset?.edge ?? null;
+
   const canvas = document.createElement("canvas");
-  canvas.width = img.naturalWidth || img.width;
-  canvas.height = img.naturalHeight || img.height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas not supported in this browser.");
 
-  ctx.fillStyle = fillStyle;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(img, 0, 0);
+  if (!edge) {
+    canvas.width = srcW;
+    canvas.height = srcH;
+    ctx.fillStyle = fillStyle;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+  } else {
+    canvas.width = edge;
+    canvas.height = edge;
+    ctx.fillStyle = fillStyle;
+    ctx.fillRect(0, 0, edge, edge);
+    // Fill ~85% of the canvas while preserving aspect ratio (Amazon-style)
+    const maxDim = edge * 0.85;
+    const scale = Math.min(maxDim / srcW, maxDim / srcH);
+    const dw = srcW * scale;
+    const dh = srcH * scale;
+    const dx = (edge - dw) / 2;
+    const dy = (edge - dh) / 2;
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
 
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, "image/jpeg", quality)
@@ -100,6 +135,10 @@ async function exportSolidBackgroundJpeg(
 
 function colorSlug(hex: string): string {
   return hex.replace("#", "").toLowerCase() || "custom";
+}
+
+function sizeSlug(size: CanvasSize): string {
+  return size === "original" ? "orig" : size;
 }
 
 async function fetchResultBlob(pngUrl: string): Promise<Blob> {
@@ -144,6 +183,7 @@ export default function BgRemover() {
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [exportingSolid, setExportingSolid] = useState(false);
   const [bgColor, setBgColor] = useState("#FFFFFF");
+  const [canvasSize, setCanvasSize] = useState<CanvasSize>("original");
   const [copyState, setCopyState] = useState<"idle" | "ok" | "err">("idle");
   const [batchDownloading, setBatchDownloading] = useState(false);
   const [showBatchMenu, setShowBatchMenu] = useState(false);
@@ -222,6 +262,7 @@ export default function BgRemover() {
     setBatchDownloading(false);
     setShowBatchMenu(false);
     setShowExportMenu(false);
+    setCanvasSize("original");
     setZipProgress(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     fetchQuota();
@@ -678,21 +719,28 @@ export default function BgRemover() {
     trackEvent("download", { format: "png", plan: quota?.plan || "unknown", batch: isBatch });
   };
 
-  const handleDownloadSolidJpeg = async (color = bgColor) => {
+  const handleDownloadSolidJpeg = async (
+    color = bgColor,
+    size: CanvasSize = canvasSize
+  ) => {
     if (!activeItem?.resultUrl) return;
     setExportingSolid(true);
     try {
-      const blob = await exportSolidBackgroundJpeg(activeItem.resultUrl, color);
-      const slug =
+      const blob = await exportSolidBackgroundJpeg(activeItem.resultUrl, color, size);
+      const cSlug =
         color.toUpperCase() === "#FFFFFF"
           ? "white"
           : color.toUpperCase() === "#000000"
             ? "black"
             : colorSlug(color);
-      downloadBlob(blob, `${baseName(activeItem.file)}-${slug}-bg.jpg`);
+      downloadBlob(
+        blob,
+        `${baseName(activeItem.file)}-${cSlug}-${sizeSlug(size)}.jpg`
+      );
       trackEvent("download", {
         format: "solid_jpeg",
-        color: slug,
+        color: cSlug,
+        canvas: size,
         plan: quota?.plan || "unknown",
         batch: isBatch,
       });
@@ -722,13 +770,22 @@ export default function BgRemover() {
     }
   };
 
-  const handleRetryFailed = async () => {
-    const failed = items.filter(
+  const handleRetryFailed = async (onlyActive = false) => {
+    if (stage === "processing") return;
+
+    let failed = items.filter(
       (i) => (i.status === "error" || i.status === "skipped") && !i.resultUrl
     );
-    if (failed.length === 0 || stage === "processing") return;
+    if (onlyActive && activeItem) {
+      failed = failed.filter((i) => i.id === activeItem.id);
+    }
+    if (failed.length === 0) return;
 
-    trackEvent("batch_retry", { count: failed.length, plan: quota?.plan || "unknown" });
+    trackEvent("batch_retry", {
+      count: failed.length,
+      only_active: onlyActive,
+      plan: quota?.plan || "unknown",
+    });
 
     const retryBatch: BatchItem[] = failed.map((item) => ({
       ...item,
@@ -798,7 +855,11 @@ export default function BgRemover() {
           current: i + 1,
           total: done.length,
         });
-        const blob = await exportSolidBackgroundJpeg(item.resultUrl!, bgColor);
+        const blob = await exportSolidBackgroundJpeg(
+          item.resultUrl!,
+          bgColor,
+          canvasSize
+        );
         const slug =
           bgColor.toUpperCase() === "#FFFFFF"
             ? "white"
@@ -806,7 +867,7 @@ export default function BgRemover() {
               ? "black"
               : colorSlug(bgColor);
         entries.push({
-          name: `${baseName(item.file)}-${slug}-bg.jpg`,
+          name: `${baseName(item.file)}-${slug}-${sizeSlug(canvasSize)}.jpg`,
           data: await blobToUint8Array(blob),
         });
         await sleep(0);
@@ -820,10 +881,14 @@ export default function BgRemover() {
           : bgColor.toUpperCase() === "#000000"
             ? "black"
             : colorSlug(bgColor);
-      downloadZipBlob(zip, `bg-removed-${zipSlug}-${done.length}.zip`);
+      downloadZipBlob(
+        zip,
+        `bg-removed-${zipSlug}-${sizeSlug(canvasSize)}-${done.length}.zip`
+      );
       trackEvent("batch_download", {
         format: "solid_jpeg_zip",
         color: zipSlug,
+        canvas: canvasSize,
         count: done.length,
         plan: quota?.plan || "unknown",
       });
@@ -1294,72 +1359,123 @@ export default function BgRemover() {
                 </button>
               </div>
 
-              {/* Solid background options */}
+              {/* Solid background options + product canvas */}
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <button
                   type="button"
                   onClick={() => setShowExportMenu((v) => !v)}
                   className="text-sm font-medium text-neutral-600 underline-offset-2 hover:text-neutral-900 hover:underline"
                 >
-                  {showExportMenu ? "Hide background colors" : "More backgrounds ▾"}
+                  {showExportMenu
+                    ? "Hide export options"
+                    : "More backgrounds & canvas size ▾"}
                 </button>
               </div>
               {showExportMenu && (
-                <div className="mx-auto flex max-w-md flex-wrap items-center justify-center gap-3 rounded-2xl border border-black/8 bg-stone-50 px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBgColor("#FFFFFF");
-                      void handleDownloadSolidJpeg("#FFFFFF");
-                    }}
-                    disabled={exportingSolid}
-                    className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-medium text-neutral-800"
-                  >
-                    <span className="h-4 w-4 rounded border border-black/15 bg-white" />
-                    White
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBgColor("#000000");
-                      void handleDownloadSolidJpeg("#000000");
-                    }}
-                    disabled={exportingSolid}
-                    className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-medium text-neutral-800"
-                  >
-                    <span className="h-4 w-4 rounded border border-black/15 bg-black" />
-                    Black
-                  </button>
-                  <label className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-medium text-neutral-800">
-                    <input
-                      type="color"
-                      value={bgColor}
-                      onChange={(e) => setBgColor(e.target.value)}
-                      className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
-                    />
-                    Custom
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => void handleDownloadSolidJpeg(bgColor)}
-                    disabled={exportingSolid}
-                    className="rounded-lg bg-neutral-950 px-3 py-2 text-xs font-medium text-white disabled:opacity-60"
-                  >
-                    Export JPG
-                  </button>
+                <div className="mx-auto w-full max-w-lg space-y-3 rounded-2xl border border-black/8 bg-stone-50 px-4 py-4">
+                  {/* Live solid preview */}
+                  <div className="overflow-hidden rounded-xl border border-black/8">
+                    <div
+                      className="flex max-h-48 min-h-[120px] items-center justify-center p-4"
+                      style={{ backgroundColor: bgColor }}
+                    >
+                      <img
+                        src={activeItem.resultUrl}
+                        alt="Solid background preview"
+                        className="max-h-40 max-w-full object-contain"
+                        draggable={false}
+                      />
+                    </div>
+                    <p className="border-t border-black/6 bg-white px-3 py-1.5 text-center text-[11px] text-neutral-500">
+                      Preview · export canvas:{" "}
+                      {canvasSize === "original"
+                        ? "same as source"
+                        : `${canvasSize}×${canvasSize}px (subject ~85%)`}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBgColor("#FFFFFF")}
+                      className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium ${
+                        bgColor.toUpperCase() === "#FFFFFF"
+                          ? "border-emerald-500 bg-white ring-1 ring-emerald-500/30"
+                          : "border-black/10 bg-white"
+                      }`}
+                    >
+                      <span className="h-4 w-4 rounded border border-black/15 bg-white" />
+                      White
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBgColor("#000000")}
+                      className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium ${
+                        bgColor.toUpperCase() === "#000000"
+                          ? "border-emerald-500 bg-white ring-1 ring-emerald-500/30"
+                          : "border-black/10 bg-white"
+                      }`}
+                    >
+                      <span className="h-4 w-4 rounded border border-black/15 bg-black" />
+                      Black
+                    </button>
+                    <label className="inline-flex items-center gap-2 rounded-lg border border-black/10 bg-white px-3 py-2 text-xs font-medium text-neutral-800">
+                      <input
+                        type="color"
+                        value={bgColor}
+                        onChange={(e) => setBgColor(e.target.value)}
+                        className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
+                      />
+                      Custom
+                    </label>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <span className="w-full text-center text-[11px] font-medium uppercase tracking-wide text-neutral-500">
+                      Canvas size
+                    </span>
+                    {CANVAS_PRESETS.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setCanvasSize(p.id)}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
+                          canvasSize === p.id
+                            ? "border-neutral-900 bg-neutral-900 text-white"
+                            : "border-black/10 bg-white text-neutral-800 hover:bg-stone-100"
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => void handleDownloadSolidJpeg(bgColor, canvasSize)}
+                      disabled={exportingSolid}
+                      className="rounded-lg bg-neutral-950 px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-60"
+                    >
+                      {exportingSolid ? "Exporting…" : "Export solid JPG"}
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {/* Retry failed (only shown in done/error result UI) */}
+              {/* Retry other failed items while viewing a successful result */}
               {retryableCount > 0 && (
-                <div className="flex justify-center">
+                <div className="flex flex-wrap justify-center gap-2">
                   <button
                     type="button"
-                    onClick={() => void handleRetryFailed()}
+                    onClick={() => void handleRetryFailed(false)}
                     className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100"
                   >
                     Retry failed ({retryableCount})
                   </button>
+                  <p className="w-full text-center text-[11px] text-neutral-500">
+                    Select a failed thumbnail, then use “Retry this image” on that view.
+                  </p>
                 </div>
               )}
 
@@ -1397,7 +1513,8 @@ export default function BgRemover() {
                       </div>
                       {showBatchMenu && (
                         <p className="text-center text-[11px] text-neutral-500">
-                          Solid ZIP uses the color from “More backgrounds” (default white).
+                          Solid ZIP uses current color + canvas size from export options
+                          (default white / original).
                         </p>
                       )}
                       {zipProgress && (
@@ -1429,7 +1546,7 @@ export default function BgRemover() {
               )}
 
               <p className="text-center text-xs text-neutral-500">
-                Transparent PNG · solid JPG (white / black / custom) · copy for paste into docs
+                Transparent PNG · solid JPG · square canvas 1000/1600/2000 · copy
                 {isBatch ? " · Tap thumbnails to switch" : ""}
               </p>
 
@@ -1487,15 +1604,33 @@ export default function BgRemover() {
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
               <p className="text-sm text-amber-900">{activeItem.error || "This image failed."}</p>
               <p className="mt-2 text-xs text-amber-800/80">
-                Select a green thumbnail above to preview a successful result.
+                Retry this file, retry all failed, or select a successful thumbnail above.
               </p>
-              <button
-                type="button"
-                onClick={reset}
-                className="mt-4 rounded-xl border border-black/10 bg-white px-5 py-2 text-sm text-neutral-800"
-              >
-                New images
-              </button>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleRetryFailed(true)}
+                  className="rounded-xl border border-amber-400 bg-white px-5 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100"
+                >
+                  Retry this image
+                </button>
+                {retryableCount > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => void handleRetryFailed(false)}
+                    className="rounded-xl border border-amber-300 bg-white px-5 py-2 text-sm font-medium text-amber-950 hover:bg-amber-50"
+                  >
+                    Retry all failed ({retryableCount})
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="rounded-xl border border-black/10 bg-white px-5 py-2 text-sm text-neutral-800"
+                >
+                  New images
+                </button>
+              </div>
             </div>
           )}
 
@@ -1522,13 +1657,24 @@ export default function BgRemover() {
                   </a>
                 </div>
               )}
-              <button
-                type="button"
-                onClick={reset}
-                className="mt-4 text-sm text-neutral-600 underline-offset-2 hover:underline"
-              >
-                Try again
-              </button>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {retryableCount > 0 && !limitError && (
+                  <button
+                    type="button"
+                    onClick={() => void handleRetryFailed(false)}
+                    className="rounded-xl bg-neutral-950 px-5 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+                  >
+                    Retry failed ({retryableCount})
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="text-sm text-neutral-600 underline-offset-2 hover:underline"
+                >
+                  Try again
+                </button>
+              </div>
             </div>
           )}
         </div>
