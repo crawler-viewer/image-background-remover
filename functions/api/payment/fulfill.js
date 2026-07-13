@@ -1,4 +1,4 @@
-import { PRODUCTS, calcPlanExpiry } from "./paypal-lib";
+import { PRODUCTS, calcPlanExpiry } from "./paypal-lib.js";
 
 /**
  * Ensure newer payment_orders columns exist (idempotent for D1).

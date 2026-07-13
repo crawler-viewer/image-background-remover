@@ -1,5 +1,5 @@
-import { getPayPalConfig, getPayPalAccessToken } from "../paypal-lib";
-import { ensurePaymentSchema, fulfillPaidOrder } from "../fulfill";
+import { getPayPalConfig, getPayPalAccessToken } from "../paypal-lib.js";
+import { ensurePaymentSchema, fulfillPaidOrder } from "../fulfill.js";
 
 async function verifyWebhookSignature(env, headers, body) {
   const { baseUrl } = getPayPalConfig(env);

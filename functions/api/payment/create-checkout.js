@@ -1,7 +1,7 @@
-import { json, readSession } from "../auth/_lib";
-import { getUserWithSession } from "../auth/db";
-import { createPayPalOrder, PRODUCTS, assertPayPalReady } from "./paypal-lib";
-import { ensurePaymentSchema } from "./fulfill";
+import { json, readSession } from "../auth/_lib.js";
+import { getUserWithSession } from "../auth/db.js";
+import { createPayPalOrder, PRODUCTS, assertPayPalReady } from "./paypal-lib.js";
+import { ensurePaymentSchema } from "./fulfill.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;

@@ -1,5 +1,5 @@
-import { capturePayPalOrder } from "../paypal-lib";
-import { ensurePaymentSchema, fulfillPaidOrder } from "../fulfill";
+import { capturePayPalOrder } from "../paypal-lib.js";
+import { ensurePaymentSchema, fulfillPaidOrder } from "../fulfill.js";
 
 function siteBase(env) {
   return env.SITE_URL || "https://picturebackgroundremover.xyz";

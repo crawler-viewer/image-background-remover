@@ -116,11 +116,23 @@ export async function onRequestPost(context) {
       }
     }
 
-    const formData = await request.formData();
+    let formData;
+    try {
+      formData = await request.formData();
+    } catch {
+      return Response.json(
+        { error: "Expected multipart form data with an image file.", code: "INVALID_BODY" },
+        { status: 400 }
+      );
+    }
+
     const file = formData.get("image");
 
-    if (!file) {
-      return Response.json({ error: "No image provided." }, { status: 400 });
+    if (!file || typeof file === "string") {
+      return Response.json(
+        { error: "No image provided.", code: "NO_IMAGE" },
+        { status: 400 }
+      );
     }
 
     // Validate type
