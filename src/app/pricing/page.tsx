@@ -6,6 +6,7 @@ import { PricingCards } from "@/components/pricing/PricingCards";
 import { PricingFAQ } from "@/components/pricing/PricingFAQ";
 import { PricingHero } from "@/components/pricing/PricingHero";
 import { PlanComparison } from "@/components/pricing/PlanComparison";
+import { PaymentStatusBanner } from "@/components/pricing/PaymentStatusBanner";
 
 export const metadata: Metadata = {
   title: "Pricing — Free Photo Background Remover Plans | BGRemover",
@@ -24,6 +25,7 @@ export default function PricingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-stone-50 text-neutral-950">
       <SiteHeader active="pricing" showUpgrade={false} />
+      <PaymentStatusBanner />
       <PricingHero />
       <PricingCards />
       <PlanComparison />

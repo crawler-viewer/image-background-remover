@@ -3,11 +3,33 @@ import { json, readSession } from "../auth/_lib";
 import { getPlanConfig } from "../plan-config";
 import { assertMonthlyLimit } from "../usage";
 
-const DEFAULT_QUOTA = {
-  used: 0,
-  limit: 10,
-  remaining: 10,
-};
+function planExpiryInfo(planExpiresAt) {
+  if (!planExpiresAt) {
+    return {
+      plan_expires_at: null,
+      plan_expired: false,
+      plan_days_remaining: null,
+    };
+  }
+
+  const expiresMs = new Date(planExpiresAt).getTime();
+  if (Number.isNaN(expiresMs)) {
+    return {
+      plan_expires_at: planExpiresAt,
+      plan_expired: false,
+      plan_days_remaining: null,
+    };
+  }
+
+  const msLeft = expiresMs - Date.now();
+  const days = Math.ceil(msLeft / 86400000);
+
+  return {
+    plan_expires_at: planExpiresAt,
+    plan_expired: msLeft <= 0,
+    plan_days_remaining: days,
+  };
+}
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -23,8 +45,37 @@ export async function onRequestGet(context) {
       return json({ user: null }, { status: 404 });
     }
 
-    const planCode = user.plan || "free";
+    let planCode = user.plan || "free";
+    let planExpiresAt = user.plan_expires_at || null;
+
+    // Mirror remove-bg: expire prepaid plans on read so Account stays accurate
+    if (
+      (planCode === "pro" || planCode === "business") &&
+      planExpiresAt &&
+      new Date(planExpiresAt) < new Date()
+    ) {
+      planCode = "free";
+      planExpiresAt = null;
+      await env.DB
+        .prepare(
+          `UPDATE users SET plan = 'free', plan_expires_at = NULL, updated_at = ? WHERE google_sub = ?`
+        )
+        .bind(new Date().toISOString(), user.google_sub)
+        .run()
+        .catch((e) => console.error("Failed to downgrade expired plan on account/me:", e));
+    }
+
     const plan = getPlanConfig(planCode);
+    const expiry = planExpiryInfo(
+      planCode === "pro" || planCode === "business" ? user.plan_expires_at || planExpiresAt : null
+    );
+
+    // If we just downgraded, surface expired state clearly
+    if (user.plan !== "free" && planCode === "free" && user.plan_expires_at) {
+      expiry.plan_expires_at = user.plan_expires_at;
+      expiry.plan_expired = true;
+      expiry.plan_days_remaining = 0;
+    }
 
     let quota = {
       used: 0,
@@ -37,7 +88,6 @@ export async function onRequestGet(context) {
       console.error("Failed to load quota for account/me:", quotaError);
     }
 
-    // Get credit balance
     let creditBalance = 0;
     try {
       const creditRow = await env.DB
@@ -60,6 +110,9 @@ export async function onRequestGet(context) {
         updated_at: user.updated_at || null,
         last_seen_at: user.last_seen_at || null,
         last_login_at: user.last_login_at || null,
+        plan_expires_at: expiry.plan_expires_at,
+        plan_expired: expiry.plan_expired,
+        plan_days_remaining: expiry.plan_days_remaining,
         month_used: quota.used,
         monthly_limit: quota.limit,
         remaining: quota.remaining,

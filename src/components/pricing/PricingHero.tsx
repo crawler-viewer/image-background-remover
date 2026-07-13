@@ -13,7 +13,8 @@ export function PricingHero() {
           Pricing that stays simple
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-neutral-600">
-          Start with the free tier. Upgrade when your image volume makes the paid plans worth it.
+          Start free. Paid Pro and Business are prepaid periods via PayPal — not auto-renewing
+          subscriptions. Credits never expire.
         </p>
         <div className="mt-6 flex justify-center gap-3 text-sm text-neutral-500">
           <span>Guest: 5/mo</span>
