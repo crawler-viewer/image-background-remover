@@ -10,15 +10,12 @@ export const metadata: Metadata = {
     "Free online photo background remover. No signup required. Download transparent PNG or pure white JPG in seconds. Batch process up to 20 images free.",
   metadataBase: new URL("https://picturebackgroundremover.xyz/"),
   alternates: { canonical: "/" },
+  // Keep meta keywords under ~100 chars (audit tools flag stuffing)
   keywords: [
-    "remove background from photo online",
+    "remove background",
     "photo background remover",
-    "transparent background remover",
-    "remove background free",
-    "jpg background remover",
-    "png background remover",
     "bg remover",
-    "BGRemover",
+    "transparent PNG",
   ],
   openGraph: {
     title: "Remove Background Online Free | BGRemover",
