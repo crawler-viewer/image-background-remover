@@ -4,10 +4,10 @@ import "./globals.css";
 const isProduction = process.env.NEXT_PUBLIC_SITE_ENV === "production";
 
 export const metadata: Metadata = {
-  // Align with GSC queries: remove background from photo online, transparent, free, jpg/png
-  title: "Remove Background from Photo Online Free | Transparent PNG & White JPG",
+  // SEO length targets: title ~40–60 chars, description ~140–160 chars
+  title: "Remove Background Online Free | BGRemover",
   description:
-    "Free online photo background remover. Remove background from photos online in seconds — no signup. Download transparent PNG or pure white JPG. Batch up to 20 images. Try BGRemover free.",
+    "Free online photo background remover. No signup required. Download transparent PNG or pure white JPG in seconds. Batch process up to 20 images free.",
   metadataBase: new URL("https://picturebackgroundremover.xyz/"),
   alternates: { canonical: "/" },
   keywords: [
@@ -21,9 +21,9 @@ export const metadata: Metadata = {
     "BGRemover",
   ],
   openGraph: {
-    title: "Remove Background from Photo Online Free | BGRemover",
+    title: "Remove Background Online Free | BGRemover",
     description:
-      "AI photo background remover — free to try, no signup. Transparent PNG or Amazon-ready white JPG. Batch upload supported.",
+      "Free online photo background remover. No signup required. Download transparent PNG or pure white JPG in seconds. Batch process up to 20 images free.",
     type: "website",
     url: "/",
     siteName: "BGRemover",
@@ -38,9 +38,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Remove Background from Photo Online Free | BGRemover",
+    title: "Remove Background Online Free | BGRemover",
     description:
-      "Free AI background remover for photos. Transparent PNG or white JPG. No signup to start.",
+      "Free online photo background remover. No signup required. Download transparent PNG or pure white JPG in seconds. Batch process up to 20 images free.",
     images: ["/og-image.png"],
   },
   robots: isProduction
