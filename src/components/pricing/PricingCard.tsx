@@ -1,25 +1,36 @@
 "use client";
 
 import type { BillingCycle, PricingPlan } from "@/lib/pricing";
-import { useState } from "react";
-import { trackEvent } from "@/lib/analytics";
+import { useEffect, useRef, useState } from "react";
+import { startCheckoutOrLogin } from "@/lib/checkout";
 
 type PricingCardProps = {
   plan: PricingPlan;
   billingCycle: BillingCycle;
   currentPlan?: string;
   userStatus?: string;
+  /** When true, this card's product matches ?buy= after login — auto-start checkout once */
+  autoBuy?: boolean;
+  onAutoBuyHandled?: () => void;
 };
 
 function getProductId(planCode: string, billingCycle: BillingCycle): string | null {
   if (planCode === "pro") return billingCycle === "yearly" ? "pro_yearly" : "pro_monthly";
-  if (planCode === "business") return billingCycle === "yearly" ? "business_yearly" : "business_monthly";
+  if (planCode === "business")
+    return billingCycle === "yearly" ? "business_yearly" : "business_monthly";
   return null;
 }
 
-export function PricingCard({ plan, billingCycle, currentPlan, userStatus }: PricingCardProps) {
+export function PricingCard({
+  plan,
+  billingCycle,
+  currentPlan,
+  autoBuy = false,
+  onAutoBuyHandled,
+}: PricingCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const autoBuyStarted = useRef(false);
 
   const priceLabel =
     plan.code === "pro" && billingCycle === "yearly" && plan.yearlyPriceLabel
@@ -31,46 +42,60 @@ export function PricingCard({ plan, billingCycle, currentPlan, userStatus }: Pri
   const productId = getProductId(plan.code, billingCycle);
 
   const isCurrentPlan = currentPlan === plan.code;
-  const isDowngrade = Boolean(currentPlan && (
-    (currentPlan === "business" && plan.code !== "business") ||
-    (currentPlan === "pro" && (plan.code === "free" || plan.code === "guest"))
-  ));
+  // Same plan → allow renew (extends expiry). Only block true downgrades.
+  const isDowngrade = Boolean(
+    currentPlan &&
+      ((currentPlan === "business" && plan.code === "pro") ||
+        (currentPlan === "business" && (plan.code === "free" || plan.code === "guest")) ||
+        (currentPlan === "pro" && (plan.code === "free" || plan.code === "guest")))
+  );
+  const isRenewal = isCurrentPlan && !!productId;
 
   const handleBuy = async () => {
     if (!productId) return;
     setLoading(true);
     setError(null);
-    trackEvent("checkout_start", {
-      product_id: productId,
-      product_type: "prepaid_plan",
-      plan: plan.code,
-      billing_cycle: billingCycle,
-    });
     try {
-      const res = await fetch("/api/payment/create-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId }),
+      const outcome = await startCheckoutOrLogin(productId, "pricing", {
+        product_type: "prepaid_plan",
+        plan: plan.code,
+        billing_cycle: billingCycle,
       });
-      const data = await res.json();
-      if (data.approvalUrl) {
-        window.location.href = data.approvalUrl;
-      } else {
-        trackEvent("checkout_error", {
-          product_id: productId,
-          reason: data.error || "unknown",
-        });
-        setError(data.error || "Failed to create checkout");
+      if (!outcome.redirected) {
+        setError(outcome.error);
+        setLoading(false);
       }
+      // If redirected, leave loading true (navigating away)
     } catch {
-      trackEvent("checkout_error", { product_id: productId, reason: "network" });
       setError("Payment error. Please try again.");
-    } finally {
       setLoading(false);
     }
   };
 
+  // Auto-resume checkout after Google login (?buy=productId)
+  useEffect(() => {
+    if (!autoBuy || !productId || isDowngrade || autoBuyStarted.current) return;
+    autoBuyStarted.current = true;
+    onAutoBuyHandled?.();
+    void handleBuy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when autoBuy is set
+  }, [autoBuy, productId, isDowngrade]);
+
   const isPayable = !!productId;
+
+  let ctaLabel = plan.ctaLabel;
+  if (isRenewal) {
+    ctaLabel =
+      plan.code === "business"
+        ? billingCycle === "yearly"
+          ? "Renew Business (1 year)"
+          : "Extend access"
+        : billingCycle === "yearly"
+          ? "Renew Pro (1 year)"
+          : "Extend access";
+  }
+  if (loading) ctaLabel = "Redirecting to PayPal...";
+  if (isDowngrade) ctaLabel = "Contact Support";
 
   return (
     <div
@@ -100,8 +125,12 @@ export function PricingCard({ plan, billingCycle, currentPlan, userStatus }: Pri
         <div className="text-4xl font-bold tracking-tight">{priceLabel}</div>
         {(plan.code === "pro" || plan.code === "business") && billingCycle === "yearly" ? (
           <p className="mt-2 text-sm text-neutral-500">Save ~17% · pay once for 12 months</p>
-        ) : (plan.code === "pro" || plan.code === "business") ? (
-          <p className="mt-2 text-sm text-neutral-500">Prepaid · no auto-renew</p>
+        ) : plan.code === "pro" || plan.code === "business" ? (
+          <p className="mt-2 text-sm text-neutral-500">
+            {isRenewal
+              ? "Renewing extends your current expiry — remaining days are kept"
+              : "Prepaid · no auto-renew"}
+          </p>
         ) : null}
       </div>
 
@@ -120,26 +149,23 @@ export function PricingCard({ plan, billingCycle, currentPlan, userStatus }: Pri
         </p>
       ) : null}
 
-      {isCurrentPlan ? (
-        <div className="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-          Your Current Plan
-        </div>
-      ) : isPayable ? (
+      {isPayable ? (
         <button
+          type="button"
           onClick={handleBuy}
           disabled={loading || isDowngrade}
           className={`mt-8 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
-            plan.highlight
+            plan.highlight || isRenewal
               ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:bg-neutral-400"
               : "border border-black/10 bg-white text-neutral-800 hover:bg-stone-100 disabled:bg-neutral-100 disabled:text-neutral-400"
           }`}
         >
-          {loading ? "Redirecting to PayPal..." : isDowngrade ? "Contact Support" : plan.ctaLabel}
+          {ctaLabel}
         </button>
       ) : (
         <a
           href={plan.ctaHref}
-          className={`mt-8 inline-flex w-full items-center justify-center rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100`}
+          className="mt-8 inline-flex w-full items-center justify-center rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100"
         >
           {plan.ctaLabel}
         </a>

@@ -55,7 +55,10 @@ export default function WhiteBackgroundPage() {
         eyebrow="Marketplace images"
         title="White background product photos in seconds"
         description="Remove cluttered backgrounds with AI, then export a pure white JPG (RGB 255, 255, 255) ready for Amazon, Shopify, eBay, and catalog uploads — without opening Photoshop."
-        primaryCta={{ href: "/#tool", label: "Create white background free →" }}
+        primaryCta={{
+          href: "/?export=white&size=2000#tool",
+          label: "Create white background free →",
+        }}
         secondaryCta={{ href: "/batch-remove-background/", label: "Batch many SKUs" }}
         steps={[
           {
@@ -90,7 +93,7 @@ export default function WhiteBackgroundPage() {
           },
           { href: "/blog/remove-bg-alternative-free/", label: "remove.bg alternative" },
           { href: "/pricing/", label: "Pricing" },
-          { href: "/#tool", label: "Open tool" },
+          { href: "/?export=white&size=2000#tool", label: "Open tool (white JPG)" },
         ]}
       >
         <div className="mt-10 rounded-2xl border border-black/8 bg-white p-6 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">

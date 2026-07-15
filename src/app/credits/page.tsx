@@ -1,46 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, trackViewCredits } from "@/lib/analytics";
+import { parseBuyProductId, startCheckoutOrLogin } from "@/lib/checkout";
+import { getCreditPacks } from "@/lib/products";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
-const CREDIT_PACKS = [
-  { id: "credits_20", credits: 20, price: "$2.90", perUnit: "$0.145", badge: null },
-  { id: "credits_100", credits: 100, price: "$9.90", perUnit: "$0.099", badge: "Popular" },
-  { id: "credits_300", credits: 300, price: "$24.90", perUnit: "$0.083", badge: null },
-  { id: "credits_800", credits: 800, price: "$49.90", perUnit: "$0.062", badge: "Best Value" },
-];
+const CREDIT_PACKS = getCreditPacks();
 
 export default function CreditsPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [resumeHint, setResumeHint] = useState(false);
+  const autoBuyStarted = useRef(false);
 
   const handleBuy = async (productId: string) => {
     setLoading(productId);
     setError(null);
-    trackEvent("checkout_start", { product_id: productId, product_type: "credits" });
     try {
-      const res = await fetch("/api/payment/create-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId }),
+      const outcome = await startCheckoutOrLogin(productId, "credits", {
+        product_type: "credits",
       });
-      const data = await res.json();
-      if (data.approvalUrl) {
-        window.location.href = data.approvalUrl;
-      } else {
-        trackEvent("checkout_error", { product_id: productId, reason: data.error || "unknown" });
-        setError(data.error || "Failed to create checkout");
+      if (!outcome.redirected) {
+        setError(outcome.error);
+        setLoading(null);
       }
     } catch {
       trackEvent("checkout_error", { product_id: productId, reason: "network" });
       setError("Payment error. Please try again.");
-    } finally {
       setLoading(null);
     }
   };
+
+  // Resume checkout after Google login (?buy=credits_*)
+  useEffect(() => {
+    trackViewCredits("credits_page");
+    if (autoBuyStarted.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const buy = parseBuyProductId(params.get("buy"));
+    if (!buy || !buy.startsWith("credits_")) return;
+
+    autoBuyStarted.current = true;
+    setResumeHint(true);
+    params.delete("buy");
+    const next = window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
+    window.history.replaceState({}, "", next);
+    void handleBuy(buy);
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col bg-stone-50 text-neutral-950">
@@ -51,9 +59,15 @@ export default function CreditsPage() {
           <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-5xl">Buy Credit Packs</h1>
           <p className="mt-3 text-neutral-600">
             Need more removals without a prepaid plan? Buy credits that never expire. Used after your
-            monthly free/plan limit is reached.
+            monthly free/plan limit is reached. Sign in is required to purchase.
           </p>
         </div>
+
+        {resumeHint && (
+          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            Signed in — opening PayPal checkout…
+          </div>
+        )}
 
         {error && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -81,10 +95,11 @@ export default function CreditsPage() {
                 <p className="mt-1 text-sm text-neutral-500">credits</p>
               </div>
               <div className="mt-4 text-center">
-                <div className="text-2xl font-semibold text-neutral-900">{pack.price}</div>
-                <p className="mt-1 text-xs text-neutral-500">{pack.perUnit} per removal</p>
+                <div className="text-2xl font-semibold text-neutral-900">{pack.priceLabel}</div>
+                <p className="mt-1 text-xs text-neutral-500">{pack.perUnitLabel}</p>
               </div>
               <button
+                type="button"
                 onClick={() => handleBuy(pack.id)}
                 disabled={loading === pack.id}
                 className={`mt-5 w-full rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
@@ -116,7 +131,10 @@ export default function CreditsPage() {
             </li>
             <li className="flex items-start gap-3">
               <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-emerald-600" />
-              <span>You must be signed in to purchase and use credits.</span>
+              <span>
+                You must be signed in to purchase. If you are not, we will send you to Google login
+                and resume checkout afterward.
+              </span>
             </li>
           </ul>
         </div>
@@ -128,7 +146,7 @@ export default function CreditsPage() {
               href="/pricing/"
               className="font-medium text-emerald-700 underline decoration-emerald-700/30 underline-offset-4 hover:text-emerald-800"
             >
-              View subscription plans →
+              View prepaid plans →
             </Link>
           </p>
         </div>

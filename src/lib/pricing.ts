@@ -1,3 +1,5 @@
+import { planPriceLabel } from "@/lib/products";
+
 export type BillingCycle = "monthly" | "yearly";
 export type PlanCode = "guest" | "free" | "pro" | "business";
 
@@ -13,6 +15,11 @@ export type PricingPlan = {
   highlight?: boolean;
   features: string[];
 };
+
+const proMonthly = planPriceLabel("pro", "monthly");
+const proYearly = planPriceLabel("pro", "yearly");
+const businessMonthly = planPriceLabel("business", "monthly");
+const businessYearly = planPriceLabel("business", "yearly");
 
 export const pricingPlans: PricingPlan[] = [
   {
@@ -48,8 +55,8 @@ export const pricingPlans: PricingPlan[] = [
     name: "Pro",
     badge: "Most Popular",
     description: "Prepaid plan for sellers and creators — pay once for a month or year of higher limits.",
-    monthlyPriceLabel: "$9.9/mo",
-    yearlyPriceLabel: "$99/yr",
+    monthlyPriceLabel: proMonthly,
+    yearlyPriceLabel: proYearly,
     ctaLabel: "Buy Pro (prepaid)",
     ctaHref: "/pricing#upgrade",
     highlight: true,
@@ -64,8 +71,8 @@ export const pricingPlans: PricingPlan[] = [
     code: "business",
     name: "Business",
     description: "Prepaid higher volume for catalogs and teams.",
-    monthlyPriceLabel: "$29.9/mo",
-    yearlyPriceLabel: "$299/yr",
+    monthlyPriceLabel: businessMonthly,
+    yearlyPriceLabel: businessYearly,
     ctaLabel: "Buy Business (prepaid)",
     ctaHref: "/pricing#upgrade",
     features: [
@@ -137,7 +144,7 @@ export const pricingFaqs = [
   },
   {
     q: "Credits vs Pro — which should I buy?",
-    a: "Credits never expire and are best for occasional extra removals after you hit free limits. Pro is better if you consistently need ~200 removals every month. Example: $9.90 buys either 100 credits or one prepaid month of Pro (200/mo).",
+    a: `Credits never expire and are best for occasional extra removals after you hit free limits. Pro is better if you consistently need ~200 removals every month. Example: ${proMonthly.replace("/mo", "")} buys either 100 credits or one prepaid month of Pro (200/mo).`,
   },
   {
     q: "Do unused removals roll over?",

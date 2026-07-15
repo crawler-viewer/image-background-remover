@@ -2,8 +2,34 @@ const GOOGLE_OAUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
 const STATE_COOKIE = "bg_auth_state";
+const RETURN_COOKIE = "bg_auth_return";
 const SESSION_COOKIE = "bg_session";
 const SESSION_TTL = 60 * 60 * 24 * 7;
+const RETURN_COOKIE_TTL = 600;
+
+/**
+ * Only allow same-origin relative paths (open-redirect safe).
+ * Accepts "/pricing/?buy=pro_monthly" style values.
+ */
+export function sanitizeReturnPath(raw) {
+  if (!raw || typeof raw !== "string") return null;
+  let value = raw.trim();
+  try {
+    value = decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+  value = value.trim();
+  if (!value.startsWith("/")) return null;
+  if (value.startsWith("//")) return null;
+  if (value.includes("://")) return null;
+  if (value.includes("\\")) return null;
+  // Block protocol-relative and control chars
+  if (/[\u0000-\u001F\u007F]/.test(value)) return null;
+  // Cap length
+  if (value.length > 512) return null;
+  return value;
+}
 
 function getBaseUrl(request) {
   const url = new URL(request.url);
@@ -176,6 +202,23 @@ export function createStateHeader(state) {
 
 export function clearStateHeader() {
   return serializeCookie(STATE_COOKIE, "", { maxAge: 0, sameSite: "Lax" });
+}
+
+export function createReturnHeader(returnPath) {
+  const safe = sanitizeReturnPath(returnPath);
+  if (!safe) return null;
+  return serializeCookie(RETURN_COOKIE, safe, {
+    maxAge: RETURN_COOKIE_TTL,
+    sameSite: "Lax",
+  });
+}
+
+export function clearReturnHeader() {
+  return serializeCookie(RETURN_COOKIE, "", { maxAge: 0, sameSite: "Lax" });
+}
+
+export function readReturnPath(request) {
+  return sanitizeReturnPath(getCookie(request, RETURN_COOKIE));
 }
 
 export function readState(request) {

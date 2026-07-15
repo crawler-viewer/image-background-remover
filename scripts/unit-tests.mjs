@@ -87,6 +87,27 @@ test("calcPlanExpiry yearly is ~365 days ahead", () => {
   const days = (new Date(iso).getTime() - before) / 86400000;
   assert.ok(days > 360 && days < 370, `expected ~365 days, got ${days}`);
 });
+test("calcPlanExpiry extends from provided base date", () => {
+  const base = new Date("2026-08-01T00:00:00.000Z");
+  const iso = paypalLib.calcPlanExpiry({ period: "monthly" }, base);
+  // ~30 days after Aug 1
+  assert.equal(iso.slice(0, 10), "2026-09-01");
+});
+test("amountsEqual compares money strings", () => {
+  assert.equal(paypalLib.amountsEqual("9.90", "9.9"), true);
+  assert.equal(paypalLib.amountsEqual("9.90", "9.91"), false);
+  assert.equal(paypalLib.amountsEqual(null, "9.90"), false);
+});
+test("extractCapturedAmount reads purchase_units captures", () => {
+  const amt = paypalLib.extractCapturedAmount({
+    purchase_units: [
+      {
+        payments: { captures: [{ amount: { value: "9.90", currency_code: "USD" } }] },
+      },
+    ],
+  });
+  assert.equal(amt, "9.90");
+});
 test("assertPayPalReady fails without credentials", () => {
   assert.throws(
     () => paypalLib.assertPayPalReady({}),
@@ -148,12 +169,13 @@ test("resolvePlanProduct falls back to plan+amount", () => {
 });
 
 // Mock DB for fulfillPaidOrder
-function createMockDb(orderRow) {
+function createMockDb(orderRow, userOverrides = {}) {
   let order = { ...orderRow };
   let user = {
     google_sub: order.google_sub,
     plan: "free",
     plan_expires_at: null,
+    ...userOverrides,
   };
   let credits = 0;
 
@@ -192,6 +214,9 @@ function createMockDb(orderRow) {
         async first() {
           if (sql.includes("SELECT status FROM payment_orders")) {
             return { status: order.status };
+          }
+          if (sql.includes("SELECT plan, plan_expires_at FROM users")) {
+            return { plan: user.plan, plan_expires_at: user.plan_expires_at };
           }
           return null;
         },
@@ -246,6 +271,83 @@ await testAsync("applies credits once (idempotent claim)", async () => {
   assert.equal(db._state().credits, 100);
 });
 
+await testAsync("renewing same plan extends from current expiry", async () => {
+  const farExpiry = new Date(Date.now() + 20 * 86400000).toISOString();
+  const order = {
+    id: 3,
+    status: "pending",
+    order_type: "subscription",
+    plan_code: "pro",
+    product_id: "pro_monthly",
+    google_sub: "user-3",
+    amount_usd: "9.90",
+  };
+  const db = createMockDb(order, { plan: "pro", plan_expires_at: farExpiry });
+  const r = await fulfill.fulfillPaidOrder(db, order);
+  assert.equal(r.applied, true);
+  assert.equal(r.extended, true);
+  const newExpiry = new Date(db._state().user.plan_expires_at).getTime();
+  const expectedMin = new Date(farExpiry).getTime() + 27 * 86400000;
+  assert.ok(newExpiry >= expectedMin, `expected extension beyond remaining, got ${db._state().user.plan_expires_at}`);
+});
+
+test("resolvePlanExtensionBase stacks same active plan", () => {
+  const expires = new Date(Date.now() + 10 * 86400000).toISOString();
+  const base = fulfill.resolvePlanExtensionBase(
+    { plan: "pro", plan_expires_at: expires },
+    "pro"
+  );
+  assert.equal(base.toISOString(), new Date(expires).toISOString());
+});
+
+test("resolvePlanExtensionBase starts now for upgrade", () => {
+  const expires = new Date(Date.now() + 10 * 86400000).toISOString();
+  const before = Date.now();
+  const base = fulfill.resolvePlanExtensionBase(
+    { plan: "pro", plan_expires_at: expires },
+    "business"
+  );
+  assert.ok(base.getTime() >= before - 1000);
+  assert.ok(base.getTime() <= Date.now() + 1000);
+});
+
+test("buildPaymentSuccessQuery includes plan details", () => {
+  const qs = fulfill.buildPaymentSuccessQuery(
+    {
+      id: 42,
+      product_id: "pro_monthly",
+      order_type: "subscription",
+      plan_code: "pro",
+      amount_usd: "9.90",
+    },
+    { kind: "plan", plan: "pro", expiresAt: "2026-08-01T00:00:00.000Z", extended: true }
+  );
+  const p = new URLSearchParams(qs);
+  assert.equal(p.get("payment"), "success");
+  assert.equal(p.get("kind"), "plan");
+  assert.equal(p.get("plan"), "pro");
+  assert.equal(p.get("extended"), "1");
+  assert.equal(p.get("product"), "pro_monthly");
+  assert.equal(p.get("amount"), "9.90");
+  assert.equal(p.get("order"), "42");
+});
+
+// Auth return path sanitization
+const authLib = await import(
+  pathToFileURL(path.join(root, "functions/api/auth/_lib.js")).href
+);
+console.log("\nauth return path");
+test("sanitizeReturnPath allows relative paths", () => {
+  assert.equal(authLib.sanitizeReturnPath("/pricing/?buy=pro_monthly"), "/pricing/?buy=pro_monthly");
+  assert.equal(authLib.sanitizeReturnPath("/credits/?buy=credits_100"), "/credits/?buy=credits_100");
+});
+test("sanitizeReturnPath blocks open redirects", () => {
+  assert.equal(authLib.sanitizeReturnPath("https://evil.com"), null);
+  assert.equal(authLib.sanitizeReturnPath("//evil.com"), null);
+  assert.equal(authLib.sanitizeReturnPath("pricing"), null);
+  assert.equal(authLib.sanitizeReturnPath("/\\evil"), null);
+});
+
 // Frontend pricing alignment (TS compiled away — read as text checks)
 console.log("\npricing.ts alignment (source)");
 const require = createRequire(import.meta.url);
@@ -255,6 +357,91 @@ test("pricing features mention prepaid / no auto-renew", () => {
   assert.match(pricingSrc, /no auto-renew/i);
   assert.match(pricingSrc, /500 removals/);
   assert.doesNotMatch(pricingSrc, /800 removals per month/);
+});
+
+// Shared products.js is the single catalog for PayPal + frontend
+console.log("\nshared products catalog");
+const sharedProducts = await import(
+  pathToFileURL(path.join(root, "shared/products.js")).href
+);
+test("shared products match PRODUCTS export", () => {
+  assert.equal(paypalLib.PRODUCTS.pro_monthly.amount, sharedProducts.default.pro_monthly.amount);
+  assert.equal(paypalLib.PRODUCTS.credits_20.credits, sharedProducts.default.credits_20.credits);
+  assert.equal(paypalLib.PRODUCTS.credits_100.amount, "9.90");
+});
+test("shared products has all plan + credit SKUs", () => {
+  for (const id of [
+    "pro_monthly",
+    "pro_yearly",
+    "business_monthly",
+    "business_yearly",
+    "credits_20",
+    "credits_100",
+    "credits_300",
+    "credits_800",
+  ]) {
+    assert.ok(sharedProducts.default[id], `missing ${id}`);
+  }
+});
+const productsTs = fs.readFileSync(path.join(root, "src/lib/products.ts"), "utf8");
+test("frontend products.ts imports shared products.js", () => {
+  assert.match(productsTs, /shared\/products\.js/);
+});
+const paypalLibSrc = fs.readFileSync(
+  path.join(root, "functions/api/payment/paypal-lib.js"),
+  "utf8"
+);
+test("paypal-lib imports shared products.js", () => {
+  assert.match(paypalLibSrc, /shared\/products\.js/);
+});
+
+// BgRemover UX helpers (source-level — pure functions duplicated for assert)
+console.log("\nbatch ETA helper");
+function formatEta(remainingJobs, avgSec, currentElapsed = 0) {
+  if (remainingJobs <= 0) return "";
+  const secPer = avgSec > 0 ? avgSec : 8;
+  const currentLeft = Math.max(0, secPer - currentElapsed);
+  const queuedLeft = Math.max(0, remainingJobs - 1) * secPer;
+  const total = Math.round(currentLeft + queuedLeft);
+  if (total < 5) return "a few seconds";
+  if (total < 60) return `~${total}s left`;
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  if (mins < 3 && secs > 0) return `~${mins}m ${secs}s left`;
+  if (secs < 15) return `~${mins} min left`;
+  return `~${mins + 1} min left`;
+}
+test("formatEta for multi-image batch", () => {
+  assert.match(formatEta(5, 10, 0), /left/);
+  assert.equal(formatEta(0, 10, 0), "");
+  assert.match(formatEta(1, 8, 7), /few seconds|~1s|left/);
+});
+const bgSrc = fs.readFileSync(path.join(root, "src/components/BgRemover.tsx"), "utf8");
+test("BgRemover has dual download CTAs and deep-link export", () => {
+  assert.match(bgSrc, /Transparent PNG/);
+  assert.match(bgSrc, /White background JPG/);
+  assert.match(bgSrc, /export=white/);
+  assert.match(bgSrc, /handleDownloadAmazonWhite/);
+  assert.match(bgSrc, /batchEta/);
+});
+const whiteSrc = fs.readFileSync(
+  path.join(root, "src/app/white-background/page.tsx"),
+  "utf8"
+);
+test("white-background CTA deep-links export=white", () => {
+  assert.match(whiteSrc, /export=white&size=2000/);
+});
+test("BgRemover white ZIP defaults to 2000", () => {
+  assert.match(bgSrc, /ZIP white JPG/);
+  assert.match(bgSrc, /zipSize.*2000|2000.*zipSize|canvasSize === "original" \? "2000"/);
+  assert.match(bgSrc, /handleDownloadAllCustomSolid|white_jpeg_zip/);
+});
+const analyticsSrc = fs.readFileSync(path.join(root, "src/lib/analytics.ts"), "utf8");
+test("analytics has GA4 ecommerce helpers", () => {
+  assert.match(analyticsSrc, /trackBeginCheckout/);
+  assert.match(analyticsSrc, /trackPurchase/);
+  assert.match(analyticsSrc, /begin_checkout/);
+  assert.match(analyticsSrc, /view_pricing/);
 });
 
 console.log(`\n${passed} passed, ${failed} failed\n`);

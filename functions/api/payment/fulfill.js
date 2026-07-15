@@ -45,6 +45,30 @@ export function resolvePlanProduct(order) {
 }
 
 /**
+ * Pick the base date for prepaid period extension.
+ * - Renewing the same active plan → extend from current plan_expires_at (keep remaining time).
+ * - Upgrade / new plan / expired → start from now.
+ *
+ * Exported for unit tests.
+ */
+export function resolvePlanExtensionBase(userRow, newPlanCode, nowMs = Date.now()) {
+  const now = new Date(nowMs);
+  if (!userRow || !newPlanCode) return now;
+
+  const currentPlan = userRow.plan || "free";
+  const expiresAt = userRow.plan_expires_at ? new Date(userRow.plan_expires_at) : null;
+  const stillActive =
+    expiresAt && !Number.isNaN(expiresAt.getTime()) && expiresAt.getTime() > nowMs;
+
+  // Same prepaid plan still active → stack the new period on top of remaining time
+  if (currentPlan === newPlanCode && stillActive) {
+    return expiresAt;
+  }
+
+  return now;
+}
+
+/**
  * Atomically mark order paid and apply plan/credits.
  * Safe if called from both capture redirect and webhook.
  */
@@ -73,14 +97,32 @@ export async function fulfillPaidOrder(db, order, now = new Date().toISOString()
     return {
       applied: false,
       reason: current?.status === "paid" ? "already_paid" : "not_pending",
+      order,
     };
   }
 
   if (order.order_type === "subscription" && order.plan_code) {
     const product = resolvePlanProduct(order);
+
+    let userRow = null;
+    try {
+      userRow = await db
+        .prepare(`SELECT plan, plan_expires_at FROM users WHERE google_sub = ? LIMIT 1`)
+        .bind(order.google_sub)
+        .first();
+    } catch (e) {
+      console.error("fulfill: failed to load user for plan extension:", e);
+    }
+
+    const baseDate = resolvePlanExtensionBase(userRow, order.plan_code, Date.now());
     const expiresAt = product
-      ? calcPlanExpiry(product)
-      : new Date(Date.now() + 30 * 86400000).toISOString();
+      ? calcPlanExpiry(product, baseDate)
+      : new Date(baseDate.getTime() + 30 * 86400000).toISOString();
+
+    const extended =
+      userRow?.plan === order.plan_code &&
+      userRow?.plan_expires_at &&
+      new Date(userRow.plan_expires_at).getTime() > Date.now();
 
     await db
       .prepare(
@@ -89,7 +131,14 @@ export async function fulfillPaidOrder(db, order, now = new Date().toISOString()
       .bind(order.plan_code, expiresAt, now, order.google_sub)
       .run();
 
-    return { applied: true, kind: "plan", plan: order.plan_code, expiresAt };
+    return {
+      applied: true,
+      kind: "plan",
+      plan: order.plan_code,
+      expiresAt,
+      extended: Boolean(extended),
+      productId: order.product_id || null,
+    };
   }
 
   if (order.order_type === "credits" && order.credit_amount) {
@@ -104,8 +153,40 @@ export async function fulfillPaidOrder(db, order, now = new Date().toISOString()
       .bind(order.user_id, order.google_sub, order.credit_amount, now)
       .run();
 
-    return { applied: true, kind: "credits", credits: order.credit_amount };
+    return {
+      applied: true,
+      kind: "credits",
+      credits: order.credit_amount,
+      productId: order.product_id || null,
+    };
   }
 
-  return { applied: false, reason: "unknown_order_type" };
+  return { applied: false, reason: "unknown_order_type", order };
+}
+
+/**
+ * Build account success redirect query from order + fulfill result.
+ * Includes amount for GA4 purchase value tracking on the client.
+ */
+export function buildPaymentSuccessQuery(order, fulfillResult = {}) {
+  const params = new URLSearchParams({ payment: "success" });
+
+  if (order?.id != null) params.set("order", String(order.id));
+  if (order?.product_id) params.set("product", String(order.product_id));
+  if (order?.amount_usd != null) params.set("amount", String(order.amount_usd));
+
+  if (fulfillResult.kind === "plan" || order?.order_type === "subscription") {
+    params.set("kind", "plan");
+    const plan = fulfillResult.plan || order?.plan_code;
+    if (plan) params.set("plan", String(plan));
+    const expiresAt = fulfillResult.expiresAt;
+    if (expiresAt) params.set("expires", String(expiresAt));
+    if (fulfillResult.extended) params.set("extended", "1");
+  } else if (fulfillResult.kind === "credits" || order?.order_type === "credits") {
+    params.set("kind", "credits");
+    const credits = fulfillResult.credits ?? order?.credit_amount;
+    if (credits != null) params.set("credits", String(credits));
+  }
+
+  return params.toString();
 }

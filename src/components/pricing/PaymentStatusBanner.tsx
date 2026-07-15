@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { trackEvent } from "@/lib/analytics";
+import { parseMoneyValue, trackEvent, trackPurchase } from "@/lib/analytics";
 
 type Banner = {
   tone: "ok" | "warn" | "danger" | "info";
@@ -33,22 +33,49 @@ export function PaymentStatusBanner() {
       });
       trackEvent("checkout_error", { reason: "failed" });
     } else if (payment === "error") {
+      const reason = params.get("reason");
       setBanner({
         tone: "danger",
         title: "Something went wrong",
-        body: "We could not finish activating your purchase. If PayPal charged you, open Account in a few minutes or contact support with your receipt.",
+        body:
+          reason === "amount"
+            ? "PayPal amount did not match the order. No plan/credits were applied. Contact support with your PayPal receipt if you were charged."
+            : "We could not finish activating your purchase. If PayPal charged you, open Account in a few minutes or contact support with your receipt.",
       });
-      trackEvent("checkout_error", { reason: "error" });
+      trackEvent("checkout_error", { reason: reason || "error" });
     } else if (payment === "success") {
       setBanner({
         tone: "ok",
         title: "Payment successful",
         body: "Prepaid access or credits should now be active. Open your account to confirm limits and expiry.",
       });
-      trackEvent("purchase", { status: "success", source: "pricing" });
+      trackPurchase({
+        status: "success",
+        source: "pricing",
+        productId: params.get("product"),
+        value: parseMoneyValue(params.get("amount")),
+        orderId: params.get("order"),
+        kind: params.get("kind"),
+        plan: params.get("plan"),
+        credits: params.get("credits") ? Number(params.get("credits")) : null,
+        extended: params.get("extended") === "1",
+      });
     }
 
-    params.delete("payment");
+    for (const key of [
+      "payment",
+      "reason",
+      "kind",
+      "plan",
+      "credits",
+      "product",
+      "amount",
+      "order",
+      "extended",
+      "expires",
+    ]) {
+      params.delete(key);
+    }
     const next = window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
     window.history.replaceState({}, "", next);
   }, []);

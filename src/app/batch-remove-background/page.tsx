@@ -56,7 +56,10 @@ export default function BatchRemoveBackgroundPage() {
         title="Batch remove backgrounds from product photos"
         description="Upload a whole folder of listings — process up to 20 images in one queue, preview each result, then download a ZIP of transparent PNGs or Amazon-ready white JPGs."
         primaryCta={{ href: "/#tool", label: "Start batch remove free →" }}
-        secondaryCta={{ href: "/white-background/", label: "White background export" }}
+        secondaryCta={{
+          href: "/?export=white&size=2000#tool",
+          label: "White background export",
+        }}
         steps={[
           {
             title: "Select or drop many files",

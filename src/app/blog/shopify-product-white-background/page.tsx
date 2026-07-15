@@ -65,7 +65,10 @@ export default function ShopifyWhiteBackgroundPost() {
         </li>
         <li>
           <strong>Remove the background</strong> — upload to{" "}
-          <Link href="/#tool" className="text-emerald-700 underline underline-offset-4">
+          <Link
+            href="/?export=white&size=2000#tool"
+            className="text-emerald-700 underline underline-offset-4"
+          >
             BGRemover
           </Link>
           . Use the before/after slider to check straps, logos, and reflections.

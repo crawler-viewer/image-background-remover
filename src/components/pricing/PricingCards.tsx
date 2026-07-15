@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { pricingPlans, type BillingCycle } from "@/lib/pricing";
+import { parseBuyProductId } from "@/lib/checkout";
+import { trackViewPricing } from "@/lib/analytics";
 import { PricingCard } from "./PricingCard";
 
 type UserInfo = {
@@ -9,10 +11,41 @@ type UserInfo = {
   status: string;
 } | null;
 
+function billingCycleForProduct(productId: string | null): BillingCycle | null {
+  if (!productId) return null;
+  if (productId.endsWith("_yearly")) return "yearly";
+  if (productId.endsWith("_monthly")) return "monthly";
+  return null;
+}
+
+function planCodeForProduct(productId: string | null): string | null {
+  if (!productId) return null;
+  if (productId.startsWith("pro_")) return "pro";
+  if (productId.startsWith("business_")) return "business";
+  return null;
+}
+
 export function PricingCards() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [userInfo, setUserInfo] = useState<UserInfo>(null);
   const [loading, setLoading] = useState(true);
+  const [autoBuyProduct, setAutoBuyProduct] = useState<string | null>(null);
+  const [autoBuyConsumed, setAutoBuyConsumed] = useState(false);
+
+  useEffect(() => {
+    trackViewPricing("pricing_page");
+    const params = new URLSearchParams(window.location.search);
+    const buy = parseBuyProductId(params.get("buy"));
+    if (buy) {
+      const cycle = billingCycleForProduct(buy);
+      if (cycle) setBillingCycle(cycle);
+      setAutoBuyProduct(buy);
+      // Clean URL so refresh does not re-trigger checkout
+      params.delete("buy");
+      const next = window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
+      window.history.replaceState({}, "", next);
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -37,12 +70,21 @@ export function PricingCards() {
     };
   }, []);
 
+  const autoBuyPlanCode = useMemo(
+    () => planCodeForProduct(autoBuyProduct),
+    [autoBuyProduct]
+  );
+
+  // Wait until we know login state before auto-starting (avoids 401 race)
+  const canAutoBuy = !loading && !!autoBuyProduct && !autoBuyConsumed;
+
   return (
-    <section className="px-4 py-16">
+    <section className="px-4 py-16" id="upgrade">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex justify-center">
           <div className="inline-flex rounded-full border border-black/10 bg-white p-1 shadow-sm">
             <button
+              type="button"
               className={`rounded-full px-4 py-2 text-sm transition-colors ${
                 billingCycle === "monthly"
                   ? "bg-emerald-600 text-white"
@@ -53,6 +95,7 @@ export function PricingCards() {
               Monthly
             </button>
             <button
+              type="button"
               className={`rounded-full px-4 py-2 text-sm transition-colors ${
                 billingCycle === "yearly"
                   ? "bg-emerald-600 text-white"
@@ -65,6 +108,12 @@ export function PricingCards() {
           </div>
         </div>
 
+        {canAutoBuy && (
+          <p className="mb-6 text-center text-sm text-neutral-600">
+            Signed in — resuming checkout for your selected plan…
+          </p>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-4">
           {pricingPlans.map((plan) => (
             <PricingCard
@@ -73,6 +122,8 @@ export function PricingCards() {
               billingCycle={billingCycle}
               currentPlan={userInfo?.plan}
               userStatus={userInfo?.status}
+              autoBuy={canAutoBuy && plan.code === autoBuyPlanCode}
+              onAutoBuyHandled={() => setAutoBuyConsumed(true)}
             />
           ))}
         </div>
@@ -81,7 +132,8 @@ export function PricingCards() {
           <p className="text-sm text-neutral-500">
             Paid plans are{" "}
             <strong className="font-medium text-neutral-700">one-time prepaid periods</strong> via
-            PayPal — not auto-renewing subscriptions.
+            PayPal — not auto-renewing subscriptions. Renewing the same plan extends your current
+            expiry.
           </p>
           <p className="text-sm text-neutral-500">
             Need extra removals without a plan?{" "}

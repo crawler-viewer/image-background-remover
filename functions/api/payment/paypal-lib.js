@@ -2,6 +2,11 @@
 // One-time Checkout (CAPTURE) used for prepaid plan periods + credit packs.
 // This is NOT PayPal Subscriptions auto-renewal.
 
+// Single source of truth shared with the Next.js frontend (src/lib/products.ts).
+import PRODUCTS_RAW from "../../../shared/products.js";
+
+export const PRODUCTS = PRODUCTS_RAW;
+
 export function getPayPalConfig(env) {
   const clientId = env.PAYPAL_CLIENT_ID;
   const clientSecret = env.PAYPAL_CLIENT_SECRET;
@@ -130,68 +135,53 @@ export async function capturePayPalOrder(env, orderId) {
   return await res.json();
 }
 
-// Product definitions — prepaid plan access + credit packs
-export const PRODUCTS = {
-  pro_monthly: {
-    type: "subscription",
-    planCode: "pro",
-    amount: "9.90",
-    period: "monthly",
-    label: "Pro — 1 month prepaid",
-  },
-  pro_yearly: {
-    type: "subscription",
-    planCode: "pro",
-    amount: "99.00",
-    period: "yearly",
-    label: "Pro — 1 year prepaid",
-  },
-  business_monthly: {
-    type: "subscription",
-    planCode: "business",
-    amount: "29.90",
-    period: "monthly",
-    label: "Business — 1 month prepaid",
-  },
-  business_yearly: {
-    type: "subscription",
-    planCode: "business",
-    amount: "299.00",
-    period: "yearly",
-    label: "Business — 1 year prepaid",
-  },
-  credits_20: {
-    type: "credits",
-    credits: 20,
-    amount: "2.90",
-    label: "20 Credits",
-  },
-  credits_100: {
-    type: "credits",
-    credits: 100,
-    amount: "9.90",
-    label: "100 Credits",
-  },
-  credits_300: {
-    type: "credits",
-    credits: 300,
-    amount: "24.90",
-    label: "300 Credits",
-  },
-  credits_800: {
-    type: "credits",
-    credits: 800,
-    amount: "49.90",
-    label: "800 Credits",
-  },
-};
+/**
+ * Compute prepaid plan end date.
+ * @param {{ period?: string }} product
+ * @param {Date|string|number} [fromDate] - base date to extend from (default: now).
+ *   Pass the current plan_expires_at when renewing the same plan so remaining time is kept.
+ */
+export function calcPlanExpiry(product, fromDate = new Date()) {
+  const base =
+    fromDate instanceof Date
+      ? new Date(fromDate.getTime())
+      : new Date(fromDate || Date.now());
 
-export function calcPlanExpiry(product) {
-  const now = new Date();
-  if (product?.period === "yearly") {
-    now.setFullYear(now.getFullYear() + 1);
-  } else {
-    now.setMonth(now.getMonth() + 1);
+  if (Number.isNaN(base.getTime())) {
+    const fallback = new Date();
+    if (product?.period === "yearly") {
+      fallback.setFullYear(fallback.getFullYear() + 1);
+    } else {
+      fallback.setMonth(fallback.getMonth() + 1);
+    }
+    return fallback.toISOString();
   }
-  return now.toISOString();
+
+  if (product?.period === "yearly") {
+    base.setFullYear(base.getFullYear() + 1);
+  } else {
+    base.setMonth(base.getMonth() + 1);
+  }
+  return base.toISOString();
+}
+
+/**
+ * Extract captured amount (USD string) from a PayPal capture/order response.
+ */
+export function extractCapturedAmount(capture) {
+  if (!capture || typeof capture !== "object") return null;
+  const unit = capture.purchase_units?.[0];
+  const captureRow = unit?.payments?.captures?.[0];
+  const value = captureRow?.amount?.value || unit?.amount?.value || null;
+  if (value == null) return null;
+  return String(value);
+}
+
+/** Compare money amounts as fixed 2-decimal strings. */
+export function amountsEqual(a, b) {
+  if (a == null || b == null) return false;
+  const na = Number(a);
+  const nb = Number(b);
+  if (!Number.isFinite(na) || !Number.isFinite(nb)) return false;
+  return na.toFixed(2) === nb.toFixed(2);
 }

@@ -1,9 +1,11 @@
 import {
+  clearReturnHeader,
   clearStateHeader,
   createSessionCookie,
   ensureEnv,
   exchangeCode,
   fetchGoogleProfile,
+  readReturnPath,
   readState,
 } from "../_lib";
 import { upsertUser } from "../db";
@@ -19,13 +21,12 @@ export async function onRequestGet(context) {
     const savedState = readState(request);
 
     if (!code || !state || !savedState || state !== savedState) {
-      return new Response(null, {
-        status: 302,
-        headers: {
-          Location: "/?auth_error=state",
-          "Set-Cookie": clearStateHeader(),
-        },
+      const headers = new Headers({
+        Location: "/?auth_error=state",
       });
+      headers.append("Set-Cookie", clearStateHeader());
+      headers.append("Set-Cookie", clearReturnHeader());
+      return new Response(null, { status: 302, headers });
     }
 
     const tokenData = await exchangeCode(request, env, code);
@@ -37,18 +38,18 @@ export async function onRequestGet(context) {
       console.error("Failed to persist Google user in D1:", dbError);
     }
 
-    const headers = new Headers({ Location: "/account" });
+    // Resume checkout / original page when login was started with ?return=
+    const returnPath = readReturnPath(request) || "/account/";
+    const headers = new Headers({ Location: returnPath });
     headers.append("Set-Cookie", clearStateHeader());
+    headers.append("Set-Cookie", clearReturnHeader());
     headers.append("Set-Cookie", await createSessionCookie(env, profile));
     return new Response(null, { status: 302, headers });
   } catch (error) {
     console.error(error);
-    return new Response(null, {
-      status: 302,
-      headers: {
-        Location: "/?auth_error=google",
-        "Set-Cookie": clearStateHeader(),
-      },
-    });
+    const headers = new Headers({ Location: "/?auth_error=google" });
+    headers.append("Set-Cookie", clearStateHeader());
+    headers.append("Set-Cookie", clearReturnHeader());
+    return new Response(null, { status: 302, headers });
   }
 }

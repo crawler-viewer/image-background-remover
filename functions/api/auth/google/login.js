@@ -1,4 +1,10 @@
-import { buildGoogleAuthUrl, createStateHeader, ensureEnv } from "../_lib";
+import {
+  buildGoogleAuthUrl,
+  createReturnHeader,
+  createStateHeader,
+  ensureEnv,
+  sanitizeReturnPath,
+} from "../_lib";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -6,14 +12,23 @@ export async function onRequestGet(context) {
   try {
     ensureEnv(env);
     const { state, url } = await buildGoogleAuthUrl(request, env);
-    return new Response(null, {
-      status: 302,
-      headers: {
-        Location: url,
-        "Set-Cookie": createStateHeader(state),
-        "Cache-Control": "no-store",
-      },
+    const reqUrl = new URL(request.url);
+    const returnPath = sanitizeReturnPath(
+      reqUrl.searchParams.get("return") || reqUrl.searchParams.get("next")
+    );
+
+    const headers = new Headers({
+      Location: url,
+      "Cache-Control": "no-store",
     });
+    // Multiple Set-Cookie: Headers.append is required
+    headers.append("Set-Cookie", createStateHeader(state));
+    if (returnPath) {
+      const returnCookie = createReturnHeader(returnPath);
+      if (returnCookie) headers.append("Set-Cookie", returnCookie);
+    }
+
+    return new Response(null, { status: 302, headers });
   } catch (error) {
     console.error(error);
     return new Response(null, {

@@ -9,6 +9,7 @@ import {
   type ZipEntry,
 } from "@/lib/zip-download";
 import { createThumbnailUrl } from "@/lib/image-thumb";
+import LimitUpsell from "@/components/LimitUpsell";
 
 type Stage = "idle" | "processing" | "done" | "error";
 type ItemStatus = "queued" | "processing" | "done" | "error" | "skipped";
@@ -170,6 +171,33 @@ function statusLabel(status: ItemStatus): string {
   }
 }
 
+function parseCanvasSizeParam(raw: string | null): CanvasSize | null {
+  if (!raw) return null;
+  const v = raw.trim().toLowerCase();
+  if (v === "original" || v === "orig") return "original";
+  if (v === "1000" || v === "1000x1000") return "1000";
+  if (v === "1600" || v === "1600x1600") return "1600";
+  if (v === "2000" || v === "2000x2000") return "2000";
+  return null;
+}
+
+/** Human ETA from remaining jobs × average seconds per job. */
+function formatEta(remainingJobs: number, avgSec: number, currentElapsed = 0): string {
+  if (remainingJobs <= 0) return "";
+  const secPer = avgSec > 0 ? avgSec : 8;
+  // Current job: remaining portion of avg (floor at 0)
+  const currentLeft = Math.max(0, secPer - currentElapsed);
+  const queuedLeft = Math.max(0, remainingJobs - 1) * secPer;
+  const total = Math.round(currentLeft + queuedLeft);
+  if (total < 5) return "a few seconds";
+  if (total < 60) return `~${total}s left`;
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  if (mins < 3 && secs > 0) return `~${mins}m ${secs}s left`;
+  if (secs < 15) return `~${mins} min left`;
+  return `~${mins + 1} min left`;
+}
+
 export default function BgRemover() {
   const [stage, setStage] = useState<Stage>("idle");
   const [items, setItems] = useState<BatchItem[]>([]);
@@ -189,10 +217,15 @@ export default function BgRemover() {
   const [showBatchMenu, setShowBatchMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [zipProgress, setZipProgress] = useState<ZipProgress>(null);
+  /** Prefer Amazon-ready white JPG when opened via ?export=white deep link */
+  const [preferWhiteExport, setPreferWhiteExport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortRef = useRef(false);
+  /** Rolling average seconds per successful removal (for batch ETA). */
+  const avgSecRef = useRef(8);
+  const completedSecSamples = useRef<number[]>([]);
 
   const activeItem = items.find((i) => i.id === activeId) || null;
   const doneCount = items.filter((i) => i.status === "done").length;
@@ -201,6 +234,13 @@ export default function BgRemover() {
     (i) => (i.status === "error" || i.status === "skipped") && !i.resultUrl
   ).length;
   const isBatch = items.length > 1;
+  const remainingJobs = items.filter(
+    (i) => i.status === "queued" || i.status === "processing"
+  ).length;
+  const batchEta =
+    stage === "processing" && remainingJobs > 0
+      ? formatEta(remainingJobs, avgSecRef.current, processingTime)
+      : "";
 
   const fetchQuota = useCallback(async () => {
     try {
@@ -219,6 +259,43 @@ export default function BgRemover() {
   useEffect(() => {
     fetchQuota();
   }, [fetchQuota]);
+
+  // Deep-link: /#tool?export=white&size=2000 (also supports query on pathname)
+  useEffect(() => {
+    try {
+      const hash = window.location.hash || "";
+      const hashQuery = hash.includes("?") ? hash.slice(hash.indexOf("?") + 1) : "";
+      const search = window.location.search.startsWith("?")
+        ? window.location.search.slice(1)
+        : window.location.search;
+      const params = new URLSearchParams(hashQuery || search);
+      const exportMode = (params.get("export") || params.get("bg") || "").toLowerCase();
+      const sizeParam = parseCanvasSizeParam(params.get("size") || params.get("canvas"));
+
+      if (exportMode === "white" || exportMode === "amazon" || exportMode === "jpg") {
+        setPreferWhiteExport(true);
+        setBgColor("#FFFFFF");
+        setCanvasSize(sizeParam || "2000");
+        setShowExportMenu(true);
+      } else if (exportMode === "black") {
+        setPreferWhiteExport(false);
+        setBgColor("#000000");
+        if (sizeParam) setCanvasSize(sizeParam);
+        setShowExportMenu(true);
+      } else if (sizeParam) {
+        setCanvasSize(sizeParam);
+      }
+
+      // Scroll tool into view when #tool is present
+      if (hash.startsWith("#tool") || params.get("focus") === "tool") {
+        requestAnimationFrame(() => {
+          document.getElementById("tool")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
+    } catch {
+      // ignore malformed URLs
+    }
+  }, []);
 
   const revokeAll = useCallback((list: BatchItem[]) => {
     for (const item of list) {
@@ -479,6 +556,15 @@ export default function BgRemover() {
         if (result.ok) {
           const doneResult = result;
           success += 1;
+          // Update rolling average for ETA
+          completedSecSamples.current.push(doneResult.processingSec);
+          if (completedSecSamples.current.length > 12) {
+            completedSecSamples.current.shift();
+          }
+          const samples = completedSecSamples.current;
+          avgSecRef.current =
+            samples.reduce((a, b) => a + b, 0) / Math.max(1, samples.length);
+
           // Refresh strip thumb from result (small) so queue doesn't hold huge bitmaps
           let nextThumb = item.thumbUrl;
           try {
@@ -721,7 +807,8 @@ export default function BgRemover() {
 
   const handleDownloadSolidJpeg = async (
     color = bgColor,
-    size: CanvasSize = canvasSize
+    size: CanvasSize = canvasSize,
+    eventLabel?: string
   ) => {
     if (!activeItem?.resultUrl) return;
     setExportingSolid(true);
@@ -738,18 +825,31 @@ export default function BgRemover() {
         `${baseName(activeItem.file)}-${cSlug}-${sizeSlug(size)}.jpg`
       );
       trackEvent("download", {
-        format: "solid_jpeg",
+        format: eventLabel || "solid_jpeg",
         color: cSlug,
         canvas: size,
         plan: quota?.plan || "unknown",
         batch: isBatch,
       });
+      if (color.toUpperCase() === "#FFFFFF") {
+        trackEvent("export_white_jpg", {
+          canvas: size,
+          plan: quota?.plan || "unknown",
+          source: eventLabel || "manual",
+        });
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to export solid background.");
       trackEvent("remove_error", { reason: "solid_export" });
     } finally {
       setExportingSolid(false);
     }
+  };
+
+  /** One-click Amazon-style pure white square JPG (default 2000²). */
+  const handleDownloadAmazonWhite = async () => {
+    const size: CanvasSize = canvasSize === "original" ? "2000" : canvasSize;
+    await handleDownloadSolidJpeg("#FFFFFF", size, "amazon_white");
   };
 
   const handleCopyPng = async () => {
@@ -841,11 +941,69 @@ export default function BgRemover() {
     }
   };
 
+  /**
+   * Batch ZIP of marketplace white JPGs.
+   * Default: pure white + 2000² (Amazon-ready). If user picked 1000/1600/2000 in
+   * export options, honor that size; "original" still upgrades to 2000 for ZIP.
+   */
   const handleDownloadAllWhite = async () => {
     const done = items.filter((i) => i.status === "done" && i.resultUrl);
     if (done.length === 0) return;
+    const zipColor = "#FFFFFF";
+    const zipSize: CanvasSize = canvasSize === "original" ? "2000" : canvasSize;
     setBatchDownloading(true);
-    setZipProgress({ label: "Exporting white JPG", current: 0, total: done.length });
+    setZipProgress({
+      label: `White JPG ${zipSize}²`,
+      current: 0,
+      total: done.length,
+    });
+    try {
+      const entries: ZipEntry[] = [];
+      for (let i = 0; i < done.length; i++) {
+        const item = done[i];
+        setZipProgress({
+          label: `White JPG ${zipSize}²`,
+          current: i + 1,
+          total: done.length,
+        });
+        const blob = await exportSolidBackgroundJpeg(item.resultUrl!, zipColor, zipSize);
+        entries.push({
+          name: `${baseName(item.file)}-white-${sizeSlug(zipSize)}.jpg`,
+          data: await blobToUint8Array(blob),
+        });
+        await sleep(0);
+      }
+      setZipProgress({ label: "Creating ZIP", current: done.length, total: done.length });
+      await sleep(0);
+      const zip = createZipBlob(entries);
+      downloadZipBlob(zip, `bg-removed-white-${sizeSlug(zipSize)}-${done.length}.zip`);
+      trackEvent("batch_download", {
+        format: "white_jpeg_zip",
+        color: "white",
+        canvas: zipSize,
+        count: done.length,
+        plan: quota?.plan || "unknown",
+      });
+      trackEvent("export_white_jpg", {
+        canvas: zipSize,
+        plan: quota?.plan || "unknown",
+        source: "batch_zip",
+        count: done.length,
+      });
+    } catch {
+      setError("Failed to build white JPG zip. Try one image at a time.");
+    } finally {
+      setBatchDownloading(false);
+      setZipProgress(null);
+    }
+  };
+
+  /** ZIP using current solid color + canvas from export options (advanced). */
+  const handleDownloadAllCustomSolid = async () => {
+    const done = items.filter((i) => i.status === "done" && i.resultUrl);
+    if (done.length === 0) return;
+    setBatchDownloading(true);
+    setZipProgress({ label: "Exporting solid JPG", current: 0, total: done.length });
     try {
       const entries: ZipEntry[] = [];
       for (let i = 0; i < done.length; i++) {
@@ -855,11 +1013,7 @@ export default function BgRemover() {
           current: i + 1,
           total: done.length,
         });
-        const blob = await exportSolidBackgroundJpeg(
-          item.resultUrl!,
-          bgColor,
-          canvasSize
-        );
+        const blob = await exportSolidBackgroundJpeg(item.resultUrl!, bgColor, canvasSize);
         const slug =
           bgColor.toUpperCase() === "#FFFFFF"
             ? "white"
@@ -945,12 +1099,19 @@ export default function BgRemover() {
             ? "Business"
             : "—";
 
-  const showQuotaBar = stage === "idle" || stage === "error";
+  const showQuotaBar = stage === "idle" || stage === "error" || stage === "done" || stage === "processing";
   const showUpload = stage === "idle" || (stage === "error" && items.length === 0);
   const showQueue = items.length > 0 && (stage === "processing" || stage === "done" || (stage === "error" && items.length > 0));
+  const creditBalance = Number(quota?.credits || 0);
+  const monthlyRemaining = quota?.remaining ?? 0;
+  const totalAvailable =
+    monthlyRemaining + (quota?.loggedIn ? creditBalance : 0);
+  const usingCreditsNext =
+    !!quota?.loggedIn && monthlyRemaining <= 0 && creditBalance > 0;
+
   return (
     <div className="mx-auto w-full max-w-3xl text-neutral-950">
-      {/* Quota Status Bar */}
+      {/* Quota Status Bar — always visible during tool use */}
       {showQuotaBar && (
         <div className="mb-4 rounded-xl border border-black/8 bg-stone-50 px-4 py-3">
           {quota ? (
@@ -961,18 +1122,46 @@ export default function BgRemover() {
                     {planLabel}
                   </span>
                   <span className="text-neutral-600">
-                    {quota.remaining}/{quota.limit} left this month
-                    {quota.credits ? ` · ${quota.credits} credits` : ""}
+                    <span className="font-medium text-neutral-800">
+                      {monthlyRemaining}
+                    </span>
+                    /{quota.limit} plan left
+                    {quota.loggedIn ? (
+                      <>
+                        {" · "}
+                        <span className="font-medium text-neutral-800">{creditBalance}</span>{" "}
+                        credits
+                      </>
+                    ) : null}
                   </span>
+                  {usingCreditsNext && (
+                    <span className="inline-flex rounded-full border border-amber-300/60 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-900">
+                      Next removal uses 1 credit
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   {!quota.loggedIn && (
                     <a
-                      href="/api/auth/google/login"
+                      href="/api/auth/google/login?return=%2F%23tool"
                       onClick={() => trackEvent("login_click", { source: "quota_bar" })}
                       className="text-xs font-medium text-emerald-700 transition-colors hover:text-emerald-800"
                     >
                       Sign in for 20/mo
+                    </a>
+                  )}
+                  {quota.loggedIn && totalAvailable <= 3 && (
+                    <a
+                      href="/credits/"
+                      onClick={() =>
+                        trackEvent("upgrade_click", {
+                          source: "quota_bar_credits",
+                          plan: quota.plan,
+                        })
+                      }
+                      className="text-xs font-medium text-emerald-700 transition-colors hover:text-emerald-800"
+                    >
+                      Buy credits
                     </a>
                   )}
                   {quota.loggedIn && quota.plan !== "pro" && quota.plan !== "business" && (
@@ -991,14 +1180,14 @@ export default function BgRemover() {
               <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-200">
                 <div
                   className={`h-full transition-all duration-300 ${
-                    quota.used / quota.limit >= 0.9
+                    quota.used / Math.max(1, quota.limit) >= 0.9
                       ? "bg-red-500"
-                      : quota.used / quota.limit >= 0.6
+                      : quota.used / Math.max(1, quota.limit) >= 0.6
                         ? "bg-amber-500"
                         : "bg-emerald-500"
                   }`}
                   style={{
-                    width: `${Math.max(0, Math.min(100, (quota.used / quota.limit) * 100))}%`,
+                    width: `${Math.max(0, Math.min(100, (quota.used / Math.max(1, quota.limit)) * 100))}%`,
                   }}
                 />
               </div>
@@ -1084,40 +1273,12 @@ export default function BgRemover() {
           )}
 
           {stage === "error" && limitError && (
-            <div
-              className="mt-5 w-full max-w-md rounded-xl border border-amber-200 bg-amber-50 p-4 text-left"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <p className="text-sm font-medium text-amber-900">{limitError.message}</p>
-              <p className="mt-1 text-xs text-amber-800/80">
-                Limits reset on the 1st of each month (UTC).
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {!limitError.loggedIn && (
-                  <a
-                    href="/api/auth/google/login"
-                    onClick={() => trackEvent("login_click", { source: "limit_cta" })}
-                    className="inline-flex rounded-lg bg-neutral-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
-                  >
-                    Sign in for 20/mo free
-                  </a>
-                )}
-                <a
-                  href="/credits/"
-                  onClick={() => trackEvent("upgrade_click", { source: "limit_cta_credits" })}
-                  className="inline-flex rounded-lg border border-black/10 bg-white px-4 py-2 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100"
-                >
-                  Buy credits
-                </a>
-                <a
-                  href="/pricing/"
-                  onClick={() => trackEvent("upgrade_click", { source: "limit_cta_pricing" })}
-                  className="inline-flex rounded-lg border border-black/10 bg-white px-4 py-2 text-sm font-medium text-neutral-800 transition-colors hover:bg-stone-100"
-                >
-                  View plans
-                </a>
-              </div>
-            </div>
+            <LimitUpsell
+              className="mt-5 w-full max-w-md"
+              message={limitError.message}
+              loggedIn={limitError.loggedIn}
+              source="limit_cta_upload"
+            />
           )}
         </div>
       )}
@@ -1136,7 +1297,16 @@ export default function BgRemover() {
                     </span>{" "}
                     of <span className="font-semibold text-neutral-950">{items.length}</span>
                     {processingTime > 0 && (
-                      <span className="text-neutral-500"> · {processingTime}s</span>
+                      <span className="text-neutral-500"> · {processingTime}s this image</span>
+                    )}
+                    {batchEta && (
+                      <span className="text-neutral-500"> · {batchEta}</span>
+                    )}
+                    {doneCount > 0 && (
+                      <span className="text-neutral-500">
+                        {" "}
+                        · avg {Math.round(avgSecRef.current)}s/image
+                      </span>
                     )}
                   </>
                 ) : (
@@ -1155,7 +1325,9 @@ export default function BgRemover() {
               </div>
               {quota && (
                 <span className="text-xs text-neutral-500">
-                  {quota.remaining}/{quota.limit} left
+                  {quota.remaining}/{quota.limit} plan
+                  {quota.loggedIn ? ` · ${Number(quota.credits || 0)} credits` : ""}
+                  {usingCreditsNext ? " · next: 1 credit" : ""}
                 </span>
               )}
             </div>
@@ -1235,10 +1407,15 @@ export default function BgRemover() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-neutral-900">Removing background…</p>
-                      <p className="mt-1 max-w-[220px] truncate text-xs text-neutral-500">
+                      <p className="mt-1 max-w-[240px] truncate text-xs text-neutral-500">
                         {activeItem.file.name}
                         {processingTime > 0 && ` · ${processingTime}s`}
                       </p>
+                      {isBatch && batchEta && (
+                        <p className="mt-1 text-xs font-medium text-emerald-700">
+                          {doneCount}/{items.length} done · {batchEta}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1330,30 +1507,62 @@ export default function BgRemover() {
                 {activeItem.processingSec ? ` · ${activeItem.processingSec}s` : ""}
               </p>
 
-              {/* Primary actions */}
-              <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+              {/* Primary download CTAs — transparent PNG + marketplace white JPG */}
+              <div className="mx-auto grid w-full max-w-lg gap-3 sm:grid-cols-2">
                 <button
+                  type="button"
                   onClick={handleDownloadPng}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 sm:px-6"
+                  className={`inline-flex flex-col items-center justify-center rounded-2xl px-4 py-3.5 text-center transition-all ${
+                    preferWhiteExport
+                      ? "border border-black/10 bg-white text-neutral-900 hover:bg-stone-50"
+                      : "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+                  }`}
                 >
-                  Download PNG
+                  <span className="text-sm font-semibold">Transparent PNG</span>
+                  <span
+                    className={`mt-0.5 text-[11px] ${
+                      preferWhiteExport ? "text-neutral-500" : "text-emerald-100"
+                    }`}
+                  >
+                    Keep alpha · logos & overlays
+                  </span>
                 </button>
                 <button
-                  onClick={() => handleDownloadSolidJpeg("#FFFFFF")}
+                  type="button"
+                  onClick={() => void handleDownloadAmazonWhite()}
                   disabled={exportingSolid}
-                  className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 transition-all hover:bg-stone-50 disabled:opacity-70 sm:px-6"
+                  className={`inline-flex flex-col items-center justify-center rounded-2xl px-4 py-3.5 text-center transition-all disabled:opacity-70 ${
+                    preferWhiteExport
+                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+                      : "border border-black/10 bg-white text-neutral-900 hover:bg-stone-50"
+                  }`}
                 >
-                  {exportingSolid ? "Exporting…" : "White JPG"}
+                  <span className="text-sm font-semibold">
+                    {exportingSolid ? "Exporting…" : "White background JPG"}
+                  </span>
+                  <span
+                    className={`mt-0.5 text-[11px] ${
+                      preferWhiteExport ? "text-emerald-100" : "text-neutral-500"
+                    }`}
+                  >
+                    Amazon-ready ·{" "}
+                    {canvasSize === "original" ? "2000²" : `${canvasSize}²`} pure white
+                  </span>
                 </button>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-2">
                 <button
+                  type="button"
                   onClick={handleCopyPng}
-                  className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 transition-all hover:bg-stone-50 sm:px-6"
+                  className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-medium text-neutral-800 transition-all hover:bg-stone-50"
                 >
                   {copyState === "ok" ? "Copied!" : copyState === "err" ? "Copy failed" : "Copy PNG"}
                 </button>
                 <button
+                  type="button"
                   onClick={reset}
-                  className="inline-flex rounded-xl border border-black/10 bg-stone-50 px-5 py-3 text-sm font-semibold text-neutral-700 transition-all hover:bg-stone-100 sm:px-6"
+                  className="inline-flex rounded-xl border border-black/10 bg-stone-50 px-4 py-2 text-sm font-medium text-neutral-700 transition-all hover:bg-stone-100"
                 >
                   New images
                 </button>
@@ -1368,7 +1577,7 @@ export default function BgRemover() {
                 >
                   {showExportMenu
                     ? "Hide export options"
-                    : "More backgrounds & canvas size ▾"}
+                    : "More colors & canvas sizes ▾"}
                 </button>
               </div>
               {showExportMenu && (
@@ -1493,30 +1702,46 @@ export default function BgRemover() {
                     <div className="flex w-full flex-col items-center gap-2 pt-1">
                       <div className="flex flex-wrap justify-center gap-2">
                         <button
+                          type="button"
                           onClick={handleDownloadAllPng}
                           disabled={batchDownloading}
                           className="rounded-lg border border-black/10 bg-white px-4 py-2 text-xs font-medium text-neutral-800 hover:bg-stone-50 disabled:opacity-60"
                         >
                           {batchDownloading && zipProgress?.label.includes("PNG")
                             ? "Building…"
-                            : "ZIP all PNG"}
+                            : "ZIP transparent PNG"}
                         </button>
                         <button
-                          onClick={handleDownloadAllWhite}
+                          type="button"
+                          onClick={() => void handleDownloadAllWhite()}
                           disabled={batchDownloading}
-                          className="rounded-lg border border-black/10 bg-white px-4 py-2 text-xs font-medium text-neutral-800 hover:bg-stone-50 disabled:opacity-60"
+                          className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
                         >
-                          {batchDownloading && zipProgress?.label.includes("solid")
+                          {batchDownloading && zipProgress?.label.includes("White JPG")
                             ? "Building…"
-                            : "ZIP solid JPG"}
+                            : `ZIP white JPG ${canvasSize === "original" ? "2000" : canvasSize}²`}
                         </button>
                       </div>
-                      {showBatchMenu && (
-                        <p className="text-center text-[11px] text-neutral-500">
-                          Solid ZIP uses current color + canvas size from export options
-                          (default white / original).
-                        </p>
+                      {(bgColor.toUpperCase() !== "#FFFFFF" || canvasSize === "original") && (
+                        <button
+                          type="button"
+                          onClick={() => void handleDownloadAllCustomSolid()}
+                          disabled={batchDownloading}
+                          className="text-[11px] font-medium text-neutral-500 underline-offset-2 hover:text-neutral-800 hover:underline disabled:opacity-60"
+                        >
+                          Or ZIP current solid options (
+                          {bgColor.toUpperCase() === "#FFFFFF"
+                            ? "white"
+                            : bgColor.toUpperCase() === "#000000"
+                              ? "black"
+                              : bgColor}
+                          /{canvasSize})
+                        </button>
                       )}
+                      <p className="text-center text-[11px] text-neutral-500">
+                        White ZIP = pure RGB 255 + square canvas (default 2000² for Amazon). Change
+                        size under export options to use 1000/1600 instead.
+                      </p>
                       {zipProgress && (
                         <div className="w-full max-w-xs">
                           <div className="mb-1 flex justify-between text-[11px] text-neutral-500">
@@ -1546,48 +1771,34 @@ export default function BgRemover() {
               )}
 
               <p className="text-center text-xs text-neutral-500">
-                Transparent PNG · solid JPG · square canvas 1000/1600/2000 · copy
+                Transparent PNG · pure white JPG (RGB 255) · canvas 1000/1600/2000
                 {isBatch ? " · Tap thumbnails to switch" : ""}
               </p>
 
               {limitError && (
-                <div className="mx-auto max-w-md rounded-xl border border-amber-200 bg-amber-50 p-4 text-left">
-                  <p className="text-sm font-medium text-amber-900">{limitError.message}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {!limitError.loggedIn && (
-                      <a
-                        href="/api/auth/google/login"
-                        className="inline-flex rounded-lg bg-neutral-950 px-3 py-1.5 text-xs font-medium text-white"
-                      >
-                        Sign in
-                      </a>
-                    )}
-                    <a
-                      href="/credits/"
-                      className="inline-flex rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs text-neutral-800"
-                    >
-                      Buy credits
-                    </a>
-                    <a
-                      href="/pricing/"
-                      className="inline-flex rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs text-neutral-800"
-                    >
-                      View plans
-                    </a>
-                  </div>
-                </div>
+                <LimitUpsell
+                  className="mx-auto max-w-md"
+                  message={limitError.message}
+                  loggedIn={limitError.loggedIn}
+                  source="limit_cta_result"
+                  compact
+                />
               )}
 
-              {quota && (
+              {quota && !limitError && (
                 <div className="text-center text-sm text-neutral-500">
                   <span>
-                    {quota.remaining}/{quota.limit} removals left this month
+                    {quota.remaining}/{quota.limit} plan left
+                    {quota.loggedIn ? ` · ${Number(quota.credits || 0)} credits` : ""}
                   </span>
+                  {usingCreditsNext && (
+                    <span className="text-amber-800"> · next uses 1 credit</span>
+                  )}
                   {!quota.loggedIn && (
                     <span>
                       {" · "}
                       <a
-                        href="/api/auth/google/login"
+                        href="/api/auth/google/login?return=%2F%23tool"
                         onClick={() => trackEvent("login_click", { source: "result_hint" })}
                         className="font-medium text-emerald-700 hover:text-emerald-800"
                       >
@@ -1636,26 +1847,16 @@ export default function BgRemover() {
 
           {stage === "error" && items.length > 0 && doneCount === 0 && (
             <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
-              <p className="text-sm text-red-800">
-                {limitError?.message || error || "Batch failed."}
-              </p>
+              {!limitError && (
+                <p className="text-sm text-red-800">{error || "Batch failed."}</p>
+              )}
               {limitError && (
-                <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  {!limitError.loggedIn && (
-                    <a
-                      href="/api/auth/google/login"
-                      className="rounded-lg bg-neutral-950 px-4 py-2 text-sm font-medium text-white"
-                    >
-                      Sign in
-                    </a>
-                  )}
-                  <a
-                    href="/credits/"
-                    className="rounded-lg border border-black/10 bg-white px-4 py-2 text-sm text-neutral-800"
-                  >
-                    Buy credits
-                  </a>
-                </div>
+                <LimitUpsell
+                  className="mx-auto max-w-md text-left"
+                  message={limitError.message}
+                  loggedIn={limitError.loggedIn}
+                  source="limit_cta_batch_error"
+                />
               )}
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {retryableCount > 0 && !limitError && (

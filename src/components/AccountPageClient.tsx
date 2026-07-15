@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { trackEvent } from "@/lib/analytics";
+import { parseMoneyValue, trackEvent, trackPurchase } from "@/lib/analytics";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
@@ -92,44 +92,178 @@ function planExpiryBanner(user: AccountUser): {
   };
 }
 
+function buildPaymentSuccessMessage(params: URLSearchParams): string {
+  const kind = params.get("kind");
+  const plan = params.get("plan");
+  const credits = params.get("credits");
+  const expires = params.get("expires");
+  const extended = params.get("extended") === "1";
+
+  if (kind === "credits" && credits) {
+    return `Payment successful! +${credits} credits have been added to your balance. Credits never expire.`;
+  }
+
+  if (kind === "plan" && plan) {
+    const until = expires ? formatDateShort(expires) : null;
+    if (extended && until) {
+      return `Payment successful! Your ${plan} prepaid access was extended to ${until}. Plans do not auto-renew.`;
+    }
+    if (until) {
+      return `Payment successful! ${plan.charAt(0).toUpperCase()}${plan.slice(1)} is active until ${until}. Plans do not auto-renew.`;
+    }
+    return `Payment successful! Your ${plan} prepaid plan is active. Plans do not auto-renew — check the expiry date below.`;
+  }
+
+  return "Payment successful! Prepaid plan access or credits are active. Plans do not auto-renew — check the details below.";
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export default function AccountPageClient() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<AccountUser | null>(null);
   const [items, setItems] = useState<UsageResponse["items"]>([]);
   const [paymentMsg, setPaymentMsg] = useState<string | null>(null);
   const [paymentTone, setPaymentTone] = useState<"ok" | "warn" | "danger">("ok");
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const payment = params.get("payment");
-    if (payment === "success") {
-      setPaymentTone("ok");
-      setPaymentMsg(
-        "Payment successful! Prepaid plan access or credits are active. Plans do not auto-renew — check the expiry date below."
-      );
-      trackEvent("purchase", { status: "success" });
-      params.delete("payment");
-      const next = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
-      window.history.replaceState({}, "", next);
-    }
-  }, []);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
 
   useEffect(() => {
     let active = true;
 
-    async function load() {
-      try {
-        const [accountRes, usageRes] = await Promise.all([
-          fetch("/api/account/me", { cache: "no-store" }),
-          fetch("/api/account/usage", { cache: "no-store" }),
-        ]);
+    async function fetchAccount(): Promise<AccountUser | null> {
+      const accountRes = await fetch("/api/account/me", { cache: "no-store" });
+      const accountData = accountRes.ok ? await accountRes.json() : { user: null };
+      return (accountData.user as AccountUser | null) || null;
+    }
 
-        const accountData = accountRes.ok ? await accountRes.json() : { user: null };
-        const usageData = usageRes.ok ? await usageRes.json() : { items: [] };
+    async function fetchUsage() {
+      const usageRes = await fetch("/api/account/usage", { cache: "no-store" });
+      const usageData = usageRes.ok ? await usageRes.json() : { items: [] };
+      return (usageData.items || []) as UsageResponse["items"];
+    }
 
+    /**
+     * After PayPal redirect, poll until plan/credits reflect the purchase
+     * (covers race with webhook / slow D1).
+     */
+    async function confirmPurchase(
+      expected: { kind: string | null; plan: string | null; credits: number | null },
+      baseline: AccountUser | null
+    ) {
+      setConfirmingPayment(true);
+      const maxAttempts = 8;
+      for (let i = 0; i < maxAttempts; i += 1) {
         if (!active) return;
-        setUser(accountData.user || null);
-        setItems(usageData.items || []);
+        if (i > 0) await sleep(1000 + i * 250);
+        try {
+          const next = await fetchAccount();
+          if (!active) return;
+          if (next) {
+            setUser(next);
+            const planOk =
+              expected.kind === "plan" &&
+              expected.plan &&
+              next.plan === expected.plan &&
+              !next.plan_expired;
+            const creditsOk =
+              expected.kind === "credits" &&
+              expected.credits != null &&
+              next.credits >= (baseline?.credits || 0) + expected.credits * 0.99;
+            // credits are integers — require balance increased by at least purchased amount
+            const creditsGained =
+              expected.kind === "credits" &&
+              expected.credits != null &&
+              next.credits >= (baseline?.credits || 0) + expected.credits;
+
+            if (planOk || creditsGained || creditsOk) {
+              setConfirmingPayment(false);
+              return;
+            }
+          }
+        } catch {
+          // keep polling
+        }
+      }
+      if (active) {
+        setConfirmingPayment(false);
+        setPaymentTone("warn");
+        setPaymentMsg((prev) =>
+          prev
+            ? `${prev} If limits look unchanged, refresh in a minute — activation can take a few seconds.`
+            : "Payment received. If limits look unchanged, refresh in a minute."
+        );
+      }
+    }
+
+    async function load() {
+      const params = new URLSearchParams(window.location.search);
+      const payment = params.get("payment");
+      const expectedKind = params.get("kind");
+      const expectedPlan = params.get("plan");
+      const expectedCreditsRaw = params.get("credits");
+      const expectedCredits = expectedCreditsRaw ? Number(expectedCreditsRaw) : null;
+
+      if (payment === "success") {
+        setPaymentTone("ok");
+        setPaymentMsg(buildPaymentSuccessMessage(params));
+        trackPurchase({
+          status: "success",
+          kind: expectedKind,
+          plan: expectedPlan,
+          credits: expectedCredits,
+          productId: params.get("product"),
+          value: parseMoneyValue(params.get("amount")),
+          orderId: params.get("order"),
+          extended: params.get("extended") === "1",
+          source: "account_return",
+        });
+      } else if (payment === "pending") {
+        setPaymentTone("warn");
+        setPaymentMsg(
+          "Payment was captured but activation is still processing. We will refresh your account status shortly…"
+        );
+        trackEvent("purchase", { status: "pending", source: "account_return" });
+      }
+
+      // Strip payment query params from the URL (keep UX clean)
+      if (payment) {
+        for (const key of [
+          "payment",
+          "kind",
+          "plan",
+          "credits",
+          "expires",
+          "extended",
+          "product",
+          "token",
+          "reason",
+          "amount",
+          "order",
+        ]) {
+          params.delete(key);
+        }
+        const next = window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
+        window.history.replaceState({}, "", next);
+      }
+
+      try {
+        const [accountUser, usageItems] = await Promise.all([fetchAccount(), fetchUsage()]);
+        if (!active) return;
+        setUser(accountUser);
+        setItems(usageItems);
+
+        if (payment === "success" || payment === "pending") {
+          void confirmPurchase(
+            {
+              kind: expectedKind,
+              plan: expectedPlan,
+              credits: Number.isFinite(expectedCredits as number) ? expectedCredits : null,
+            },
+            accountUser
+          );
+        }
       } catch {
         if (!active) return;
         setUser(null);
@@ -223,9 +357,14 @@ export default function AccountPageClient() {
                     ? "border-amber-500/30 bg-amber-50 text-amber-900"
                     : "border-red-500/30 bg-red-50 text-red-800"
               }`}
+              role="status"
+              aria-live="polite"
             >
               {paymentTone === "ok" ? "✓ " : ""}
               {paymentMsg}
+              {confirmingPayment ? (
+                <span className="mt-1 block text-xs opacity-80">Confirming activation…</span>
+              ) : null}
             </div>
           )}
 
