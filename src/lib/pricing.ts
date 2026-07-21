@@ -1,7 +1,15 @@
 import { planPriceLabel } from "@/lib/products";
+import {
+  PLAN_LIMITS,
+  MAX_BATCH_SIZE,
+  getPlanLimits,
+  monthlyRemovalsShort,
+  maxUploadShort,
+  type PlanCode,
+} from "@/lib/plan-limits";
 
 export type BillingCycle = "monthly" | "yearly";
-export type PlanCode = "guest" | "free" | "pro" | "business";
+export type { PlanCode };
 
 export type PricingPlan = {
   code: PlanCode;
@@ -21,6 +29,47 @@ const proYearly = planPriceLabel("pro", "yearly");
 const businessMonthly = planPriceLabel("business", "monthly");
 const businessYearly = planPriceLabel("business", "yearly");
 
+const guest = getPlanLimits("guest");
+const free = getPlanLimits("free");
+const pro = getPlanLimits("pro");
+const business = getPlanLimits("business");
+
+function guestFeatures(): string[] {
+  return [
+    `${guest.monthlyLimit} removals per month`,
+    `Up to ${guest.maxFileSizeMb}MB per image`,
+    `Batch up to ${MAX_BATCH_SIZE} images`,
+    "Transparent PNG + white JPG",
+  ];
+}
+
+function freeFeatures(): string[] {
+  return [
+    `${free.monthlyLimit} removals per month`,
+    `Up to ${free.maxFileSizeMb}MB per image`,
+    `Batch up to ${MAX_BATCH_SIZE} images`,
+    "Transparent PNG + white JPG",
+  ];
+}
+
+function proFeatures(): string[] {
+  return [
+    `${pro.monthlyLimit} removals per prepaid month`,
+    `Up to ${pro.maxFileSizeMb}MB per image`,
+    "Batch processing + white JPG",
+    "One-time PayPal payment (no auto-renew)",
+  ];
+}
+
+function businessFeatures(): string[] {
+  return [
+    `${business.monthlyLimit} removals per prepaid month`,
+    `Up to ${business.maxFileSizeMb}MB per image`,
+    "Batch processing + white JPG",
+    "One-time PayPal payment (no auto-renew)",
+  ];
+}
+
 export const pricingPlans: PricingPlan[] = [
   {
     code: "guest",
@@ -29,12 +78,7 @@ export const pricingPlans: PricingPlan[] = [
     monthlyPriceLabel: "Free",
     ctaLabel: "Start Free",
     ctaHref: "/#tool",
-    features: [
-      "5 removals per month",
-      "Up to 10MB per image",
-      "Batch up to 20 images",
-      "Transparent PNG + white JPG",
-    ],
+    features: guestFeatures(),
   },
   {
     code: "free",
@@ -43,29 +87,20 @@ export const pricingPlans: PricingPlan[] = [
     monthlyPriceLabel: "$0",
     ctaLabel: "Sign in for Free",
     ctaHref: "/api/auth/google/login",
-    features: [
-      "20 removals per month",
-      "Up to 15MB per image",
-      "Batch up to 20 images",
-      "Transparent PNG + white JPG",
-    ],
+    features: freeFeatures(),
   },
   {
     code: "pro",
     name: "Pro",
     badge: "Most Popular",
-    description: "Prepaid plan for sellers and creators — pay once for a month or year of higher limits.",
+    description:
+      "Prepaid plan for sellers and creators — pay once for a month or year of higher limits.",
     monthlyPriceLabel: proMonthly,
     yearlyPriceLabel: proYearly,
     ctaLabel: "Buy Pro (prepaid)",
     ctaHref: "/pricing#upgrade",
     highlight: true,
-    features: [
-      "200 removals per prepaid month",
-      "Up to 25MB per image",
-      "Batch processing + white JPG",
-      "One-time PayPal payment (no auto-renew)",
-    ],
+    features: proFeatures(),
   },
   {
     code: "business",
@@ -75,29 +110,24 @@ export const pricingPlans: PricingPlan[] = [
     yearlyPriceLabel: businessYearly,
     ctaLabel: "Buy Business (prepaid)",
     ctaHref: "/pricing#upgrade",
-    features: [
-      "500 removals per prepaid month",
-      "Up to 50MB per image",
-      "Batch processing + white JPG",
-      "One-time PayPal payment (no auto-renew)",
-    ],
+    features: businessFeatures(),
   },
 ];
 
 export const comparisonRows = [
   {
     label: "Monthly removals",
-    guest: "5/mo",
-    free: "20/mo",
-    pro: "200/mo",
-    business: "500/mo",
+    guest: monthlyRemovalsShort("guest"),
+    free: monthlyRemovalsShort("free"),
+    pro: monthlyRemovalsShort("pro"),
+    business: monthlyRemovalsShort("business"),
   },
   {
     label: "Max upload size",
-    guest: "10MB",
-    free: "15MB",
-    pro: "25MB",
-    business: "50MB",
+    guest: maxUploadShort("guest"),
+    free: maxUploadShort("free"),
+    pro: maxUploadShort("pro"),
+    business: maxUploadShort("business"),
   },
   {
     label: "Account dashboard",
@@ -122,17 +152,17 @@ export const comparisonRows = [
   },
   {
     label: "Batch upload (max per run)",
-    guest: "20",
-    free: "20",
-    pro: "20",
-    business: "20",
+    guest: String(MAX_BATCH_SIZE),
+    free: String(MAX_BATCH_SIZE),
+    pro: String(MAX_BATCH_SIZE),
+    business: String(MAX_BATCH_SIZE),
   },
 ];
 
 export const pricingFaqs = [
   {
     q: "Is this tool free to try?",
-    a: "Yes! Guests get 5 free removals per month. Sign in for a free account to unlock 20 removals per month. Buy prepaid Pro/Business or credits for higher volume.",
+    a: `Yes! Guests get ${guest.monthlyLimit} free removals per month. Sign in for a free account to unlock ${free.monthlyLimit} removals per month. Buy prepaid Pro/Business or credits for higher volume.`,
   },
   {
     q: "Is Pro a recurring subscription?",
@@ -140,11 +170,11 @@ export const pricingFaqs = [
   },
   {
     q: "What do I get with Pro?",
-    a: "Pro includes 200 removals per month while your prepaid period is active, larger uploads (up to 25MB), transparent PNG and white JPG export, and batch processing.",
+    a: `Pro includes ${pro.monthlyLimit} removals per month while your prepaid period is active, larger uploads (up to ${pro.maxFileSizeMb}MB), transparent PNG and white JPG export, and batch processing.`,
   },
   {
     q: "Credits vs Pro — which should I buy?",
-    a: `Credits never expire and are best for occasional extra removals after you hit free limits. Pro is better if you consistently need ~200 removals every month. Example: ${proMonthly.replace("/mo", "")} buys either 100 credits or one prepaid month of Pro (200/mo).`,
+    a: `Credits never expire and are best for occasional extra removals after you hit free limits. Pro is better if you consistently need ~${pro.monthlyLimit} removals every month. Example: ${proMonthly.replace("/mo", "")} buys either 100 credits or one prepaid month of Pro (${pro.monthlyLimit}/mo).`,
   },
   {
     q: "Do unused removals roll over?",
@@ -159,3 +189,12 @@ export const pricingFaqs = [
     a: "No. Images are processed in real time and are not permanently stored.",
   },
 ];
+
+/** Compact feature lines for homepage / marketing cards. */
+export function compactPlanFeatures(code: PlanCode): string[] {
+  const p = getPlanLimits(code);
+  return [`${p.monthlyLimit} removals/month`, `Up to ${p.maxFileSizeMb}MB`];
+}
+
+/** Re-export limits map for pages that need raw numbers. */
+export { PLAN_LIMITS, MAX_BATCH_SIZE };

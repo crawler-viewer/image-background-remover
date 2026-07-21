@@ -4,6 +4,7 @@ import { StatsCounter } from "@/components/StatsCounter";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import HeroDemo from "@/components/HeroDemo";
+import { compactPlanFeatures, MAX_BATCH_SIZE, PLAN_LIMITS } from "@/lib/pricing";
 
 const BgRemover = dynamic(() => import("@/components/BgRemover"), {
   loading: () => (
@@ -64,7 +65,9 @@ export default function Home() {
                 Remove background from photo online — free
               </h1>
               <p className="mt-5 max-w-xl text-lg leading-8 text-neutral-600">
-                Free photo background remover for transparent PNG or pure white JPG. Paste, drop, or batch up to 20 images — no account needed to start. Great for product photos, portraits, and listings.
+                Free photo background remover for transparent PNG or pure white JPG. Paste, drop, or
+                batch up to {MAX_BATCH_SIZE} images — no account needed to start. Great for product
+                photos, portraits, and listings.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center gap-3 text-sm">
@@ -164,7 +167,7 @@ export default function Home() {
                   </svg>
                 ),
                 title: "Download PNG or white JPG",
-                desc: "Transparent PNG for design, pure white JPG for listings — or batch up to 20 and ZIP download.",
+                desc: `Transparent PNG for design, pure white JPG for listings — or batch up to ${MAX_BATCH_SIZE} and ZIP download.`,
               },
             ].map((item) => (
               <div key={item.step} className="text-center group min-h-[200px]">
@@ -264,28 +267,28 @@ export default function Home() {
                 price: "Free",
                 desc: "Try without signing in",
                 highlight: false,
-                features: ["5 removals/month", "Up to 10MB"],
+                features: compactPlanFeatures("guest"),
               },
               {
                 name: "Free",
                 price: "$0",
                 desc: "More monthly access + dashboard",
                 highlight: false,
-                features: ["20 removals/month", "Up to 15MB"],
+                features: compactPlanFeatures("free"),
               },
               {
                 name: "Pro",
                 price: "$9.9/mo",
                 desc: "Best for power users",
                 highlight: true,
-                features: ["200 removals/month", "Up to 25MB"],
+                features: compactPlanFeatures("pro"),
               },
               {
                 name: "Business",
                 price: "$29.9/mo",
                 desc: "Teams & high volume",
                 highlight: false,
-                features: ["500 removals/month", "Up to 50MB"],
+                features: compactPlanFeatures("business"),
               },
             ].map((plan) => (
               <div
@@ -342,15 +345,15 @@ export default function Home() {
               },
               {
                 q: "Can I remove the background from JPG or JPEG photos?",
-                a: "Yes. JPG, JPEG, PNG, and WebP are supported. Max file size depends on your plan (from 10MB for guests up to 50MB for Business).",
+                a: `Yes. JPG, JPEG, PNG, and WebP are supported. Max file size depends on your plan (from ${PLAN_LIMITS.guest.maxFileSizeMb}MB for guests up to ${PLAN_LIMITS.business.maxFileSizeMb}MB for Business).`,
               },
               {
                 q: "Why should I create an account?",
-                a: "A free account gives you 4x more monthly removals (20/mo vs 5/mo), access to your personal dashboard, and usage tracking.",
+                a: `A free account gives you more monthly removals (${PLAN_LIMITS.free.monthlyLimit}/mo vs ${PLAN_LIMITS.guest.monthlyLimit}/mo), access to your personal dashboard, and usage tracking.`,
               },
               {
                 q: "What does Pro include?",
-                a: "Pro gives you 200 removals per month, larger upload sizes (up to 25MB), transparent PNG and Amazon-ready white JPG export, and expanded usage history.",
+                a: `Pro gives you ${PLAN_LIMITS.pro.monthlyLimit} removals per month, larger upload sizes (up to ${PLAN_LIMITS.pro.maxFileSizeMb}MB), transparent PNG and Amazon-ready white JPG export, and expanded usage history.`,
               },
               {
                 q: "Is my image data safe and private?",

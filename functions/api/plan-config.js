@@ -1,27 +1,29 @@
-export const PLAN_CONFIG = {
-  guest: {
-    code: "guest",
-    monthlyLimit: 5,
-    maxFileSizeBytes: 10 * 1024 * 1024,
-  },
-  free: {
-    code: "free",
-    monthlyLimit: 20,
-    maxFileSizeBytes: 15 * 1024 * 1024,
-  },
-  pro: {
-    code: "pro",
-    monthlyLimit: 200,
-    maxFileSizeBytes: 25 * 1024 * 1024,
-  },
-  business: {
-    code: "business",
-    // 500 × ~$0.04 API ≈ $20 cost vs $29.90 price → positive full-use margin
-    monthlyLimit: 500,
-    maxFileSizeBytes: 50 * 1024 * 1024,
-  },
-};
+/**
+ * Backend plan config — thin adapter over shared/plan-limits.js.
+ * Adds maxFileSizeBytes for Workers file validation.
+ */
+import {
+  PLAN_LIMITS,
+  getPlanLimits,
+  MAX_BATCH_SIZE,
+  GUEST_IP_MONTHLY_LIMIT,
+} from "../../shared/plan-limits.js";
+
+function toPlanConfig(limits) {
+  return {
+    code: limits.code,
+    monthlyLimit: limits.monthlyLimit,
+    maxFileSizeBytes: limits.maxFileSizeMb * 1024 * 1024,
+    maxFileSizeMb: limits.maxFileSizeMb,
+  };
+}
+
+export const PLAN_CONFIG = Object.fromEntries(
+  Object.entries(PLAN_LIMITS).map(([key, limits]) => [key, toPlanConfig(limits)])
+);
 
 export function getPlanConfig(planCode) {
-  return PLAN_CONFIG[planCode] || PLAN_CONFIG.free;
+  return toPlanConfig(getPlanLimits(planCode));
 }
+
+export { PLAN_LIMITS, MAX_BATCH_SIZE, GUEST_IP_MONTHLY_LIMIT, getPlanLimits };

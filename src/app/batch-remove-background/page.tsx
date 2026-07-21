@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import UseCaseLayout from "@/components/use-cases/UseCaseLayout";
+import { MAX_BATCH_SIZE, PLAN_LIMITS } from "@/lib/plan-limits";
 
 export const metadata: Metadata = {
-  title: "Batch Background Remover Online — Up to 20 Images | BGRemover",
-  description:
-    "Remove backgrounds from multiple product photos at once. Upload up to 20 images, process them in a queue, then download a ZIP of transparent PNGs or white-background JPGs.",
+  title: `Batch Background Remover Online — Up to ${MAX_BATCH_SIZE} Images | BGRemover`,
+  description: `Remove backgrounds from multiple product photos at once. Upload up to ${MAX_BATCH_SIZE} images, process them in a queue, then download a ZIP of transparent PNGs or white-background JPGs.`,
   alternates: { canonical: "/batch-remove-background/" },
   openGraph: {
     title: "Batch Background Remover Online",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 const faqs = [
   {
     q: "How many images can I process in one batch?",
-    a: "Up to 20 images per run. Each successful removal counts as one against your monthly plan (or credits). If you have fewer removals left, we only queue what your quota allows.",
+    a: `Up to ${MAX_BATCH_SIZE} images per run. Each successful removal counts as one against your monthly plan (or credits). If you have fewer removals left, we only queue what your quota allows.`,
   },
   {
     q: "Are images processed in parallel?",
@@ -98,8 +98,14 @@ export default function BatchRemoveBackgroundPage() {
         <div className="mt-10 rounded-2xl border border-black/8 bg-white p-6 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
           <h2 className="text-lg font-semibold">Quota tips for batch runs</h2>
           <ul className="mt-4 space-y-2 text-sm text-neutral-600">
-            <li>• Guest: 5 removals/month — use batch for a small test set</li>
-            <li>• Free account: 20/month — full batch size when you have headroom</li>
+            <li>
+              • Guest: {PLAN_LIMITS.guest.monthlyLimit} removals/month — use batch for a small test
+              set
+            </li>
+            <li>
+              • Free account: {PLAN_LIMITS.free.monthlyLimit}/month — full batch size when you have
+              headroom
+            </li>
             <li>• Pro / Business or credit packs — better for weekly catalog refreshes</li>
             <li>• Each success = 1 removal; failed images are not charged</li>
           </ul>

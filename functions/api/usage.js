@@ -1,13 +1,16 @@
-import { readSession } from "./auth/_lib";
-import { getPlanConfig } from "./plan-config";
+import { readSession } from "./auth/_lib.js";
+import { getPlanConfig, GUEST_IP_MONTHLY_LIMIT } from "./plan-config.js";
+import {
+  RATE_LIMIT_WINDOW_MS,
+  RATE_LIMIT_MAX_PER_WINDOW,
+  RATE_LIMIT_ACTION,
+} from "../../shared/rate-limit.js";
 
 /** Soft ceiling across all guest cookies on the same network (UTC month). */
-export const GUEST_IP_MONTHLY_LIMIT = 15;
+export { GUEST_IP_MONTHLY_LIMIT };
 
 /** Short-window anti-burst limits for /api/remove-bg (per IP). */
-export const RATE_LIMIT_WINDOW_MS = 60_000;
-export const RATE_LIMIT_MAX_PER_WINDOW = 12;
-export const RATE_LIMIT_ACTION = "remove_bg";
+export { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_PER_WINDOW, RATE_LIMIT_ACTION };
 
 function ensureDb(env) {
   if (!env.DB) {
@@ -56,12 +59,6 @@ export function getGuestKey(request) {
   const ip = getClientIp(request);
   const userAgent = request.headers.get("user-agent") || "unknown";
   return `${ip}:${userAgent.slice(0, 80)}`;
-}
-
-export function makeGuestCookieHeader(guestKey) {
-  // Only set cookie if it's a UUID (not IP-based fallback)
-  if (guestKey.includes(":")) return null;
-  return null; // already set
 }
 
 export function generateGuestId() {
@@ -275,11 +272,97 @@ export async function recordUsage(env, { googleSub, userId = null, sourceFilenam
   return result;
 }
 
+/**
+ * Pre-claim a logged-in usage slot before calling the upstream API.
+ * Returns last_row_id so the claim can be rolled back on failure.
+ */
+export async function claimUserUsage(env, { googleSub, userId = null, sourceFilename = null }) {
+  const db = ensureDb(env);
+  const now = new Date().toISOString();
+  const result = await db
+    .prepare(
+      `INSERT INTO usage_logs (user_id, google_sub, action, source_filename, created_at)
+       VALUES (?, ?, 'remove_bg', ?, ?)`
+    )
+    .bind(userId, googleSub, sourceFilename, now)
+    .run();
+
+  const id = Number(result?.meta?.last_row_id || 0);
+  if (!id) {
+    throw new Error("Failed to claim user usage (no row id)");
+  }
+  return { id };
+}
+
+export async function rollbackUserUsage(env, usageId) {
+  if (!usageId) return;
+  const db = ensureDb(env);
+  await db
+    .prepare(`DELETE FROM usage_logs WHERE id = ?`)
+    .bind(usageId)
+    .run();
+}
+
+/**
+ * Atomic credit pre-deduct. Returns true only when one credit was taken.
+ */
+export async function tryDeductCredit(env, googleSub) {
+  if (!googleSub) return false;
+  const db = ensureDb(env);
+  const now = new Date().toISOString();
+  const result = await db
+    .prepare(
+      `UPDATE user_credits
+       SET balance = balance - 1, updated_at = ?
+       WHERE google_sub = ? AND balance > 0`
+    )
+    .bind(now, googleSub)
+    .run();
+  return Number(result?.meta?.changes || 0) > 0;
+}
+
+/** Refund one credit after a failed upstream call (best-effort). */
+export async function refundCredit(env, googleSub) {
+  if (!googleSub) return;
+  const db = ensureDb(env);
+  const now = new Date().toISOString();
+  await db
+    .prepare(
+      `UPDATE user_credits
+       SET balance = balance + 1, updated_at = ?
+       WHERE google_sub = ?`
+    )
+    .bind(now, googleSub)
+    .run();
+}
+
+export async function getCreditBalance(env, googleSub) {
+  if (!googleSub || !env?.DB) return 0;
+  try {
+    const row = await ensureDb(env)
+      .prepare(`SELECT balance FROM user_credits WHERE google_sub = ? LIMIT 1`)
+      .bind(googleSub)
+      .first();
+    return Number(row?.balance || 0);
+  } catch {
+    return 0;
+  }
+}
+
 export async function recordGuestUsage(env, { guestKey, sourceFilename = null, clientIp = null }) {
+  const claim = await claimGuestUsage(env, { guestKey, sourceFilename, clientIp });
+  return claim;
+}
+
+/**
+ * Pre-claim guest cookie (+ optional IP) slots before upstream.
+ * @returns {{ guestLogId: number, ipLogId: number|null }}
+ */
+export async function claimGuestUsage(env, { guestKey, sourceFilename = null, clientIp = null }) {
   const db = ensureDb(env);
   const now = new Date().toISOString();
 
-  await db
+  const guestResult = await db
     .prepare(
       `INSERT INTO guest_usage_logs (guest_key, action, source_filename, created_at)
        VALUES (?, 'remove_bg', ?, ?)`
@@ -287,16 +370,32 @@ export async function recordGuestUsage(env, { guestKey, sourceFilename = null, c
     .bind(guestKey, sourceFilename, now)
     .run();
 
-  // Parallel IP bucket for anti-abuse (same table, prefixed key).
+  const guestLogId = Number(guestResult?.meta?.last_row_id || 0);
+  if (!guestLogId) {
+    throw new Error("Failed to claim guest usage (no row id)");
+  }
+
+  let ipLogId = null;
   if (clientIp && clientIp !== "unknown") {
-    await db
+    const ipResult = await db
       .prepare(
         `INSERT INTO guest_usage_logs (guest_key, action, source_filename, created_at)
          VALUES (?, 'remove_bg', ?, ?)`
       )
       .bind(ipGuestKey(clientIp), sourceFilename, now)
       .run();
+    ipLogId = Number(ipResult?.meta?.last_row_id || 0) || null;
   }
 
-  return true;
+  return { guestLogId, ipLogId };
+}
+
+export async function rollbackGuestUsage(env, { guestLogId = null, ipLogId = null } = {}) {
+  const db = ensureDb(env);
+  if (guestLogId) {
+    await db.prepare(`DELETE FROM guest_usage_logs WHERE id = ?`).bind(guestLogId).run();
+  }
+  if (ipLogId) {
+    await db.prepare(`DELETE FROM guest_usage_logs WHERE id = ?`).bind(ipLogId).run();
+  }
 }

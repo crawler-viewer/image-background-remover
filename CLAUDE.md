@@ -41,7 +41,7 @@ Key consequence: anything dynamic (auth, quota, image processing, payments) must
 
 ### Plan config
 
-`functions/api/plan-config.js` is the **source of truth** for backend limits (monthly removals + max upload size for `guest`/`free`/`pro`/`business`). `src/lib/pricing.ts` holds the marketing/UI version of the same plans — keep these in sync when limits change.
+`shared/plan-limits.js` is the **source of truth** for monthly removals, max upload size, `MAX_BATCH_SIZE`, and `GUEST_IP_MONTHLY_LIMIT`. Backend adapts it via `functions/api/plan-config.js`; frontend via `src/lib/plan-limits.ts` / `src/lib/pricing.ts`. Change limits only in `shared/plan-limits.js` — unit tests assert alignment.
 
 Note: the backend enforces **monthly** quotas (`monthRange()` uses UTC month start/end). The account UI historically used "daily" naming; treat the backend as authoritative.
 
@@ -88,13 +88,20 @@ Deploy ops: `docs/deploy-checklist.md`.
 
 Required in Cloudflare Pages (preview + production):
 
-- `REMOVE_BG_API_KEY` — fallback image provider
-- `CLIPDROP_API_KEY` — preferred image provider (optional; falls back to Remove.bg if absent)
+- `CLIPDROP_API_KEY` — preferred image provider
+- `REMOVE_BG_API_KEY` — fallback if Clipdrop unset
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — OAuth
 - `AUTH_SECRET` — HMAC key for session cookies (rotating it invalidates all sessions)
 - D1 binding `DB` pointing at the `bg-remover-db` database
 
-Local dev uses `.env.local` (same keys minus `CLIPDROP_API_KEY` per `.env.example`). `pnpm pages:env:update` (script at `scripts/update-cloudflare-env.sh`) does a **merge-update** of the Pages project config via Cloudflare API — it reads the current config first so other env vars are preserved. Requires `jq` and `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`.
+Optional cost controls:
+
+- `DAILY_UPSTREAM_LIMIT` — max claimed removals per UTC day (`0`/omit = off)
+- `UPSTREAM_COST_USD` — estimated USD per image for structured logs (default `0.04`)
+
+Rate-limit constants: `shared/rate-limit.js`. Batch UI paces by `BATCH_MIN_GAP_MS` and retries on `Retry-After`.
+
+Local dev uses `.env.local` (see `.env.example`). `pnpm pages:env:update` (script at `scripts/update-cloudflare-env.sh`) does a **merge-update** of the Pages project config via Cloudflare API — it reads the current config first so other env vars are preserved. Requires `jq` and `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`.
 
 ## Conventions
 

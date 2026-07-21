@@ -7,11 +7,15 @@ import { PricingFAQ } from "@/components/pricing/PricingFAQ";
 import { PricingHero } from "@/components/pricing/PricingHero";
 import { PlanComparison } from "@/components/pricing/PlanComparison";
 import { PaymentStatusBanner } from "@/components/pricing/PaymentStatusBanner";
+import { getPlanLimits } from "@/lib/plan-limits";
+
+const guestLimit = getPlanLimits("guest").monthlyLimit;
+const freeLimit = getPlanLimits("free").monthlyLimit;
+const proLimit = getPlanLimits("pro").monthlyLimit;
 
 export const metadata: Metadata = {
   title: "Pricing — Free Photo Background Remover Plans | BGRemover",
-  description:
-    "Free online background remover pricing. Guests 5/mo, free account 20/mo, Pro 200/mo. Transparent PNG & white JPG. Start free — no card required.",
+  description: `Free online background remover pricing. Guests ${guestLimit}/mo, free account ${freeLimit}/mo, Pro ${proLimit}/mo. Transparent PNG & white JPG. Start free — no card required.`,
   alternates: { canonical: "/pricing/" },
   openGraph: {
     title: "BGRemover Pricing — Free to Start",

@@ -1,5 +1,8 @@
 # BGRemover 定价体系文档
 
+> **限额单一数据源：** 月次数 / 上传大小 / 批量上限 / 游客 IP 封顶 以 `shared/plan-limits.js` 为准。  
+> 后端 `functions/api/plan-config.js`、前端 `src/lib/pricing.ts` 均从该文件读取。改限额只改 shared，并用 `pnpm test` 校验对齐。
+
 ## 一、套餐总览
 
 | Plan | 价格 | 月限额 | 文件上限 | 目标用户 |

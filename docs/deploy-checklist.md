@@ -11,7 +11,8 @@ pnpm build
 
 - [ ] `pnpm build` succeeds (TypeScript + static export to `out/`)
 - [ ] No secrets committed (`.env`, `.env.local` not in git)
-- [ ] Plan copy matches backend: Guest 5 · Free 20 · Pro 200 · Business **500**
+- [ ] Plan limits only changed in `shared/plan-limits.js` (run `pnpm test`)
+- [ ] `pnpm test` passes
 
 ## 1. D1 schema (remote)
 
@@ -53,6 +54,8 @@ Set for **Production** (and Preview if you test OAuth there).
 | `PAYPAL_WEBHOOK_ID` | Recommended | Signature verify |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Recommended | **Must be present at build time** for static export |
 | `NEXT_PUBLIC_SITE_ENV` | Recommended | `production` → allow indexing |
+| `DAILY_UPSTREAM_LIMIT` | Optional | UTC-day cap on claimed removals (omit/`0` = off) |
+| `UPSTREAM_COST_USD` | Optional | Log cost estimate per image (default `0.04`) |
 
 Binding:
 

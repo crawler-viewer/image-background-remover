@@ -1,13 +1,15 @@
-import { readSession } from "./auth/_lib";
-import { getUserWithSession } from "./auth/db";
-import { getPlanConfig } from "./plan-config";
+import { readSession } from "./auth/_lib.js";
+import { getUserWithSession } from "./auth/db.js";
+import { resolveActivePlan } from "./auth/plan.js";
 import {
   assertMonthlyLimit,
   assertGuestAccess,
   getClientIp,
   getOrCreateGuestId,
   guestCookieString,
-} from "./usage";
+  getCreditBalance,
+} from "./usage.js";
+import { getPlanConfig } from "./plan-config.js";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -17,19 +19,11 @@ export async function onRequestGet(context) {
     const user = await getUserWithSession(env, session);
 
     if (user?.google_sub) {
-      const planCode = user.plan || "free";
-      const plan = getPlanConfig(planCode);
+      const active = await resolveActivePlan(env, user);
+      const planCode = active.planCode;
+      const plan = active.plan;
       const quota = await assertMonthlyLimit(env, user.google_sub, planCode);
-
-      // Get credit balance
-      let creditBalance = 0;
-      try {
-        const creditRow = await env.DB
-          .prepare(`SELECT balance FROM user_credits WHERE google_sub = ? LIMIT 1`)
-          .bind(user.google_sub)
-          .first();
-        creditBalance = Number(creditRow?.balance || 0);
-      } catch {}
+      const creditBalance = await getCreditBalance(env, user.google_sub);
 
       return Response.json({
         plan: planCode,
@@ -40,11 +34,13 @@ export async function onRequestGet(context) {
         maxFileSizeMb: Math.round(plan.maxFileSizeBytes / (1024 * 1024)),
         loggedIn: true,
         period: "monthly",
+        planExpired: active.expired,
       });
     }
 
     const { guestId, isNew } = getOrCreateGuestId(request);
-    const plan = getPlanConfig("guest");
+    const active = await resolveActivePlan(env, null);
+    const plan = active.plan;
     const clientIp = getClientIp(request);
 
     let quota;
@@ -65,7 +61,6 @@ export async function onRequestGet(context) {
     });
 
     if (isNew) {
-      // Clone response to add Set-Cookie header
       const headers = new Headers(res.headers);
       headers.set("Set-Cookie", guestCookieString(guestId));
       return new Response(res.body, { status: res.status, headers });
@@ -74,12 +69,13 @@ export async function onRequestGet(context) {
     return res;
   } catch (err) {
     console.error("Quota API error:", err);
+    const guest = getPlanConfig("guest");
     return Response.json({
       plan: "guest",
       used: 0,
-      limit: 5,
-      remaining: 5,
-      maxFileSizeMb: 10,
+      limit: guest.monthlyLimit,
+      remaining: guest.monthlyLimit,
+      maxFileSizeMb: guest.maxFileSizeMb,
       loggedIn: false,
       period: "monthly",
     });

@@ -10,6 +10,12 @@ import {
 } from "@/lib/zip-download";
 import { createThumbnailUrl } from "@/lib/image-thumb";
 import LimitUpsell from "@/components/LimitUpsell";
+import { MAX_BATCH_SIZE, getPlanLimits } from "@/lib/plan-limits";
+import {
+  BATCH_MIN_GAP_MS,
+  BATCH_RATE_LIMIT_MAX_RETRIES,
+  parseRetryAfterSec,
+} from "@/lib/rate-limit";
 
 type Stage = "idle" | "processing" | "done" | "error";
 type ItemStatus = "queued" | "processing" | "done" | "error" | "skipped";
@@ -47,9 +53,6 @@ type ZipProgress = {
   current: number;
   total: number;
 } | null;
-
-/** Hard cap per batch to protect UX and upstream costs. */
-const MAX_BATCH_SIZE = 20;
 
 function baseName(file: File | null | undefined): string {
   if (!file) return "removed-bg";
@@ -404,19 +407,23 @@ export default function BgRemover() {
             error?: string;
             code?: string;
             plan?: string;
+            retryAfterSec?: number;
           };
 
           if (res.status === 429) {
             const code = data.code || "MONTHLY_LIMIT_REACHED";
 
-            // Short-window burst limit — wait and retry once for batch UX
-            if (code === "RATE_LIMITED") {
-              const retryAfter = Number(
-                (data as { retryAfterSec?: number }).retryAfterSec || 60
-              );
+            // Short-window burst limit or upstream busy — caller may wait + retry
+            if (code === "RATE_LIMITED" || code === "UPSTREAM_RATE_LIMITED") {
+              const retryAfter = parseRetryAfterSec({
+                headerValue: res.headers.get("Retry-After"),
+                bodyRetryAfterSec: data.retryAfterSec,
+                fallback: code === "UPSTREAM_RATE_LIMITED" ? 30 : 60,
+              });
               trackEvent("remove_error", {
                 reason: "rate_limited",
                 batch: true,
+                code,
                 retry_after: retryAfter,
               });
               return {
@@ -457,6 +464,17 @@ export default function BgRemover() {
                 code,
                 loggedIn: !isGuest,
               },
+            };
+          }
+
+          if (data.code === "DAILY_BUDGET_EXCEEDED") {
+            trackEvent("remove_error", { reason: "daily_budget", batch: true });
+            return {
+              ok: false,
+              error:
+                data.error ||
+                "Service is at capacity for today. Please try again tomorrow.",
+              hardStop: true,
             };
           }
 
@@ -536,10 +554,22 @@ export default function BgRemover() {
 
         let result = await processSingle(item.file, quota?.plan || "unknown");
 
-        // One automatic wait+retry on short-window rate limit (batch-friendly)
-        if (!result.ok && result.rateLimited && !abortRef.current) {
-          const waitSec = Math.min(90, Math.max(5, result.retryAfterSec || 60));
-          setError(`Rate limited — waiting ${waitSec}s then retrying…`);
+        // Auto wait + retry on RATE_LIMITED / upstream 429 (respect Retry-After)
+        let rateRetries = 0;
+        while (
+          !result.ok &&
+          result.rateLimited &&
+          rateRetries < BATCH_RATE_LIMIT_MAX_RETRIES &&
+          !abortRef.current
+        ) {
+          rateRetries += 1;
+          const waitSec = parseRetryAfterSec({
+            bodyRetryAfterSec: result.retryAfterSec,
+            fallback: 60,
+          });
+          setError(
+            `Rate limited — waiting ${waitSec}s then retrying (${rateRetries}/${BATCH_RATE_LIMIT_MAX_RETRIES})…`
+          );
           await sleep(waitSec * 1000);
           if (abortRef.current) break;
           setError("");
@@ -626,9 +656,9 @@ export default function BgRemover() {
 
         await fetchQuota();
 
-        // Brief pause between jobs to avoid hammering the edge function
+        // Pace batch jobs under the shared IP short-window (see shared/rate-limit.js)
         if (i < batch.length - 1 && !abortRef.current) {
-          await sleep(250);
+          await sleep(BATCH_MIN_GAP_MS);
         }
       }
 
@@ -670,7 +700,7 @@ export default function BgRemover() {
       const files = Array.from(fileList);
       if (files.length === 0) return;
 
-      const maxMb = quota?.maxFileSizeMb || 25;
+      const maxMb = quota?.maxFileSizeMb || getPlanLimits("free").maxFileSizeMb;
       const remaining =
         (quota?.remaining ?? MAX_BATCH_SIZE) + (quota?.credits ? Number(quota.credits) : 0);
 
@@ -1147,7 +1177,7 @@ export default function BgRemover() {
                       onClick={() => trackEvent("login_click", { source: "quota_bar" })}
                       className="text-xs font-medium text-emerald-700 transition-colors hover:text-emerald-800"
                     >
-                      Sign in for 20/mo
+                      Sign in for {getPlanLimits("free").monthlyLimit}/mo
                     </a>
                   )}
                   {quota.loggedIn && totalAvailable <= 3 && (
@@ -1256,7 +1286,8 @@ export default function BgRemover() {
             </span>
           </p>
           <p className="text-sm text-neutral-600">
-            PNG, JPG, WebP — up to {quota?.maxFileSizeMb || 25}MB each · batch up to{" "}
+            PNG, JPG, WebP — up to{" "}
+            {quota?.maxFileSizeMb || getPlanLimits("free").maxFileSizeMb}MB each · batch up to{" "}
             {MAX_BATCH_SIZE}
           </p>
           <p className="mt-2 text-xs text-neutral-500">

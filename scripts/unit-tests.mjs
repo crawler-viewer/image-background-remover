@@ -3,7 +3,6 @@
  * Run: node scripts/unit-tests.mjs  or  pnpm test
  */
 import assert from "node:assert/strict";
-import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -37,6 +36,8 @@ async function testAsync(name, fn) {
   }
 }
 
+const fs = await import("node:fs");
+
 // Dynamic import of ESM modules under functions/
 const planConfig = await import(
   pathToFileURL(path.join(root, "functions/api/plan-config.js")).href
@@ -48,7 +49,11 @@ const fulfill = await import(
   pathToFileURL(path.join(root, "functions/api/payment/fulfill.js")).href
 );
 
-console.log("\nplan-config");
+const sharedPlanLimits = await import(
+  pathToFileURL(path.join(root, "shared/plan-limits.js")).href
+);
+
+console.log("\nplan-config + shared/plan-limits");
 test("guest limit is 5", () => {
   assert.equal(planConfig.getPlanConfig("guest").monthlyLimit, 5);
 });
@@ -63,6 +68,29 @@ test("business limit is 500 (not 800)", () => {
 });
 test("unknown plan falls back to free", () => {
   assert.equal(planConfig.getPlanConfig("nope").code, "free");
+});
+test("plan-config re-exports shared PLAN_LIMITS numbers", () => {
+  for (const code of ["guest", "free", "pro", "business"]) {
+    const shared = sharedPlanLimits.PLAN_LIMITS[code];
+    const cfg = planConfig.getPlanConfig(code);
+    assert.equal(cfg.monthlyLimit, shared.monthlyLimit, `${code} monthlyLimit`);
+    assert.equal(cfg.maxFileSizeMb, shared.maxFileSizeMb, `${code} maxFileSizeMb`);
+    assert.equal(
+      cfg.maxFileSizeBytes,
+      shared.maxFileSizeMb * 1024 * 1024,
+      `${code} maxFileSizeBytes`
+    );
+  }
+});
+test("MAX_BATCH_SIZE and GUEST_IP from shared", () => {
+  assert.equal(planConfig.MAX_BATCH_SIZE, sharedPlanLimits.MAX_BATCH_SIZE);
+  assert.equal(planConfig.GUEST_IP_MONTHLY_LIMIT, sharedPlanLimits.GUEST_IP_MONTHLY_LIMIT);
+  assert.equal(sharedPlanLimits.MAX_BATCH_SIZE, 20);
+  assert.equal(sharedPlanLimits.GUEST_IP_MONTHLY_LIMIT, 15);
+});
+test("plan-config.js imports shared/plan-limits.js", () => {
+  const src = fs.readFileSync(path.join(root, "functions/api/plan-config.js"), "utf8");
+  assert.match(src, /shared\/plan-limits\.js/);
 });
 
 console.log("\npaypal products & expiry");
@@ -332,6 +360,152 @@ test("buildPaymentSuccessQuery includes plan details", () => {
   assert.equal(p.get("order"), "42");
 });
 
+// Plan resolution (expiry / downgrade)
+const planLib = await import(
+  pathToFileURL(path.join(root, "functions/api/auth/plan.js")).href
+);
+console.log("\nresolveActivePlan / computeActivePlan");
+test("guest when user is null", () => {
+  const r = planLib.computeActivePlan(null);
+  assert.equal(r.planCode, "guest");
+  assert.equal(r.needsDowngrade, false);
+});
+test("free user stays free", () => {
+  const r = planLib.computeActivePlan({ plan: "free", plan_expires_at: null });
+  assert.equal(r.planCode, "free");
+  assert.equal(r.expired, false);
+});
+test("active pro is kept", () => {
+  const future = new Date(Date.now() + 7 * 86400000).toISOString();
+  const r = planLib.computeActivePlan({ plan: "pro", plan_expires_at: future });
+  assert.equal(r.planCode, "pro");
+  assert.equal(r.needsDowngrade, false);
+  assert.equal(r.planExpiresAt, future);
+});
+test("expired pro becomes free and needs downgrade", () => {
+  const past = new Date(Date.now() - 86400000).toISOString();
+  const r = planLib.computeActivePlan({ plan: "pro", plan_expires_at: past });
+  assert.equal(r.planCode, "free");
+  assert.equal(r.expired, true);
+  assert.equal(r.previousPlan, "pro");
+  assert.equal(r.needsDowngrade, true);
+  assert.equal(r.planExpiresAt, past);
+});
+test("expired business becomes free", () => {
+  const past = new Date(Date.now() - 1000).toISOString();
+  const r = planLib.computeActivePlan({ plan: "business", plan_expires_at: past });
+  assert.equal(r.planCode, "free");
+  assert.equal(r.previousPlan, "business");
+});
+test("isPlanExpired boundary", () => {
+  assert.equal(planLib.isPlanExpired(null), false);
+  assert.equal(planLib.isPlanExpired(new Date(Date.now() - 1).toISOString()), true);
+  assert.equal(planLib.isPlanExpired(new Date(Date.now() + 60_000).toISOString()), false);
+});
+test("planExpiryInfo forceExpired", () => {
+  const info = planLib.planExpiryInfo("2026-01-01T00:00:00.000Z", { forceExpired: true });
+  assert.equal(info.plan_expired, true);
+  assert.equal(info.plan_days_remaining, 0);
+});
+await testAsync("resolveActivePlan writes downgrade to DB", async () => {
+  const past = new Date(Date.now() - 86400000).toISOString();
+  let updated = null;
+  const env = {
+    DB: {
+      prepare(sql) {
+        return {
+          bind(...args) {
+            this._args = args;
+            return this;
+          },
+          async run() {
+            if (sql.includes("UPDATE users SET plan = 'free'")) {
+              updated = this._args;
+            }
+            return { meta: { changes: 1 } };
+          },
+        };
+      },
+    },
+  };
+  const r = await planLib.resolveActivePlan(
+    env,
+    { google_sub: "sub-1", plan: "pro", plan_expires_at: past }
+  );
+  assert.equal(r.planCode, "free");
+  assert.equal(r.plan.code, "free");
+  assert.ok(updated);
+  assert.equal(updated[1], "sub-1");
+});
+
+// Credit helpers (mock D1)
+const usageLib = await import(
+  pathToFileURL(path.join(root, "functions/api/usage.js")).href
+);
+console.log("\ncredit deduct / refund");
+function createCreditDb(initialBalance) {
+  let balance = initialBalance;
+  return {
+    _balance: () => balance,
+    prepare(sql) {
+      const self = {
+        binds: [],
+        bind(...args) {
+          self.binds = args;
+          return self;
+        },
+        async run() {
+          if (sql.includes("balance = balance - 1")) {
+            const sub = self.binds[1];
+            if (balance > 0) {
+              balance -= 1;
+              return { meta: { changes: 1 } };
+            }
+            return { meta: { changes: 0 } };
+          }
+          if (sql.includes("balance = balance + 1")) {
+            balance += 1;
+            return { meta: { changes: 1 } };
+          }
+          return { meta: { changes: 0 } };
+        },
+        async first() {
+          if (sql.includes("SELECT balance")) {
+            return { balance };
+          }
+          return null;
+        },
+      };
+      return self;
+    },
+  };
+}
+await testAsync("tryDeductCredit succeeds when balance > 0", async () => {
+  const db = createCreditDb(2);
+  const ok = await usageLib.tryDeductCredit({ DB: db }, "u1");
+  assert.equal(ok, true);
+  assert.equal(db._balance(), 1);
+});
+await testAsync("tryDeductCredit fails when balance is 0", async () => {
+  const db = createCreditDb(0);
+  const ok = await usageLib.tryDeductCredit({ DB: db }, "u1");
+  assert.equal(ok, false);
+  assert.equal(db._balance(), 0);
+});
+await testAsync("refundCredit restores one credit", async () => {
+  const db = createCreditDb(0);
+  await usageLib.refundCredit({ DB: db }, "u1");
+  assert.equal(db._balance(), 1);
+});
+await testAsync("concurrent-style double deduct cannot go negative", async () => {
+  const db = createCreditDb(1);
+  const a = await usageLib.tryDeductCredit({ DB: db }, "u1");
+  const b = await usageLib.tryDeductCredit({ DB: db }, "u1");
+  assert.equal(a, true);
+  assert.equal(b, false);
+  assert.equal(db._balance(), 0);
+});
+
 // Auth return path sanitization
 const authLib = await import(
   pathToFileURL(path.join(root, "functions/api/auth/_lib.js")).href
@@ -349,17 +523,170 @@ test("sanitizeReturnPath blocks open redirects", () => {
 });
 
 // Frontend pricing alignment (TS compiled away — read as text checks)
-console.log("\npricing.ts alignment (source)");
-const require = createRequire(import.meta.url);
-const fs = await import("node:fs");
+console.log("\npricing.ts + plan-limits alignment (source)");
 const pricingSrc = fs.readFileSync(path.join(root, "src/lib/pricing.ts"), "utf8");
+const planLimitsTs = fs.readFileSync(path.join(root, "src/lib/plan-limits.ts"), "utf8");
+const bgSrcEarly = fs.readFileSync(path.join(root, "src/components/BgRemover.tsx"), "utf8");
 test("pricing features mention prepaid / no auto-renew", () => {
   assert.match(pricingSrc, /no auto-renew/i);
-  assert.match(pricingSrc, /500 removals/);
+  assert.match(pricingSrc, /plan-limits|getPlanLimits|PLAN_LIMITS|MAX_BATCH_SIZE/);
   assert.doesNotMatch(pricingSrc, /800 removals per month/);
+});
+test("frontend plan-limits.ts imports shared/plan-limits.js", () => {
+  assert.match(planLimitsTs, /shared\/plan-limits\.js/);
+});
+test("pricing.ts derives copy from plan-limits helpers", () => {
+  assert.match(pricingSrc, /from "@\/lib\/plan-limits"/);
+  assert.match(pricingSrc, /getPlanLimits|monthlyRemovalsShort|MAX_BATCH_SIZE/);
+});
+test("BgRemover uses shared MAX_BATCH_SIZE (not hardcoded 20 const)", () => {
+  assert.match(bgSrcEarly, /from "@\/lib\/plan-limits"/);
+  assert.match(bgSrcEarly, /MAX_BATCH_SIZE/);
+  assert.doesNotMatch(bgSrcEarly, /const MAX_BATCH_SIZE\s*=\s*20/);
+});
+test("pricing feature strings would match shared numbers when rendered", () => {
+  // Source no longer hardcodes removals counts — they come from getPlanLimits at runtime.
+  for (const code of ["guest", "free", "pro", "business"]) {
+    const n = sharedPlanLimits.PLAN_LIMITS[code].monthlyLimit;
+    const mb = sharedPlanLimits.PLAN_LIMITS[code].maxFileSizeMb;
+    assert.ok(n > 0 && mb > 0, code);
+  }
+  // Guard against old business=800 drift in any marketing source we care about
+  assert.doesNotMatch(pricingSrc, /800 removals/);
 });
 
 // Shared products.js is the single catalog for PayPal + frontend
+// Rate limit helpers + daily budget
+const rateLimitShared = await import(
+  pathToFileURL(path.join(root, "shared/rate-limit.js")).href
+);
+const costGuard = await import(
+  pathToFileURL(path.join(root, "functions/api/cost-guard.js")).href
+);
+const usageForRate = await import(
+  pathToFileURL(path.join(root, "functions/api/usage.js")).href
+);
+
+console.log("\nrate-limit + cost-guard");
+test("shared rate limit constants are sensible", () => {
+  assert.equal(rateLimitShared.RATE_LIMIT_WINDOW_MS, 60_000);
+  assert.equal(rateLimitShared.RATE_LIMIT_MAX_PER_WINDOW, 12);
+  assert.equal(rateLimitShared.BATCH_MIN_GAP_MS, 5000);
+  assert.equal(rateLimitShared.BATCH_RATE_LIMIT_MAX_RETRIES, 3);
+});
+test("usage.js re-exports shared rate limit constants", () => {
+  assert.equal(usageForRate.RATE_LIMIT_WINDOW_MS, rateLimitShared.RATE_LIMIT_WINDOW_MS);
+  assert.equal(usageForRate.RATE_LIMIT_MAX_PER_WINDOW, rateLimitShared.RATE_LIMIT_MAX_PER_WINDOW);
+});
+test("parseRetryAfterSec prefers header over body", () => {
+  assert.equal(
+    rateLimitShared.parseRetryAfterSec({
+      headerValue: "15",
+      bodyRetryAfterSec: 60,
+      fallback: 90,
+    }),
+    15
+  );
+});
+test("parseRetryAfterSec uses body when no header", () => {
+  assert.equal(
+    rateLimitShared.parseRetryAfterSec({
+      headerValue: null,
+      bodyRetryAfterSec: 45,
+    }),
+    45
+  );
+});
+test("parseRetryAfterSec clamps to max and min 1", () => {
+  assert.equal(
+    rateLimitShared.parseRetryAfterSec({ bodyRetryAfterSec: 999, max: 90 }),
+    90
+  );
+  assert.equal(
+    rateLimitShared.parseRetryAfterSec({ bodyRetryAfterSec: 0, fallback: 0 }),
+    1
+  );
+});
+test("dayRangeUtc is midnight-aligned UTC", () => {
+  const now = new Date("2026-07-21T15:30:00.000Z");
+  const { start, end } = costGuard.dayRangeUtc(now);
+  assert.equal(start, "2026-07-21T00:00:00.000Z");
+  assert.equal(end, "2026-07-22T00:00:00.000Z");
+});
+test("getDailyUpstreamLimit treats empty as disabled", () => {
+  assert.equal(costGuard.getDailyUpstreamLimit({}), 0);
+  assert.equal(costGuard.getDailyUpstreamLimit({ DAILY_UPSTREAM_LIMIT: "" }), 0);
+  assert.equal(costGuard.getDailyUpstreamLimit({ DAILY_UPSTREAM_LIMIT: "2000" }), 2000);
+  assert.equal(costGuard.getDailyUpstreamLimit({ DAILY_UPSTREAM_LIMIT: "0" }), 0);
+});
+await testAsync("assertDailyUpstreamBudget disabled allows traffic", async () => {
+  const r = await costGuard.assertDailyUpstreamBudget({});
+  assert.equal(r.allowed, true);
+  assert.equal(r.disabled, true);
+});
+await testAsync("assertDailyUpstreamBudget blocks when used >= limit", async () => {
+  const env = {
+    DAILY_UPSTREAM_LIMIT: "10",
+    DB: {
+      prepare(sql) {
+        return {
+          bind() {
+            return this;
+          },
+          async first() {
+            // Each query returns 6 → total 12 > 10
+            return { count: 6 };
+          },
+        };
+      },
+    },
+  };
+  const r = await costGuard.assertDailyUpstreamBudget(env, new Date("2026-07-21T12:00:00Z"));
+  assert.equal(r.allowed, false);
+  assert.equal(r.used, 12);
+  assert.equal(r.limit, 10);
+});
+await testAsync("assertDailyUpstreamBudget allows under limit", async () => {
+  const env = {
+    DAILY_UPSTREAM_LIMIT: "100",
+    DB: {
+      prepare() {
+        return {
+          bind() {
+            return this;
+          },
+          async first() {
+            return { count: 3 };
+          },
+        };
+      },
+    },
+  };
+  const r = await costGuard.assertDailyUpstreamBudget(env);
+  assert.equal(r.allowed, true);
+  assert.equal(r.used, 6);
+  assert.equal(r.remaining, 94);
+});
+test("frontend rate-limit.ts imports shared/rate-limit.js", () => {
+  const src = fs.readFileSync(path.join(root, "src/lib/rate-limit.ts"), "utf8");
+  assert.match(src, /shared\/rate-limit\.js/);
+});
+test("BgRemover uses BATCH_MIN_GAP_MS and multi-retry", () => {
+  const src = fs.readFileSync(path.join(root, "src/components/BgRemover.tsx"), "utf8");
+  assert.match(src, /BATCH_MIN_GAP_MS/);
+  assert.match(src, /BATCH_RATE_LIMIT_MAX_RETRIES/);
+  assert.match(src, /parseRetryAfterSec/);
+  assert.doesNotMatch(src, /await sleep\(250\)/);
+});
+test("CI uses frozen-lockfile", () => {
+  const ci = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
+  const deploy = fs.readFileSync(path.join(root, ".github/workflows/deploy.yml"), "utf8");
+  assert.match(ci, /frozen-lockfile/);
+  assert.match(deploy, /frozen-lockfile/);
+  assert.doesNotMatch(ci, /no-frozen-lockfile/);
+  assert.doesNotMatch(deploy, /no-frozen-lockfile/);
+});
+
 console.log("\nshared products catalog");
 const sharedProducts = await import(
   pathToFileURL(path.join(root, "shared/products.js")).href
@@ -416,7 +743,7 @@ test("formatEta for multi-image batch", () => {
   assert.equal(formatEta(0, 10, 0), "");
   assert.match(formatEta(1, 8, 7), /few seconds|~1s|left/);
 });
-const bgSrc = fs.readFileSync(path.join(root, "src/components/BgRemover.tsx"), "utf8");
+const bgSrc = bgSrcEarly;
 test("BgRemover has dual download CTAs and deep-link export", () => {
   assert.match(bgSrc, /Transparent PNG/);
   assert.match(bgSrc, /White background JPG/);

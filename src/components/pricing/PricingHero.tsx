@@ -1,3 +1,5 @@
+import { monthlyRemovalsShort } from "@/lib/plan-limits";
+
 export function PricingHero() {
   return (
     <section className="relative overflow-hidden border-b border-black/8 bg-white px-4 py-20">
@@ -17,13 +19,13 @@ export function PricingHero() {
           subscriptions. Credits never expire.
         </p>
         <div className="mt-6 flex justify-center gap-3 text-sm text-neutral-500">
-          <span>Guest: 5/mo</span>
+          <span>Guest: {monthlyRemovalsShort("guest")}</span>
           <span>•</span>
-          <span>Free account: 20/mo</span>
+          <span>Free account: {monthlyRemovalsShort("free")}</span>
           <span>•</span>
-          <span>Pro: 200/mo</span>
+          <span>Pro: {monthlyRemovalsShort("pro")}</span>
           <span>•</span>
-          <span>Business: 500/mo</span>
+          <span>Business: {monthlyRemovalsShort("business")}</span>
         </div>
       </div>
     </section>

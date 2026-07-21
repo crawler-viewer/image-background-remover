@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { pricingPlans, type BillingCycle } from "@/lib/pricing";
+import { getPlanLimits } from "@/lib/plan-limits";
 import { parseBuyProductId } from "@/lib/checkout";
 import { trackViewPricing } from "@/lib/analytics";
 import { PricingCard } from "./PricingCard";
@@ -143,7 +144,7 @@ export function PricingCards() {
             >
               Buy credit packs →
             </a>{" "}
-            ($9.90 = 100 credits vs Pro 200/mo prepaid)
+            ($9.90 = 100 credits vs Pro {getPlanLimits("pro").monthlyLimit}/mo prepaid)
           </p>
         </div>
       </div>

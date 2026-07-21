@@ -5,6 +5,7 @@ import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
 import { startCheckoutOrLogin } from "@/lib/checkout";
 import { getMinCreditPack, getPopularCreditPack, planPriceLabel } from "@/lib/products";
+import { getPlanLimits } from "@/lib/plan-limits";
 
 export type LimitUpsellProps = {
   message: string;
@@ -83,7 +84,7 @@ export default function LimitUpsell({
               onClick={() => trackEvent("login_click", { source })}
               className="inline-flex rounded-lg bg-neutral-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
             >
-              Sign in for 20/mo free
+              Sign in for {getPlanLimits("free").monthlyLimit}/mo free
             </a>
             <Link
               href="/pricing/"

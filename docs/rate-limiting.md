@@ -11,11 +11,13 @@ Defense in depth for `/api/remove-bg` (the only costly upstream call).
 | App short window | D1 `rate_limit_logs` | **12 requests / IP / 60s** | Burst / script abuse |
 | Cloudflare WAF | Dashboard (recommended) | See below | Edge block before Workers bill |
 
-App constants live in `functions/api/usage.js`:
+App constants live in **`shared/rate-limit.js`** (backend re-exports via `functions/api/usage.js`):
 
 - `RATE_LIMIT_WINDOW_MS = 60_000`
 - `RATE_LIMIT_MAX_PER_WINDOW = 12`
-- `GUEST_IP_MONTHLY_LIMIT = 15`
+- `BATCH_MIN_GAP_MS ≈ 5000` (client paces batch jobs under the window)
+- `BATCH_RATE_LIMIT_MAX_RETRIES = 3`
+- Guest IP ceiling: `GUEST_IP_MONTHLY_LIMIT` in `shared/plan-limits.js` (15)
 
 On short-window 429 the API returns:
 
@@ -28,7 +30,13 @@ On short-window 429 the API returns:
 }
 ```
 
-with `Retry-After` header. The batch UI waits and retries **once**.
+with `Retry-After` header. The batch UI waits (body + header), retries up to **3** times, and spaces jobs by `BATCH_MIN_GAP_MS`.
+
+### Optional global daily budget
+
+Set `DAILY_UPSTREAM_LIMIT` (e.g. `2000`) on Cloudflare Pages to cap claimed removals per **UTC day**.  
+When exceeded, `/api/remove-bg` returns **503** with `code: "DAILY_BUDGET_EXCEEDED"`.  
+Omit or set `0` to disable. Structured logs include `costUsdEst` when `UPSTREAM_COST_USD` is set (default `0.04`).
 
 ## Apply D1 schema (required once)
 

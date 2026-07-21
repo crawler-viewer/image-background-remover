@@ -1,35 +1,7 @@
-import { getUserWithSession } from "../auth/db";
-import { json, readSession } from "../auth/_lib";
-import { getPlanConfig } from "../plan-config";
-import { assertMonthlyLimit } from "../usage";
-
-function planExpiryInfo(planExpiresAt) {
-  if (!planExpiresAt) {
-    return {
-      plan_expires_at: null,
-      plan_expired: false,
-      plan_days_remaining: null,
-    };
-  }
-
-  const expiresMs = new Date(planExpiresAt).getTime();
-  if (Number.isNaN(expiresMs)) {
-    return {
-      plan_expires_at: planExpiresAt,
-      plan_expired: false,
-      plan_days_remaining: null,
-    };
-  }
-
-  const msLeft = expiresMs - Date.now();
-  const days = Math.ceil(msLeft / 86400000);
-
-  return {
-    plan_expires_at: planExpiresAt,
-    plan_expired: msLeft <= 0,
-    plan_days_remaining: days,
-  };
-}
+import { getUserWithSession } from "../auth/db.js";
+import { json, readSession } from "../auth/_lib.js";
+import { planExpiryInfo, resolveActivePlan } from "../auth/plan.js";
+import { assertMonthlyLimit, getCreditBalance } from "../usage.js";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -45,37 +17,14 @@ export async function onRequestGet(context) {
       return json({ user: null }, { status: 404 });
     }
 
-    let planCode = user.plan || "free";
-    let planExpiresAt = user.plan_expires_at || null;
+    const active = await resolveActivePlan(env, user);
+    const planCode = active.planCode;
+    const plan = active.plan;
 
-    // Mirror remove-bg: expire prepaid plans on read so Account stays accurate
-    if (
-      (planCode === "pro" || planCode === "business") &&
-      planExpiresAt &&
-      new Date(planExpiresAt) < new Date()
-    ) {
-      planCode = "free";
-      planExpiresAt = null;
-      await env.DB
-        .prepare(
-          `UPDATE users SET plan = 'free', plan_expires_at = NULL, updated_at = ? WHERE google_sub = ?`
-        )
-        .bind(new Date().toISOString(), user.google_sub)
-        .run()
-        .catch((e) => console.error("Failed to downgrade expired plan on account/me:", e));
-    }
-
-    const plan = getPlanConfig(planCode);
-    const expiry = planExpiryInfo(
-      planCode === "pro" || planCode === "business" ? user.plan_expires_at || planExpiresAt : null
-    );
-
-    // If we just downgraded, surface expired state clearly
-    if (user.plan !== "free" && planCode === "free" && user.plan_expires_at) {
-      expiry.plan_expires_at = user.plan_expires_at;
-      expiry.plan_expired = true;
-      expiry.plan_days_remaining = 0;
-    }
+    // When just expired, keep original expiry timestamp so UI can show "expired"
+    const expiry = active.expired
+      ? planExpiryInfo(active.planExpiresAt, { forceExpired: true })
+      : planExpiryInfo(active.planExpiresAt);
 
     let quota = {
       used: 0,
@@ -88,14 +37,7 @@ export async function onRequestGet(context) {
       console.error("Failed to load quota for account/me:", quotaError);
     }
 
-    let creditBalance = 0;
-    try {
-      const creditRow = await env.DB
-        .prepare(`SELECT balance FROM user_credits WHERE google_sub = ? LIMIT 1`)
-        .bind(user.google_sub)
-        .first();
-      creditBalance = Number(creditRow?.balance || 0);
-    } catch {}
+    const creditBalance = await getCreditBalance(env, user.google_sub);
 
     return json({
       user: {
