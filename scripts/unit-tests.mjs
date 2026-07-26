@@ -1006,8 +1006,69 @@ await testAsync("public stats exclude ip:* mirror rows", async () => {
   const guestQuery = db.queries.find((q) => q.includes("guest_usage_logs"));
   assert.ok(guestQuery, "stats must query guest_usage_logs");
   assert.match(guestQuery, /guest_key NOT LIKE 'ip:%'/);
-  // 7 logged-in + 7 guest cookie rows, not 7 + 14
-  assert.equal(body.totalProcessed, 14);
+  // Removals are summed in one round trip; users is the only other query
+  assert.equal(db.queries.length, 2);
+  assert.equal(body.totalProcessed, 7);
+  assert.equal(body.totalUsers, 7);
+});
+
+await testAsync("stats are served from the edge cache on the second hit", async () => {
+  const db = countingDb(3);
+  const store = new Map();
+  const realCaches = globalThis.caches;
+  globalThis.caches = {
+    default: {
+      async match(key) {
+        const hit = store.get(key.url);
+        return hit ? hit.clone() : undefined;
+      },
+      async put(key, res) {
+        store.set(key.url, res);
+      },
+    },
+  };
+
+  try {
+    const ctx = () => ({
+      env: { DB: db },
+      // Query string must not fragment the cache key
+      request: new Request("https://picturebackgroundremover.xyz/api/stats?t=1"),
+      waitUntil: (p) => p,
+    });
+
+    const first = await stats.onRequestGet(ctx());
+    assert.equal((await first.json()).totalProcessed, 3);
+    const queriesAfterFirst = db.queries.length;
+    assert.ok(queriesAfterFirst > 0, "first call must hit D1");
+
+    const second = await stats.onRequestGet(ctx());
+    assert.equal((await second.json()).totalProcessed, 3);
+    assert.equal(db.queries.length, queriesAfterFirst, "second call must not touch D1");
+  } finally {
+    if (realCaches === undefined) delete globalThis.caches;
+    else globalThis.caches = realCaches;
+  }
+});
+
+await testAsync("a stats failure is not cached", async () => {
+  const failing = {
+    queries: [],
+    prepare() {
+      return {
+        bind() {
+          return this;
+        },
+        async first() {
+          throw new Error("D1_ERROR: down");
+        },
+      };
+    },
+  };
+  const res = await withSilencedConsole(() =>
+    stats.onRequestGet({ env: { DB: failing } })
+  );
+  assert.equal(res.headers.get("Cache-Control"), "no-store");
+  assert.deepEqual(await res.json(), { totalProcessed: 0, totalUsers: 0 });
 });
 
 await testAsync("admin report rejects the API key in the query string", async () => {

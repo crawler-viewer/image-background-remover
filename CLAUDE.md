@@ -122,9 +122,11 @@ Required in Cloudflare Pages (preview + production):
 - `AUTH_SECRET` — HMAC key for session cookies (rotating it invalidates all sessions)
 - D1 binding `DB` pointing at the `bg-remover-db` database
 
-Optional cost controls:
+Cost controls:
 
-- `DAILY_UPSTREAM_LIMIT` — max claimed removals per UTC day (`0`/omit = off)
+- `DAILY_UPSTREAM_LIMIT` — max claimed removals per UTC day. **Set it in production**: `0`/omit
+  means no global ceiling, and `remove_bg_ok` logs then carry `dailyBudget.enforced=false` so the
+  gap is alertable. It is not fail-closed on purpose — a forgotten var must not take the site down.
 - `UPSTREAM_COST_USD` — estimated USD per image for structured logs (default `0.04`)
 
 Rate-limit constants: `shared/rate-limit.js`. Batch UI paces by `BATCH_MIN_GAP_MS` and retries on `Retry-After`.

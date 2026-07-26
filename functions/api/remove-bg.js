@@ -118,9 +118,13 @@ export async function onRequestPost(context) {
       upstreamMs: upstream.upstreamMs,
       totalMs: Date.now() - startedAt,
       costUsdEst: getUpstreamCostUsd(env),
+      // `enforced: false` is the queryable signal that DAILY_UPSTREAM_LIMIT is
+      // unset, i.e. this removal had no global spend ceiling behind it. Alert on
+      // it rather than failing closed — an unset var must not take the site down.
       dailyBudget: guards.budget.disabled
-        ? null
+        ? { enforced: false }
         : {
+            enforced: true,
             used: guards.budget.used,
             limit: guards.budget.limit,
             remaining: guards.budget.remaining,

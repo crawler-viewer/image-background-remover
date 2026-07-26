@@ -55,7 +55,7 @@ Set for **Production** (and Preview if you test OAuth there).
 | `ADMIN_API_KEY` | Optional | `/api/admin/report`, sent as `x-admin-key` header only |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Recommended | **Must be present at build time** for static export |
 | `NEXT_PUBLIC_SITE_ENV` | Recommended | `production` → allow indexing |
-| `DAILY_UPSTREAM_LIMIT` | Optional | UTC-day cap on claimed removals (omit/`0` = off) |
+| `DAILY_UPSTREAM_LIMIT` | **Yes (prod)** | UTC-day cap on claimed removals. Omit/`0` = no global spend ceiling; `remove_bg_ok` logs then carry `dailyBudget.enforced=false` |
 | `UPSTREAM_COST_USD` | Optional | Log cost estimate per image (default `0.04`) |
 
 Binding:

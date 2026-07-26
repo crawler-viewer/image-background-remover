@@ -11,6 +11,7 @@ third-party API and writes rows on demand).
 | Plan monthly quota | D1 `usage_logs` / `guest_usage_logs` | Guest 5, Free 20, Pro 200, Business 500 | Product billing |
 | Guest IP monthly | `guest_usage_logs` key `ip:<ip>` | 15 / UTC month | Stop cookie-clearing freeloaders |
 | App short window | D1 `rate_limit_logs` | **12 requests / IP / 60s** | Burst / script abuse |
+| Daily spend ceiling | `DAILY_UPSTREAM_LIMIT` | per UTC day, global | Cap the provider bill; **set it in production** |
 | Checkout cap | `payment_orders` count | **10 / account / hour** | Stop order-table and PayPal-API flooding |
 | Cloudflare WAF | Dashboard (recommended) | See below | Edge block before Workers bill |
 

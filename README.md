@@ -29,8 +29,9 @@ GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 AUTH_SECRET=replace_with_a_long_random_secret
 
-# Optional: global UTC-day cap on claimed removals (0 or omit = disabled)
-# DAILY_UPSTREAM_LIMIT=2000
+# Global UTC-day cap on claimed removals — set this in production
+# (0 or omit = no global spend ceiling)
+DAILY_UPSTREAM_LIMIT=2000
 # Optional: USD estimate per image for structured logs (default 0.04)
 # UPSTREAM_COST_USD=0.04
 
@@ -123,6 +124,6 @@ Product prices / SKUs: **`shared/products.js`**.
 - D1-backed user storage, quota, credits
 - Guest / Free / Pro / Business monthly limits
 - Guest IP monthly cap + short-window rate limit (see `docs/rate-limiting.md`)
-- Optional `DAILY_UPSTREAM_LIMIT` spend guard
+- `DAILY_UPSTREAM_LIMIT` global daily spend guard (set in production)
 - SEO optimized (structured data, meta tags)
 - Mobile responsive
