@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LegalShell from "@/components/LegalShell";
+import { SUPPORT_EMAIL } from "@/lib/support";
 
 export const metadata: Metadata = {
   title: "Terms of Service - BGRemover",
@@ -49,7 +50,7 @@ export default function Page() {
                   <li>Paid plans (Pro, Business) are prepaid access periods purchased once via PayPal (not auto-renewing subscriptions).</li>
                   <li>All prices are in USD.</li>
                   <li>Plan access continues until the prepaid period ends; buy again to extend. Credit packs never expire.</li>
-                  <li>Refunds are handled on a case-by-case basis. Contact us within 7 days of purchase for refund requests.</li>
+                  <li>Refunds are handled on a case-by-case basis. Email <a href={`mailto:${SUPPORT_EMAIL}`} className="text-emerald-700 underline underline-offset-4">{SUPPORT_EMAIL}</a> within 7 days of purchase, including your PayPal transaction ID. See the <a href="/contact/" className="text-emerald-700 underline underline-offset-4">contact page</a>.</li>
                   <li>We reserve the right to change pricing with 30 days&apos; notice.</li>
                 </ul>
               </section>
@@ -97,7 +98,9 @@ export default function Page() {
               <section>
                 <h2 className="text-lg font-semibold">11. Contact</h2>
                 <p className="mt-2">
-                  If you have questions about these Terms, please contact us through our website.
+                  Questions about these Terms? Email{" "}
+                  <a href={`mailto:${SUPPORT_EMAIL}`} className="text-emerald-700 underline underline-offset-4">{SUPPORT_EMAIL}</a>{" "}
+                  or use our <a href="/contact/" className="text-emerald-700 underline underline-offset-4">contact page</a>.
                 </p>
               </section>
     </LegalShell>

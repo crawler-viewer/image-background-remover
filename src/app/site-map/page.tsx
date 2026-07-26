@@ -61,8 +61,9 @@ const sections: Array<{
     ],
   },
   {
-    title: "Legal",
+    title: "Legal & support",
     links: [
+      { href: "/contact/", label: "Contact & Support" },
       { href: "/privacy/", label: "Privacy Policy" },
       { href: "/terms/", label: "Terms of Service" },
     ],

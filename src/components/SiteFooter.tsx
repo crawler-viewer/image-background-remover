@@ -90,8 +90,11 @@ export default function SiteFooter() {
             </div>
             <div className="flex flex-col gap-2">
               <span className="mb-1 text-xs uppercase tracking-[0.15em] text-neutral-400">
-                Legal
+                Legal &amp; support
               </span>
+              <a href="/contact/" className="transition-colors hover:text-neutral-900">
+                Contact
+              </a>
               <a href="/privacy/" className="transition-colors hover:text-neutral-900">
                 Privacy
               </a>

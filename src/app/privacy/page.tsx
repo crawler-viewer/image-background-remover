@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LegalShell from "@/components/LegalShell";
+import { SUPPORT_EMAIL } from "@/lib/support";
 
 export const metadata: Metadata = {
   title: "Privacy Policy - BGRemover",
@@ -96,7 +97,9 @@ export default function Page() {
               <section>
                 <h2 className="text-lg font-semibold">11. Contact</h2>
                 <p className="mt-2">
-                  If you have questions about this Privacy Policy, please contact us through our website.
+                  Questions, or want to exercise any of the rights above? Email{" "}
+                  <a href={`mailto:${SUPPORT_EMAIL}`} className="text-emerald-700 underline underline-offset-4">{SUPPORT_EMAIL}</a>{" "}
+                  or use our <a href="/contact/" className="text-emerald-700 underline underline-offset-4">contact page</a>.
                 </p>
               </section>
     </LegalShell>
