@@ -1054,6 +1054,19 @@ await testAsync("frontend rate-limit module mirrors the shared constants", async
   );
   assert.equal(front.parseRetryAfterSec({ headerValue: "12" }), 12);
 });
+test("static responses carry the baseline security headers", () => {
+  const headers = fs.readFileSync(path.join(root, "public/_headers"), "utf8");
+  const global = headers.slice(headers.indexOf("/*"));
+  for (const h of [
+    "X-Content-Type-Options: nosniff",
+    "X-Frame-Options: DENY",
+    "frame-ancestors 'none'",
+    "Referrer-Policy: strict-origin-when-cross-origin",
+    "Permissions-Policy:",
+  ]) {
+    assert.ok(global.includes(h), `missing ${h}`);
+  }
+});
 test("CI uses frozen-lockfile", () => {
   const ci = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
   const deploy = fs.readFileSync(path.join(root, ".github/workflows/deploy.yml"), "utf8");

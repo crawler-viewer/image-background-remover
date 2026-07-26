@@ -10,3 +10,15 @@
 
 /*
   X-Content-Type-Options: nosniff
+  # The site is never framed (no iframes anywhere in src/), and the tool page has
+  # an upload button worth protecting from clickjacking.
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  # Do not leak the full URL (which can carry ?export=/?buy= intent) off-site
+  Referrer-Policy: strict-origin-when-cross-origin
+  # Deliberately no payment=(): PayPal is a redirect today, but blocking it
+  # would silently break a future Smart Buttons integration on the revenue path.
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  # No script-src CSP: the GA4 bootstrap and JSON-LD blocks are inline, and a
+  # static export cannot mint per-request nonces, so it would need
+  # 'unsafe-inline' — which buys close to nothing. Revisit if inline scripts go.
