@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import ConsentBanner from "@/components/ConsentBanner";
 import "./globals.css";
 
 const isProduction = process.env.NEXT_PUBLIC_SITE_ENV === "production";
@@ -61,17 +62,29 @@ export default function RootLayout({
         <link rel="preconnect" href="https://accounts.google.com" />
         {gaId ? (
           <>
-            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+            {/*
+              Consent Mode v2 must be set BEFORE the gtag script runs, so this
+              inline block comes first. Everything starts denied; ConsentBanner
+              flips analytics_storage only after the visitor chooses.
+            */}
             <script
               dangerouslySetInnerHTML={{
                 __html: `
                   window.dataLayer = window.dataLayer || [];
                   function gtag(){dataLayer.push(arguments);}
+                  gtag('consent', 'default', {
+                    ad_storage: 'denied',
+                    ad_user_data: 'denied',
+                    ad_personalization: 'denied',
+                    analytics_storage: 'denied',
+                    wait_for_update: 500
+                  });
                   gtag('js', new Date());
                   gtag('config', '${gaId}', { anonymize_ip: true });
                 `,
               }}
             />
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
           </>
         ) : null}
         <script
@@ -159,6 +172,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-stone-50 text-neutral-950 antialiased">
         {children}
+        {gaId ? <ConsentBanner /> : null}
       </body>
     </html>
   );

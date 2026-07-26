@@ -1982,6 +1982,88 @@ test("daily budget and generic errors are distinguished", () => {
   assert.match(empty.result.error, /Server error \(500\)/);
 });
 
+console.log("\nanalytics consent");
+await testAsync("consent defaults to undecided and never infers a grant", async () => {
+  const store = new Map();
+  globalThis.window = {
+    localStorage: {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, v),
+    },
+  };
+  try {
+    const consent = await importTs("src/lib/consent.ts");
+    assert.equal(consent.readConsent(), null, "no stored value → undecided");
+
+    // A junk value must not be read as consent
+    store.set(consent.CONSENT_STORAGE_KEY, "yes-please");
+    assert.equal(consent.readConsent(), null);
+
+    consent.storeConsent("granted");
+    assert.equal(consent.readConsent(), "granted");
+    consent.storeConsent("denied");
+    assert.equal(consent.readConsent(), "denied");
+  } finally {
+    delete globalThis.window;
+  }
+});
+
+await testAsync("consent survives storage being unavailable", async () => {
+  globalThis.window = {
+    localStorage: {
+      getItem() {
+        throw new Error("SecurityError: storage disabled");
+      },
+      setItem() {
+        throw new Error("SecurityError: storage disabled");
+      },
+    },
+  };
+  try {
+    const consent = await importTs("src/lib/consent.ts");
+    // Private mode must read as undecided, not as consent, and must not throw
+    assert.equal(consent.readConsent(), null);
+    assert.doesNotThrow(() => consent.storeConsent("granted"));
+  } finally {
+    delete globalThis.window;
+  }
+});
+
+await testAsync("applying consent updates analytics storage only", async () => {
+  const calls = [];
+  globalThis.window = { gtag: (...args) => calls.push(args) };
+  try {
+    const consent = await importTs("src/lib/consent.ts");
+    consent.applyConsent("granted");
+
+    assert.equal(calls.length, 1);
+    const [command, action, payload] = calls[0];
+    assert.equal(command, "consent");
+    assert.equal(action, "update");
+    assert.equal(payload.analytics_storage, "granted");
+    // We never run ads — those stay denied whatever the visitor picks
+    for (const key of ["ad_storage", "ad_user_data", "ad_personalization"]) {
+      assert.equal(payload[key], "denied", key);
+    }
+  } finally {
+    delete globalThis.window;
+  }
+});
+
+test("GA4 boots with consent denied before the gtag script loads", () => {
+  const layout = fs.readFileSync(path.join(root, "src/app/layout.tsx"), "utf8");
+  const consentDefault = layout.indexOf("gtag('consent', 'default'");
+  const scriptLoad = layout.indexOf("googletagmanager.com/gtag/js");
+  assert.ok(consentDefault > -1, "Consent Mode default block missing");
+  assert.ok(
+    consentDefault < scriptLoad,
+    "consent default must be set before gtag.js loads, or the first hit escapes"
+  );
+  for (const key of ["analytics_storage: 'denied'", "ad_storage: 'denied'"]) {
+    assert.ok(layout.includes(key), `missing ${key}`);
+  }
+});
+
 console.log("\nGA4 analytics helpers");
 await testAsync("ecommerce events carry GA4-shaped params", async () => {
   const events = [];
