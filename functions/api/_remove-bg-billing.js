@@ -43,6 +43,30 @@ function guestJson(body, { status, guestInfo }) {
 }
 
 const CLAIM_FAILED = { error: "Could not reserve quota. Please try again.", code: "QUOTA_CLAIM_FAILED" };
+const GUEST_CLAIM_FAILED = {
+  error: "Could not reserve guest quota. Please try again.",
+  code: "QUOTA_CLAIM_FAILED",
+};
+
+/**
+ * A claimed row only becomes the orchestrator's responsibility once we hand it
+ * back as `claims`. Anything that throws before that would strand it: the
+ * orchestrator's `claims` is still null, so its `releaseClaims` has nothing to
+ * release and the caller silently loses a removal they never received.
+ * So release it here, where the claim exists.
+ */
+async function releaseStrandedClaim({ requestId, event, error, release }) {
+  logEvent("error", event, { requestId, error: String(error?.message || error) });
+  try {
+    await release();
+  } catch (releaseErr) {
+    // Out of options — make the orphan row findable for manual reconciliation
+    logEvent("error", `${event}_release_failed`, {
+      requestId,
+      error: String(releaseErr?.message || releaseErr),
+    });
+  }
+}
 
 async function reserveForUser(env, { user, planCode, plan, file, requestId }) {
   const quota = await assertMonthlyLimit(env, user.google_sub, planCode);
@@ -64,19 +88,30 @@ async function reserveForUser(env, { user, planCode, plan, file, requestId }) {
       return { response: json(CLAIM_FAILED, { status: 503 }) };
     }
 
-    // Rank of this row inside the month, not a fresh total: two requests racing
-    // on the last slot get ranks N and N+1, so the earlier one keeps it instead
-    // of both rolling back.
-    const rank = await getUserUsageRank(env, user.google_sub, claim.id);
-    if (rank <= plan.monthlyLimit) {
-      return {
-        billMode: "quota",
-        claims: { userUsageId: claim.id, googleSub: user.google_sub },
-      };
-    }
+    // The row exists from here on — see releaseStrandedClaim
+    try {
+      // Rank of this row inside the month, not a fresh total: two requests
+      // racing on the last slot get ranks N and N+1, so the earlier one keeps
+      // it instead of both rolling back.
+      const rank = await getUserUsageRank(env, user.google_sub, claim.id);
+      if (rank <= plan.monthlyLimit) {
+        return {
+          billMode: "quota",
+          claims: { userUsageId: claim.id, googleSub: user.google_sub },
+        };
+      }
 
-    await rollbackUserUsage(env, claim.id);
-    usedNow = rank - 1;
+      await rollbackUserUsage(env, claim.id);
+      usedNow = rank - 1;
+    } catch (err) {
+      await releaseStrandedClaim({
+        requestId,
+        event: "user_usage_claim_stranded",
+        error: err,
+        release: () => rollbackUserUsage(env, claim.id),
+      });
+      return { response: json(CLAIM_FAILED, { status: 503 }) };
+    }
   }
 
   // Over plan quota — credits are the fallback
@@ -136,51 +171,56 @@ async function reserveForGuest(env, { request, clientIp, file, requestId }) {
       requestId,
       error: String(claimErr?.message || claimErr),
     });
-    return {
-      guestInfo,
-      response: json(
-        { error: "Could not reserve guest quota. Please try again.", code: "QUOTA_CLAIM_FAILED" },
-        { status: 503 }
-      ),
-    };
+    return { guestInfo, response: json(GUEST_CLAIM_FAILED, { status: 503 }) };
   }
 
-  const guestPlan = getPlanConfig("guest");
-  const { cookieRank, ipRank } = await getGuestUsageRanks(env, {
-    guestKey: guestInfo.guestId,
-    clientIp,
-    guestLogId: guestClaim.guestLogId,
-    ipLogId: guestClaim.ipLogId,
-  });
-  const overCookie = cookieRank > guestPlan.monthlyLimit;
-  const overIp = ipRank > GUEST_IP_MONTHLY_LIMIT;
+  // Both rows exist from here on — see releaseStrandedClaim
+  try {
+    const guestPlan = getPlanConfig("guest");
+    const { cookieRank, ipRank } = await getGuestUsageRanks(env, {
+      guestKey: guestInfo.guestId,
+      clientIp,
+      guestLogId: guestClaim.guestLogId,
+      ipLogId: guestClaim.ipLogId,
+    });
+    const overCookie = cookieRank > guestPlan.monthlyLimit;
+    const overIp = ipRank > GUEST_IP_MONTHLY_LIMIT;
 
-  if (overCookie || overIp) {
-    await rollbackGuestUsage(env, guestClaim);
-    return {
-      guestInfo,
-      response: guestJson(
-        overCookie
-          ? {
-              error: "Guest monthly limit reached. Sign in to unlock more removals.",
-              code: "GUEST_MONTHLY_LIMIT_REACHED",
-              used: Math.max(0, cookieRank - 1),
-              limit: guestPlan.monthlyLimit,
-              plan: "guest",
-            }
-          : {
-              error: "Too many free removals from this network this month. Sign in to continue.",
-              code: "GUEST_IP_LIMIT_REACHED",
-              used: Math.max(0, ipRank - 1),
-              limit: GUEST_IP_MONTHLY_LIMIT,
-              plan: "guest",
-            },
-        { status: 429, guestInfo }
-      ),
-    };
+    if (overCookie || overIp) {
+      await rollbackGuestUsage(env, guestClaim);
+      return {
+        guestInfo,
+        response: guestJson(
+          overCookie
+            ? {
+                error: "Guest monthly limit reached. Sign in to unlock more removals.",
+                code: "GUEST_MONTHLY_LIMIT_REACHED",
+                used: Math.max(0, cookieRank - 1),
+                limit: guestPlan.monthlyLimit,
+                plan: "guest",
+              }
+            : {
+                error: "Too many free removals from this network this month. Sign in to continue.",
+                code: "GUEST_IP_LIMIT_REACHED",
+                used: Math.max(0, ipRank - 1),
+                limit: GUEST_IP_MONTHLY_LIMIT,
+                plan: "guest",
+              },
+          { status: 429, guestInfo }
+        ),
+      };
+    }
+
+    return { billMode: "quota", claims: { guestClaim }, guestInfo };
+  } catch (err) {
+    await releaseStrandedClaim({
+      requestId,
+      event: "guest_usage_claim_stranded",
+      error: err,
+      release: () => rollbackGuestUsage(env, guestClaim),
+    });
+    return { guestInfo, response: json(GUEST_CLAIM_FAILED, { status: 503 }) };
   }
-
-  return { billMode: "quota", claims: { guestClaim }, guestInfo };
 }
 
 /**

@@ -1075,11 +1075,16 @@ const removeBgGuards = await import(
  * In-memory D1 stand-in. Dispatches on the SQL we actually issue and throws on
  * anything unknown, so a newly added query cannot slip through untested.
  */
-function fakeRemoveBgDb({ guestUsed = 0, ipUsed = 0 } = {}) {
+function fakeRemoveBgDb({ guestUsed = 0, ipUsed = 0, failOn = null } = {}) {
   const store = { seq: 100, inserted: [], deleted: [], guestUsed, ipUsed };
 
   const handle = (sql, args) => {
     const s = sql.replace(/\s+/g, " ").trim();
+
+    // Simulate a D1 hiccup on one specific query
+    if (failOn && s.includes(failOn)) {
+      throw new Error(`D1_ERROR: simulated failure on ${failOn}`);
+    }
 
     if (s.startsWith("INSERT INTO rate_limit_logs")) {
       return { meta: { last_row_id: ++store.seq, changes: 1 } };
@@ -1243,6 +1248,34 @@ await testAsync("upstream failure rolls back both claimed guest rows", async () 
     db.store.deleted.sort(),
     db.store.inserted.map((r) => r.id).sort(),
     "the rows released are the rows claimed"
+  );
+});
+
+await testAsync("a D1 failure after claiming releases the rows, not the user's quota", async () => {
+  // The rank query runs after the rows are inserted but before the claim is
+  // handed to the orchestrator — the one window where a throw used to strand
+  // them, silently costing a removal the caller never received.
+  const db = fakeRemoveBgDb({ failOn: "AS cookie_rank" });
+
+  const { result, calls } = await withStubbedUpstream(
+    () => new Response("unreachable", { status: 200 }),
+    () =>
+      withSilencedConsole(() =>
+        removeBg.onRequestPost({
+          request: imageUploadRequest(),
+          env: { DB: db, CLIPDROP_API_KEY: "test-key" },
+        })
+      )
+  );
+
+  assert.equal(result.status, 503);
+  assert.equal((await result.json()).code, "QUOTA_CLAIM_FAILED");
+  assert.equal(calls(), 0, "never reached the paid call");
+  assert.equal(db.store.inserted.length, 2);
+  assert.deepEqual(
+    db.store.deleted.sort(),
+    db.store.inserted.map((r) => r.id).sort(),
+    "both claimed rows released despite the mid-flight failure"
   );
 });
 
