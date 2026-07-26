@@ -177,6 +177,45 @@ export function extractCapturedAmount(capture) {
   return String(value);
 }
 
+/**
+ * Extract { value, currency } from a PAYMENT.CAPTURE.* webhook resource.
+ * Webhook capture resources carry the money on the resource itself, not in
+ * purchase_units (that shape is only on order/capture API responses).
+ */
+export function extractWebhookCaptureAmount(resource) {
+  if (!resource || typeof resource !== "object") return null;
+  const amount = resource.amount;
+  if (!amount || amount.value == null) return null;
+  return {
+    value: String(amount.value),
+    currency: amount.currency_code ? String(amount.currency_code) : null,
+  };
+}
+
+/**
+ * Money check shared by the capture redirect and the webhook fulfiller.
+ * Fail-closed: a missing/unparsable amount never fulfills.
+ *
+ * @param {{ amount_usd?: string, currency?: string }|null} order
+ * @param {{ value?: string|number|null, currency?: string|null }|null} captured
+ * @returns {{ ok: boolean, reason: string|null }}
+ */
+export function verifyCapturedAmount(order, captured) {
+  if (!order) return { ok: false, reason: "missing_order" };
+  if (!captured || captured.value == null) return { ok: false, reason: "missing_amount" };
+  if (order.amount_usd == null) return { ok: false, reason: "missing_order_amount" };
+  if (!amountsEqual(captured.value, order.amount_usd)) {
+    return { ok: false, reason: "amount_mismatch" };
+  }
+
+  const expected = String(order.currency || "USD").toUpperCase();
+  if (captured.currency && String(captured.currency).toUpperCase() !== expected) {
+    return { ok: false, reason: "currency_mismatch" };
+  }
+
+  return { ok: true, reason: null };
+}
+
 /** Compare money amounts as fixed 2-decimal strings. */
 export function amountsEqual(a, b) {
   if (a == null || b == null) return false;

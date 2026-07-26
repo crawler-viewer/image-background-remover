@@ -71,6 +71,8 @@ The schema file is the migration — there is no migrations directory. Add new t
 
 `functions/api/payment/` contains PayPal checkout and webhook handling, persisting to `payment_orders` and crediting `user_credits` (credit packs) or updating `users.plan` + `plan_expires_at` (subscriptions). The frontend entry point is `/credits` and `/pricing`.
 
+Both fulfilment paths (capture redirect and webhook) are fail-closed on money: `verifyCapturedAmount` in `paypal-lib.js` must pass before `fulfillPaidOrder` runs, and the webhook returns 503 for every event unless `PAYPAL_WEBHOOK_ID` is set — an unsigned event could otherwise grant a plan to anyone who knows a `paypal_order_id` (which `create-checkout` hands to the browser).
+
 ### Frontend
 
 `src/app/` is App Router with `output: "export"` — every route must be statically renderable (no `dynamic = "force-dynamic"`, no server actions, no Node runtime APIs at request time). Dynamic data is fetched client-side from `/api/*`.

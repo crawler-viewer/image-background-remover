@@ -136,6 +136,35 @@ test("extractCapturedAmount reads purchase_units captures", () => {
   });
   assert.equal(amt, "9.90");
 });
+test("extractWebhookCaptureAmount reads capture resource money", () => {
+  const amt = paypalLib.extractWebhookCaptureAmount({
+    id: "CAP-1",
+    amount: { value: "29.90", currency_code: "USD" },
+  });
+  assert.deepEqual(amt, { value: "29.90", currency: "USD" });
+  assert.equal(paypalLib.extractWebhookCaptureAmount({ id: "CAP-1" }), null);
+  assert.equal(paypalLib.extractWebhookCaptureAmount(null), null);
+});
+test("verifyCapturedAmount accepts an exact match", () => {
+  const r = paypalLib.verifyCapturedAmount(
+    { amount_usd: "9.90", currency: "USD" },
+    { value: "9.9", currency: "USD" }
+  );
+  assert.equal(r.ok, true);
+});
+test("verifyCapturedAmount rejects underpay, wrong currency, missing amount", () => {
+  const order = { amount_usd: "299.00", currency: "USD" };
+  assert.equal(
+    paypalLib.verifyCapturedAmount(order, { value: "0.01", currency: "USD" }).reason,
+    "amount_mismatch"
+  );
+  assert.equal(
+    paypalLib.verifyCapturedAmount(order, { value: "299.00", currency: "MXN" }).reason,
+    "currency_mismatch"
+  );
+  assert.equal(paypalLib.verifyCapturedAmount(order, null).reason, "missing_amount");
+  assert.equal(paypalLib.verifyCapturedAmount(null, { value: "299.00" }).reason, "missing_order");
+});
 test("assertPayPalReady fails without credentials", () => {
   assert.throws(
     () => paypalLib.assertPayPalReady({}),
@@ -171,6 +200,63 @@ test("assertPayPalReady allows live when PAYPAL_SANDBOX=false", () => {
     SITE_URL: "https://picturebackgroundremover.xyz",
   });
   assert.equal(cfg.isSandbox, false);
+});
+
+console.log("\npaypal webhook handler");
+const webhook = await import(
+  pathToFileURL(path.join(root, "functions/api/payment/paypal/webhook.js")).href
+);
+
+function webhookRequest(event, headers = {}) {
+  return new Request("https://picturebackgroundremover.xyz/api/payment/paypal/webhook", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(event),
+  });
+}
+
+/** Any D1 access at all is a failure for the reject paths. */
+function explodingDb(onUse) {
+  return {
+    prepare() {
+      onUse();
+      throw new Error("DB must not be touched on a rejected webhook");
+    },
+  };
+}
+
+async function withSilencedConsole(fn) {
+  const { error, warn, log } = console;
+  console.error = () => {};
+  console.warn = () => {};
+  console.log = () => {};
+  try {
+    return await fn();
+  } finally {
+    console.error = error;
+    console.warn = warn;
+    console.log = log;
+  }
+}
+
+await testAsync("webhook fails closed without PAYPAL_WEBHOOK_ID", async () => {
+  let dbUsed = false;
+  const res = await withSilencedConsole(() =>
+    webhook.onRequestPost({
+      request: webhookRequest({
+        event_type: "PAYMENT.CAPTURE.COMPLETED",
+        resource: {
+          amount: { value: "9.90", currency_code: "USD" },
+          supplementary_data: { related_ids: { order_id: "PAYPAL-1" } },
+        },
+      }),
+      env: { DB: explodingDb(() => (dbUsed = true)) },
+    })
+  );
+
+  // 503 (not 200) so PayPal retries once the variable is configured
+  assert.equal(res.status, 503);
+  assert.equal(dbUsed, false, "no fulfilment may happen without signature verification");
 });
 
 console.log("\nfulfill helpers");

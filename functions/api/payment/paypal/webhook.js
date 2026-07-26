@@ -1,15 +1,16 @@
-import { getPayPalConfig, getPayPalAccessToken } from "../paypal-lib.js";
+import {
+  getPayPalConfig,
+  getPayPalAccessToken,
+  extractWebhookCaptureAmount,
+  verifyCapturedAmount,
+} from "../paypal-lib.js";
 import { ensurePaymentSchema, fulfillPaidOrder } from "../fulfill.js";
+import { logEvent } from "../../log.js";
 
 async function verifyWebhookSignature(env, headers, body) {
   const { baseUrl } = getPayPalConfig(env);
   const token = await getPayPalAccessToken(env);
   const webhookId = env.PAYPAL_WEBHOOK_ID;
-
-  if (!webhookId) {
-    console.error("Missing PAYPAL_WEBHOOK_ID");
-    return false;
-  }
 
   const res = await fetch(`${baseUrl}/v1/notifications/verify-webhook-signature`, {
     method: "POST",
@@ -29,7 +30,11 @@ async function verifyWebhookSignature(env, headers, body) {
   });
 
   if (!res.ok) {
-    console.error("Webhook verification failed:", await res.text());
+    const detail = await res.text().catch(() => "");
+    logEvent("error", "paypal_webhook_verify_failed", {
+      status: res.status,
+      detail: String(detail).slice(0, 200),
+    });
     return false;
   }
 
@@ -41,14 +46,24 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    // Fail closed: without a webhook id we cannot tell PayPal apart from anyone
+    // who knows a paypal_order_id, and this endpoint grants plans/credits.
+    // 503 (not 200) so PayPal keeps retrying once the variable is configured.
+    if (!env.PAYPAL_WEBHOOK_ID) {
+      logEvent("error", "paypal_webhook_id_missing", {
+        hint: "Set PAYPAL_WEBHOOK_ID in Cloudflare Pages; webhooks are rejected until then.",
+      });
+      return new Response("Webhook not configured", { status: 503 });
+    }
+
     const body = await request.text();
 
-    if (env.PAYPAL_WEBHOOK_ID) {
-      const valid = await verifyWebhookSignature(env, request.headers, body);
-      if (!valid) {
-        console.error("Invalid webhook signature");
-        return new Response("Invalid signature", { status: 401 });
-      }
+    const valid = await verifyWebhookSignature(env, request.headers, body);
+    if (!valid) {
+      logEvent("warn", "paypal_webhook_signature_invalid", {
+        transmissionId: request.headers.get("paypal-transmission-id") || null,
+      });
+      return new Response("Invalid signature", { status: 401 });
     }
 
     const event = JSON.parse(body);
@@ -78,12 +93,35 @@ export async function onRequestPost(context) {
         .first();
 
       if (!order) {
-        console.error("Webhook: order not found for PayPal ID:", paypalOrderId);
+        logEvent("error", "paypal_webhook_order_not_found", { paypalOrderId });
+        return new Response("OK", { status: 200 });
+      }
+
+      // Same money check as the capture redirect — a signed event still has to
+      // pay the amount we recorded, in the currency we recorded.
+      const captured = extractWebhookCaptureAmount(capture);
+      const check = verifyCapturedAmount(order, captured);
+      if (!check.ok) {
+        logEvent("error", "paypal_webhook_amount_rejected", {
+          paypalOrderId,
+          orderId: order.id,
+          reason: check.reason,
+          captured: captured?.value ?? null,
+          capturedCurrency: captured?.currency ?? null,
+          expected: order.amount_usd ?? null,
+          expectedCurrency: order.currency || "USD",
+        });
+        // Leave the order pending for manual review; ack so PayPal stops retrying.
         return new Response("OK", { status: 200 });
       }
 
       const result = await fulfillPaidOrder(db, order, now);
-      console.log("Webhook fulfill:", order.id, result);
+      logEvent("info", "paypal_webhook_fulfilled", {
+        orderId: order.id,
+        applied: result.applied,
+        kind: result.kind || null,
+        reason: result.reason || null,
+      });
     }
 
     if (eventType === "PAYMENT.CAPTURE.DENIED" || eventType === "PAYMENT.CAPTURE.REVERSED") {

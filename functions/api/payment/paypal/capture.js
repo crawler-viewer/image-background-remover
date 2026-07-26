@@ -1,7 +1,7 @@
 import {
-  amountsEqual,
   capturePayPalOrder,
   extractCapturedAmount,
+  verifyCapturedAmount,
 } from "../paypal-lib.js";
 import {
   buildPaymentSuccessQuery,
@@ -51,12 +51,28 @@ export async function onRequestGet(context) {
       return Response.redirect(`${base}/pricing/?payment=error`, 302);
     }
 
-    // Validate captured amount matches our recorded order (prevents product mismatch)
+    // Validate captured amount matches our recorded order (prevents product mismatch).
+    // Fail-closed: an unreadable amount is treated the same as a mismatch.
     const capturedAmount = extractCapturedAmount(capture);
-    if (capturedAmount && order.amount_usd && !amountsEqual(capturedAmount, order.amount_usd)) {
+    const capturedCurrency =
+      capture?.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.currency_code ||
+      capture?.purchase_units?.[0]?.amount?.currency_code ||
+      null;
+    const check = verifyCapturedAmount(order, {
+      value: capturedAmount,
+      currency: capturedCurrency,
+    });
+    if (!check.ok) {
       console.error(
-        "PayPal amount mismatch:",
-        { paypalOrderId, capturedAmount, expected: order.amount_usd, orderId: order.id }
+        "PayPal amount rejected:",
+        {
+          paypalOrderId,
+          reason: check.reason,
+          capturedAmount,
+          capturedCurrency,
+          expected: order.amount_usd,
+          orderId: order.id,
+        }
       );
       // Do not fulfill mismatched payments — leave pending for manual review
       return Response.redirect(`${base}/pricing/?payment=error&reason=amount`, 302);

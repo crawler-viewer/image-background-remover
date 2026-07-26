@@ -51,7 +51,8 @@ Set for **Production** (and Preview if you test OAuth there).
 | `PAYPAL_CLIENT_ID` | If payments | Live app |
 | `PAYPAL_CLIENT_SECRET` | If payments | Live app |
 | `PAYPAL_SANDBOX` | If payments | Must be **`false`** for live |
-| `PAYPAL_WEBHOOK_ID` | Recommended | Signature verify |
+| `PAYPAL_WEBHOOK_ID` | **If payments** | Signature verify. Missing → webhook returns 503 for every event (fail-closed) |
+| `ADMIN_API_KEY` | Optional | `/api/admin/report`, sent as `x-admin-key` header only |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Recommended | **Must be present at build time** for static export |
 | `NEXT_PUBLIC_SITE_ENV` | Recommended | `production` → allow indexing |
 | `DAILY_UPSTREAM_LIMIT` | Optional | UTC-day cap on claimed removals (omit/`0` = off) |
@@ -103,9 +104,13 @@ Plans are **prepaid one-time Checkout** (not PayPal Subscriptions). Env:
 - [ ] `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` = **Live** app
 - [ ] `PAYPAL_SANDBOX=false` (required on production; otherwise checkout returns 503)
 - [ ] `SITE_URL=https://picturebackgroundremover.xyz`
-- [ ] `PAYPAL_WEBHOOK_ID` set (recommended)
+- [ ] `PAYPAL_WEBHOOK_ID` set — **required**: the webhook rejects every event with 503
+      until it is present, and PayPal keeps retrying, so an unset value silently
+      stalls fulfilment instead of accepting forged events
 - [ ] Webhook URL: `https://picturebackgroundremover.xyz/api/payment/paypal/webhook`
 - [ ] Events: `PAYMENT.CAPTURE.COMPLETED` (and denied/reversed if available)
+- [ ] Verify after deploy: a signed event whose captured amount ≠ the recorded
+      order amount is logged as `paypal_webhook_amount_rejected` and left `pending`
 - [ ] D1: re-run `db/schema.sql` or rely on runtime `ALTER` for `product_id` / `billing_period`
 - [ ] Test: credit pack first, then prepaid Pro month
 - [ ] Capture redirect → `/account/?payment=success` and plan/credits updated
