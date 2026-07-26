@@ -1341,6 +1341,148 @@ await testAsync("unsupported type and missing file are rejected with 400", async
   assert.equal((await empty.response.json()).code, "NO_IMAGE");
 });
 
+console.log("\ncheckout throttle");
+const createCheckout = await import(
+  pathToFileURL(path.join(root, "functions/api/payment/create-checkout.js")).href
+);
+
+const CHECKOUT_ENV = {
+  AUTH_SECRET: "test-secret-for-unit-tests",
+  PAYPAL_CLIENT_ID: "id",
+  PAYPAL_CLIENT_SECRET: "secret",
+  PAYPAL_SANDBOX: "false",
+  SITE_URL: "https://picturebackgroundremover.xyz",
+};
+
+/** Fake D1 for create-checkout: one user row, a configurable order count. */
+function fakeCheckoutDb(ordersInWindow) {
+  const store = { inserted: 0, countQueries: 0, updates: [] };
+  const handle = (sql) => {
+    const s = sql.replace(/\s+/g, " ").trim();
+    if (s.startsWith("ALTER TABLE")) return { meta: {} };
+    if (s.includes("FROM users")) {
+      return { row: { id: 7, google_sub: "sub-7", email: "a@b.c", plan: "free", status: "active" } };
+    }
+    if (s.includes("FROM payment_orders")) {
+      store.countQueries += 1;
+      return { row: { count: ordersInWindow } };
+    }
+    if (s.startsWith("INSERT INTO payment_orders")) {
+      store.inserted += 1;
+      return { meta: { last_row_id: 900 + store.inserted, changes: 1 } };
+    }
+    if (s.startsWith("UPDATE payment_orders")) {
+      store.updates.push(s);
+      return { meta: { changes: 1 } };
+    }
+    throw new Error(`fakeCheckoutDb: unexpected SQL: ${s}`);
+  };
+  return {
+    store,
+    prepare(sql) {
+      const stmt = {
+        bind() {
+          return stmt;
+        },
+        async first() {
+          return handle(sql).row ?? null;
+        },
+        async run() {
+          return handle(sql);
+        },
+      };
+      return stmt;
+    },
+  };
+}
+
+async function checkoutRequest(productId) {
+  const cookie = await authLib.createSessionCookie(CHECKOUT_ENV, {
+    sub: "sub-7",
+    email: "a@b.c",
+    name: "Test",
+  });
+  return new Request("https://picturebackgroundremover.xyz/api/payment/create-checkout", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: cookie.split(";")[0],
+    },
+    body: JSON.stringify({ productId }),
+  });
+}
+
+await testAsync("checkout is throttled per account before PayPal is called", async () => {
+  const db = fakeCheckoutDb(rateLimitShared.CHECKOUT_MAX_PER_WINDOW);
+  const request = await checkoutRequest("pro_monthly");
+  const { result, calls } = await withStubbedUpstream(
+    () => new Response("{}", { status: 200 }),
+    () =>
+      withSilencedConsole(() =>
+        createCheckout.onRequestPost({ request, env: { ...CHECKOUT_ENV, DB: db } })
+      )
+  );
+
+  assert.equal(result.status, 429);
+  const body = await result.json();
+  assert.equal(body.code, "CHECKOUT_RATE_LIMITED");
+  assert.equal(result.headers.get("Retry-After"), "3600");
+  assert.equal(db.store.inserted, 0, "no order row for a throttled attempt");
+  assert.equal(calls(), 0, "PayPal never called");
+});
+
+await testAsync("checkout under the cap still reaches PayPal", async () => {
+  const db = fakeCheckoutDb(rateLimitShared.CHECKOUT_MAX_PER_WINDOW - 1);
+  let paypalCalls = 0;
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    paypalCalls += 1;
+    // token endpoint, then create-order
+    if (String(url).includes("/oauth2/token")) {
+      return new Response(JSON.stringify({ access_token: "t" }), { status: 200 });
+    }
+    return new Response(
+      JSON.stringify({ id: "PP-1", links: [{ rel: "approve", href: "https://paypal/approve" }] }),
+      { status: 200 }
+    );
+  };
+  try {
+    const request = await checkoutRequest("pro_monthly");
+    const res = await withSilencedConsole(() =>
+      createCheckout.onRequestPost({ request, env: { ...CHECKOUT_ENV, DB: db } })
+    );
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.paypalOrderId, "PP-1");
+    assert.equal(body.approvalUrl, "https://paypal/approve");
+    assert.equal(db.store.inserted, 1);
+    assert.ok(paypalCalls >= 1);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+await testAsync("a failed PayPal call does not leave a pending order behind", async () => {
+  const db = fakeCheckoutDb(0);
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("paypal down", { status: 500 });
+  try {
+    const request = await checkoutRequest("credits_100");
+    const res = await withSilencedConsole(() =>
+      createCheckout.onRequestPost({ request, env: { ...CHECKOUT_ENV, DB: db } })
+    );
+    assert.equal(res.status, 500);
+    assert.equal(db.store.inserted, 1);
+    // The row can never be fulfilled, so it must not sit in the table as pending
+    assert.ok(
+      db.store.updates.some((s) => /SET status = 'failed'/.test(s)),
+      "orphaned order should be marked failed"
+    );
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
 console.log("\nshared products catalog");
 const sharedProducts = await import(
   pathToFileURL(path.join(root, "shared/products.js")).href

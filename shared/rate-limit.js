@@ -17,6 +17,15 @@ export const BATCH_MIN_GAP_MS = Math.ceil(
   RATE_LIMIT_WINDOW_MS / Math.max(1, RATE_LIMIT_MAX_PER_WINDOW)
 );
 
+/**
+ * Checkout creation cap, per signed-in user (functions/api/payment/create-checkout.js).
+ * Each call writes a payment_orders row and creates a PayPal order, so an
+ * unthrottled loop grows the table and burns the PayPal API quota that real
+ * buyers need. Well above any honest purchase pattern.
+ */
+export const CHECKOUT_WINDOW_MS = 60 * 60 * 1000;
+export const CHECKOUT_MAX_PER_WINDOW = 10;
+
 /** How many times the batch UI auto-retries after RATE_LIMITED. */
 export const BATCH_RATE_LIMIT_MAX_RETRIES = 3;
 
@@ -50,6 +59,8 @@ export default {
   RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_PER_WINDOW,
   RATE_LIMIT_ACTION,
+  CHECKOUT_WINDOW_MS,
+  CHECKOUT_MAX_PER_WINDOW,
   BATCH_MIN_GAP_MS,
   BATCH_RATE_LIMIT_MAX_RETRIES,
   BATCH_RETRY_AFTER_MAX_SEC,

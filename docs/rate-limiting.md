@@ -1,6 +1,8 @@
 # Rate limiting & anti-abuse
 
-Defense in depth for `/api/remove-bg` (the only costly upstream call).
+Defense in depth for `/api/remove-bg` (the only costly upstream call), plus a
+cap on `/api/payment/create-checkout` (the only other endpoint that calls a
+third-party API and writes rows on demand).
 
 ## Layers
 
@@ -9,6 +11,7 @@ Defense in depth for `/api/remove-bg` (the only costly upstream call).
 | Plan monthly quota | D1 `usage_logs` / `guest_usage_logs` | Guest 5, Free 20, Pro 200, Business 500 | Product billing |
 | Guest IP monthly | `guest_usage_logs` key `ip:<ip>` | 15 / UTC month | Stop cookie-clearing freeloaders |
 | App short window | D1 `rate_limit_logs` | **12 requests / IP / 60s** | Burst / script abuse |
+| Checkout cap | `payment_orders` count | **10 / account / hour** | Stop order-table and PayPal-API flooding |
 | Cloudflare WAF | Dashboard (recommended) | See below | Edge block before Workers bill |
 
 App constants live in **`shared/rate-limit.js`** (backend re-exports via `functions/api/usage.js`):
@@ -17,7 +20,12 @@ App constants live in **`shared/rate-limit.js`** (backend re-exports via `functi
 - `RATE_LIMIT_MAX_PER_WINDOW = 12`
 - `BATCH_MIN_GAP_MS ≈ 5000` (client paces batch jobs under the window)
 - `BATCH_RATE_LIMIT_MAX_RETRIES = 3`
+- `CHECKOUT_WINDOW_MS` / `CHECKOUT_MAX_PER_WINDOW` (1h / 10, per signed-in account)
 - Guest IP ceiling: `GUEST_IP_MONTHLY_LIMIT` in `shared/plan-limits.js` (15)
+
+Note the checkout cap is keyed by account, not IP — the endpoint requires a
+session, and free Google accounts are cheap, so it bounds damage rather than
+preventing a determined attacker. The PayPal API quota is the asset protected.
 
 On short-window 429 the API returns:
 

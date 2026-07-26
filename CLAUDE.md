@@ -90,6 +90,8 @@ The schema file is the migration — there is no migrations directory. Add new t
 
 `functions/api/payment/` contains PayPal checkout and webhook handling, persisting to `payment_orders` and crediting `user_credits` (credit packs) or updating `users.plan` + `plan_expires_at` (subscriptions). The frontend entry point is `/credits` and `/pricing`.
 
+`create-checkout` is throttled per account (`CHECKOUT_MAX_PER_WINDOW` in `shared/rate-limit.js`): each call writes a `payment_orders` row and creates a PayPal order, so an unthrottled loop grows the table and eats the PayPal API quota real buyers need. If the PayPal call then fails, the row is marked `failed` rather than left `pending` forever.
+
 Both fulfilment paths (capture redirect and webhook) are fail-closed on money: `verifyCapturedAmount` in `paypal-lib.js` must pass before `fulfillPaidOrder` runs, and the webhook returns 503 for every event unless `PAYPAL_WEBHOOK_ID` is set — an unsigned event could otherwise grant a plan to anyone who knows a `paypal_order_id` (which `create-checkout` hands to the browser).
 
 ### Frontend
