@@ -15,7 +15,11 @@ pnpm pages:deploy             # wrangler pages deploy out --project-name=image-b
 pnpm pages:env:update         # push env vars to Cloudflare Pages preview+production via API
 ```
 
-There is no lint, test, or typecheck script. Type errors surface at `pnpm build` time (Next.js runs `tsc`). When changing code, run `pnpm build` to verify.
+`pnpm test` runs `scripts/unit-tests.mjs` (no test framework, no extra deps). It imports the
+real modules — including frontend `.ts` files, via native type stripping plus
+`scripts/ts-alias-hook.mjs` for the `@/*` alias — so assertions are behavioural, not
+source-text greps. **Node ≥ 22.18 is required** for that. There is no lint script; type errors
+surface at `pnpm build` time (Next.js runs `tsc`). When changing code, run both.
 
 CI: `.github/workflows/ci.yml` covers pull requests. `.github/workflows/deploy.yml` runs tests
 in a `test` job that the `deploy` job depends on, so a red build never reaches production.
@@ -28,7 +32,17 @@ Key consequence: anything dynamic (auth, quota, image processing, payments) must
 
 ### Request flow for `/api/remove-bg`
 
-`functions/api/remove-bg.js` orchestrates a single chain that mixes concerns (identity → plan resolution → quota check → file validation → upstream call → usage recording). Touch points:
+`functions/api/remove-bg.js` is orchestration only (~140 lines). Each phase is a module, and
+each phase function returns either `{ response }` to short-circuit or the data the next phase
+needs. The `_`-prefixed filenames keep Pages from routing them:
+
+| Module | Owns |
+|---|---|
+| `_remove-bg-guards.js` | daily spend cap → per-IP burst limit → `Content-Length` pre-check → type/size validation |
+| `_remove-bg-billing.js` | session → user row → plan (+expiry downgrade) → quota claim/rank → credit fallback → `releaseClaims` |
+| `_remove-bg-upstream.js` | provider selection, the Clipdrop/Remove.bg call, upstream→client error mapping |
+
+Add new server logic **inside a phase module**, not in the orchestrator. Touch points:
 
 1. `readSession` (`functions/api/auth/_lib.js`) — verifies HMAC-signed `bg_session` cookie using `AUTH_SECRET`.
 2. `getUserWithSession` (`functions/api/auth/db.js`) — loads the D1 `users` row.
@@ -83,6 +97,11 @@ Both fulfilment paths (capture redirect and webhook) are fail-closed on money: `
 `src/app/` is App Router with `output: "export"` — every route must be statically renderable (no `dynamic = "force-dynamic"`, no server actions, no Node runtime APIs at request time). Dynamic data is fetched client-side from `/api/*`.
 
 Main interactive component is `src/components/BgRemover.tsx`, a state-machine (`idle | processing | done | error`) that posts a `FormData` blob to `/api/remove-bg` and renders a before/after slider. Supports multi-file batch (up to 20) and ZIP download via `fflate`.
+
+It owns state and orchestration only. Two rules keep it that way:
+
+- **Logic goes in `src/lib/bg-remover/*.ts`** — `canvas.ts` (sizes + filename slugs, incl. `resolveWhiteExportSize`: white/marketplace exports upgrade `original` → 2000²), `deep-link.ts` (`?export=white&size=2000`), `removal-errors.ts` (failure → retry / hard-stop / single-file error, plus the GA4 event to fire), `batch-allowance.ts` (how many files may start), `quota-view.ts` (derived quota numbers), `format.ts` (ETA, sizes, labels). These are pure and unit-tested. `export-image.ts` and `zip-batch.ts` need browser APIs (canvas, Blob) and are not.
+- **Markup goes in `src/components/bg-remover/*.tsx`** — `QuotaBar`, `UploadDropzone`, `BatchQueue`, `ProcessingOverlay`, `CompareSlider`, `ResultActions`, `ExportOptions`, `BatchZipMenu`, `FailedItemPanel`, `BatchErrorPanel`. All presentational: props in, callbacks out, no own state.
 
 SEO use-case pages (static, CTA to `/#tool`):
 

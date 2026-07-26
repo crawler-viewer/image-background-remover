@@ -45,6 +45,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
+          # Keep >= 22.18: pnpm test imports .ts via native type stripping
           node-version: "22"
 
       - name: Setup pnpm

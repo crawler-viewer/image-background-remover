@@ -1,13 +1,37 @@
 /**
  * Lightweight unit tests (no extra deps).
  * Run: node scripts/unit-tests.mjs  or  pnpm test
+ *
+ * Frontend TypeScript modules are imported for real (native type stripping,
+ * Node >= 22.18) through scripts/ts-alias-hook.mjs, which resolves the `@/*`
+ * alias and extensionless specifiers. Only genuinely non-code contracts
+ * (workflow YAML, a landing-page href) are still asserted as text.
  */
 import assert from "node:assert/strict";
 import path from "node:path";
+import { register } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
+
+// Importing .ts needs unflagged type stripping (Node 22.18+ / 24+)
+const [major, minor] = process.versions.node.split(".").map(Number);
+if (major < 22 || (major === 22 && minor < 18)) {
+  console.error(
+    `\nThis suite imports frontend .ts modules directly and needs Node >= 22.18 ` +
+      `(found ${process.versions.node}). Upgrade Node, or run with ` +
+      `--experimental-strip-types on 22.6–22.17.\n`
+  );
+  process.exit(1);
+}
+
+register("./ts-alias-hook.mjs", import.meta.url);
+
+/** Import a TypeScript module from src/ by repo-relative path. */
+function importTs(relPath) {
+  return import(pathToFileURL(path.join(root, relPath)).href);
+}
 
 let passed = 0;
 let failed = 0;
@@ -608,37 +632,67 @@ test("sanitizeReturnPath blocks open redirects", () => {
   assert.equal(authLib.sanitizeReturnPath("/\\evil"), null);
 });
 
-// Frontend pricing alignment (TS compiled away — read as text checks)
-console.log("\npricing.ts + plan-limits alignment (source)");
-const pricingSrc = fs.readFileSync(path.join(root, "src/lib/pricing.ts"), "utf8");
-const planLimitsTs = fs.readFileSync(path.join(root, "src/lib/plan-limits.ts"), "utf8");
-const bgSrcEarly = fs.readFileSync(path.join(root, "src/components/BgRemover.tsx"), "utf8");
-test("pricing features mention prepaid / no auto-renew", () => {
-  assert.match(pricingSrc, /no auto-renew/i);
-  assert.match(pricingSrc, /plan-limits|getPlanLimits|PLAN_LIMITS|MAX_BATCH_SIZE/);
-  assert.doesNotMatch(pricingSrc, /800 removals per month/);
-});
-test("frontend plan-limits.ts imports shared/plan-limits.js", () => {
-  assert.match(planLimitsTs, /shared\/plan-limits\.js/);
-});
-test("pricing.ts derives copy from plan-limits helpers", () => {
-  assert.match(pricingSrc, /from "@\/lib\/plan-limits"/);
-  assert.match(pricingSrc, /getPlanLimits|monthlyRemovalsShort|MAX_BATCH_SIZE/);
-});
-test("BgRemover uses shared MAX_BATCH_SIZE (not hardcoded 20 const)", () => {
-  assert.match(bgSrcEarly, /from "@\/lib\/plan-limits"/);
-  assert.match(bgSrcEarly, /MAX_BATCH_SIZE/);
-  assert.doesNotMatch(bgSrcEarly, /const MAX_BATCH_SIZE\s*=\s*20/);
-});
-test("pricing feature strings would match shared numbers when rendered", () => {
-  // Source no longer hardcodes removals counts — they come from getPlanLimits at runtime.
+// Frontend pricing alignment — real imports, so the rendered copy is asserted
+console.log("\npricing + plan limits (frontend modules)");
+const planLimitsTs = await importTs("src/lib/plan-limits.ts");
+const pricing = await importTs("src/lib/pricing.ts");
+
+test("frontend plan limits are the shared numbers, not a copy", () => {
   for (const code of ["guest", "free", "pro", "business"]) {
-    const n = sharedPlanLimits.PLAN_LIMITS[code].monthlyLimit;
-    const mb = sharedPlanLimits.PLAN_LIMITS[code].maxFileSizeMb;
-    assert.ok(n > 0 && mb > 0, code);
+    assert.deepEqual(
+      planLimitsTs.getPlanLimits(code),
+      sharedPlanLimits.getPlanLimits(code),
+      code
+    );
   }
-  // Guard against old business=800 drift in any marketing source we care about
-  assert.doesNotMatch(pricingSrc, /800 removals/);
+  assert.equal(planLimitsTs.MAX_BATCH_SIZE, sharedPlanLimits.MAX_BATCH_SIZE);
+  assert.equal(planLimitsTs.GUEST_IP_MONTHLY_LIMIT, sharedPlanLimits.GUEST_IP_MONTHLY_LIMIT);
+});
+
+test("every pricing card renders its plan's shared numbers", () => {
+  for (const plan of pricing.pricingPlans) {
+    const limits = sharedPlanLimits.getPlanLimits(plan.code);
+    const features = plan.features.join(" | ");
+    assert.match(
+      features,
+      new RegExp(`\\b${limits.monthlyLimit} removals`),
+      `${plan.code} removals`
+    );
+    assert.match(features, new RegExp(`${limits.maxFileSizeMb}MB`), `${plan.code} upload size`);
+  }
+});
+
+test("prepaid plans say no auto-renew; free tiers advertise the batch cap", () => {
+  const byCode = Object.fromEntries(pricing.pricingPlans.map((p) => [p.code, p]));
+  for (const code of ["pro", "business"]) {
+    assert.match(byCode[code].features.join(" | "), /no auto-renew/i, code);
+  }
+  for (const code of ["guest", "free"]) {
+    assert.match(
+      byCode[code].features.join(" | "),
+      new RegExp(`Batch up to ${sharedPlanLimits.MAX_BATCH_SIZE} images`),
+      code
+    );
+  }
+});
+
+test("comparison table + FAQ quote the shared numbers", () => {
+  const removalsRow = pricing.comparisonRows.find((r) => r.label === "Monthly removals");
+  for (const code of ["guest", "free", "pro", "business"]) {
+    assert.match(
+      String(removalsRow[code]),
+      new RegExp(`${sharedPlanLimits.getPlanLimits(code).monthlyLimit}`),
+      code
+    );
+  }
+  const batchRow = pricing.comparisonRows.find((r) => r.label.startsWith("Batch upload"));
+  assert.equal(batchRow.pro, String(sharedPlanLimits.MAX_BATCH_SIZE));
+
+  const faq = pricing.pricingFaqs.map((f) => `${f.q} ${f.a}`).join("\n");
+  assert.match(faq, new RegExp(`${sharedPlanLimits.getPlanLimits("guest").monthlyLimit} free`));
+  assert.match(faq, /prepaid/i);
+  // Guard against the old business=800 drift
+  assert.doesNotMatch(faq, /800 removals/);
 });
 
 // Shared products.js is the single catalog for PayPal + frontend
@@ -987,16 +1041,18 @@ test("deploy workflow is gated on tests passing", () => {
   assert.match(src, /pnpm test/);
 });
 
-test("frontend rate-limit.ts imports shared/rate-limit.js", () => {
-  const src = fs.readFileSync(path.join(root, "src/lib/rate-limit.ts"), "utf8");
-  assert.match(src, /shared\/rate-limit\.js/);
-});
-test("BgRemover uses BATCH_MIN_GAP_MS and multi-retry", () => {
-  const src = fs.readFileSync(path.join(root, "src/components/BgRemover.tsx"), "utf8");
-  assert.match(src, /BATCH_MIN_GAP_MS/);
-  assert.match(src, /BATCH_RATE_LIMIT_MAX_RETRIES/);
-  assert.match(src, /parseRetryAfterSec/);
-  assert.doesNotMatch(src, /await sleep\(250\)/);
+await testAsync("frontend rate-limit module mirrors the shared constants", async () => {
+  const front = await importTs("src/lib/rate-limit.ts");
+  assert.equal(front.RATE_LIMIT_WINDOW_MS, rateLimitShared.RATE_LIMIT_WINDOW_MS);
+  assert.equal(front.RATE_LIMIT_MAX_PER_WINDOW, rateLimitShared.RATE_LIMIT_MAX_PER_WINDOW);
+  assert.equal(front.BATCH_MIN_GAP_MS, rateLimitShared.BATCH_MIN_GAP_MS);
+  assert.equal(front.BATCH_RATE_LIMIT_MAX_RETRIES, rateLimitShared.BATCH_RATE_LIMIT_MAX_RETRIES);
+  // The batch loop paces on this: a gap below window/max would trip the server limit
+  assert.ok(
+    front.BATCH_MIN_GAP_MS >= front.RATE_LIMIT_WINDOW_MS / front.RATE_LIMIT_MAX_PER_WINDOW,
+    "batch gap must keep a single client under the IP window"
+  );
+  assert.equal(front.parseRetryAfterSec({ headerValue: "12" }), 12);
 });
 test("CI uses frozen-lockfile", () => {
   const ci = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
@@ -1005,6 +1061,251 @@ test("CI uses frozen-lockfile", () => {
   assert.match(deploy, /frozen-lockfile/);
   assert.doesNotMatch(ci, /no-frozen-lockfile/);
   assert.doesNotMatch(deploy, /no-frozen-lockfile/);
+});
+
+console.log("\nremove-bg orchestration (guest path)");
+const removeBg = await import(
+  pathToFileURL(path.join(root, "functions/api/remove-bg.js")).href
+);
+const removeBgGuards = await import(
+  pathToFileURL(path.join(root, "functions/api/_remove-bg-guards.js")).href
+);
+
+/**
+ * In-memory D1 stand-in. Dispatches on the SQL we actually issue and throws on
+ * anything unknown, so a newly added query cannot slip through untested.
+ */
+function fakeRemoveBgDb({ guestUsed = 0, ipUsed = 0 } = {}) {
+  const store = { seq: 100, inserted: [], deleted: [], guestUsed, ipUsed };
+
+  const handle = (sql, args) => {
+    const s = sql.replace(/\s+/g, " ").trim();
+
+    if (s.startsWith("INSERT INTO rate_limit_logs")) {
+      return { meta: { last_row_id: ++store.seq, changes: 1 } };
+    }
+    if (s.startsWith("SELECT COUNT(*) AS count") && s.includes("FROM rate_limit_logs")) {
+      return { results: [{ count: 1 }], row: { count: 1 } };
+    }
+    if (s.startsWith("DELETE FROM rate_limit_logs")) {
+      return { meta: { changes: 0 } };
+    }
+    if (s.includes("AS cookie_used")) {
+      return { row: { cookie_used: store.guestUsed, ip_used: store.ipUsed } };
+    }
+    if (s.startsWith("INSERT INTO guest_usage_logs")) {
+      const id = ++store.seq;
+      store.inserted.push({ id, guestKey: args[0] });
+      return { meta: { last_row_id: id, changes: 1 } };
+    }
+    if (s.includes("AS cookie_rank")) {
+      // The claim just added one row for each key
+      return { row: { cookie_rank: store.guestUsed + 1, ip_rank: store.ipUsed + 1 } };
+    }
+    if (s.startsWith("DELETE FROM guest_usage_logs")) {
+      store.deleted.push(args[0]);
+      return { meta: { changes: 1 } };
+    }
+    throw new Error(`fakeRemoveBgDb: unexpected SQL: ${s}`);
+  };
+
+  return {
+    store,
+    prepare(sql) {
+      const stmt = {
+        sql,
+        args: [],
+        bind(...args) {
+          stmt.args = args;
+          return stmt;
+        },
+        async first() {
+          return handle(sql, stmt.args).row ?? null;
+        },
+        async run() {
+          return handle(sql, stmt.args);
+        },
+      };
+      return stmt;
+    },
+    async batch(statements) {
+      return statements.map((stmt) => handle(stmt.sql, stmt.args));
+    },
+  };
+}
+
+function imageUploadRequest() {
+  const form = new FormData();
+  form.append("image", new File([new Uint8Array(2048)], "cat.png", { type: "image/png" }));
+  return new Request("https://picturebackgroundremover.xyz/api/remove-bg", {
+    method: "POST",
+    headers: { "cf-connecting-ip": "203.0.113.7" },
+    body: form,
+  });
+}
+
+async function withStubbedUpstream(response, fn) {
+  const realFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return typeof response === "function" ? response() : response();
+  };
+  try {
+    return { result: await fn(), calls: () => calls };
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+}
+
+await testAsync("no provider key configured → 503, upstream never called", async () => {
+  const { result } = await withStubbedUpstream(
+    () => new Response("should not happen", { status: 200 }),
+    () =>
+      withSilencedConsole(() =>
+        removeBg.onRequestPost({ request: imageUploadRequest(), env: { DB: fakeRemoveBgDb() } })
+      )
+  );
+  assert.equal(result.status, 503);
+});
+
+await testAsync("guest removal succeeds, mints the cookie on the same response", async () => {
+  const db = fakeRemoveBgDb({ guestUsed: 0, ipUsed: 0 });
+  const png = new Uint8Array([137, 80, 78, 71, 1, 2, 3, 4]);
+
+  const { result, calls } = await withStubbedUpstream(
+    () => new Response(png, { status: 200, headers: { "Content-Type": "image/png" } }),
+    () =>
+      withSilencedConsole(() =>
+        removeBg.onRequestPost({
+          request: imageUploadRequest(),
+          env: { DB: db, CLIPDROP_API_KEY: "test-key" },
+        })
+      )
+  );
+
+  assert.equal(result.status, 200);
+  assert.equal(result.headers.get("Content-Type"), "image/png");
+  assert.equal(result.headers.get("Cache-Control"), "no-store");
+  assert.ok(result.headers.get("X-Request-Id"), "request id header for log correlation");
+  // Guest cookie must ride the response that consumed the quota
+  assert.match(result.headers.get("Set-Cookie") || "", /__bg_gid=[0-9a-f-]+/);
+  assert.match(result.headers.get("Set-Cookie") || "", /HttpOnly/);
+  assert.equal(calls(), 1, "one upstream call");
+
+  // Cookie row + ip: mirror row, and nothing rolled back
+  assert.equal(db.store.inserted.length, 2);
+  assert.ok(db.store.inserted.some((r) => r.guestKey.startsWith("ip:")));
+  assert.deepEqual(db.store.deleted, []);
+});
+
+await testAsync("guest over the monthly limit → 429 before any upstream spend", async () => {
+  const guestLimit = planConfig.getPlanConfig("guest").monthlyLimit;
+  const db = fakeRemoveBgDb({ guestUsed: guestLimit, ipUsed: guestLimit });
+
+  const { result, calls } = await withStubbedUpstream(
+    () => new Response("nope", { status: 200 }),
+    () =>
+      withSilencedConsole(() =>
+        removeBg.onRequestPost({
+          request: imageUploadRequest(),
+          env: { DB: db, CLIPDROP_API_KEY: "test-key" },
+        })
+      )
+  );
+
+  assert.equal(result.status, 429);
+  const body = await result.json();
+  assert.equal(body.code, "GUEST_MONTHLY_LIMIT_REACHED");
+  assert.equal(body.limit, guestLimit);
+  assert.equal(calls(), 0, "no paid call once quota is gone");
+  assert.equal(db.store.inserted.length, 0, "no usage rows for a rejected request");
+});
+
+await testAsync("upstream failure rolls back both claimed guest rows", async () => {
+  const db = fakeRemoveBgDb();
+
+  const { result } = await withStubbedUpstream(
+    () => new Response("provider exploded", { status: 500 }),
+    () =>
+      withSilencedConsole(() =>
+        removeBg.onRequestPost({
+          request: imageUploadRequest(),
+          env: { DB: db, CLIPDROP_API_KEY: "test-key" },
+        })
+      )
+  );
+
+  assert.equal(result.status, 502);
+  assert.equal(db.store.inserted.length, 2);
+  assert.equal(db.store.deleted.length, 2, "cookie row + ip mirror row released");
+  assert.deepEqual(
+    db.store.deleted.sort(),
+    db.store.inserted.map((r) => r.id).sort(),
+    "the rows released are the rows claimed"
+  );
+});
+
+await testAsync("upstream 429 is surfaced as retryable with Retry-After", async () => {
+  const db = fakeRemoveBgDb();
+  const { result } = await withStubbedUpstream(
+    () => new Response("busy", { status: 429 }),
+    () =>
+      withSilencedConsole(() =>
+        removeBg.onRequestPost({
+          request: imageUploadRequest(),
+          env: { DB: db, CLIPDROP_API_KEY: "test-key" },
+        })
+      )
+  );
+
+  assert.equal(result.status, 429);
+  assert.equal(result.headers.get("Retry-After"), "30");
+  assert.equal((await result.json()).code, "UPSTREAM_RATE_LIMITED");
+  assert.equal(db.store.deleted.length, 2, "claims released so the retry is free");
+});
+
+await testAsync("oversized Content-Length is rejected before the body is read", async () => {
+  const plan = planConfig.getPlanConfig("free");
+  let bodyRead = false;
+  const request = {
+    headers: new Headers({ "content-length": String(plan.maxFileSizeBytes * 4) }),
+    formData: async () => {
+      bodyRead = true;
+      return new FormData();
+    },
+  };
+
+  const outcome = await withSilencedConsole(() =>
+    removeBgGuards.readUploadedImage(request, {
+      plan,
+      planCode: "free",
+      requestId: "test",
+    })
+  );
+
+  assert.equal(outcome.response.status, 413);
+  assert.equal((await outcome.response.json()).code, "FILE_TOO_LARGE");
+  assert.equal(bodyRead, false, "must not buffer a huge upload into Worker memory");
+});
+
+await testAsync("unsupported type and missing file are rejected with 400", async () => {
+  const plan = planConfig.getPlanConfig("free");
+
+  const gifForm = new FormData();
+  gifForm.append("image", new File([new Uint8Array(64)], "a.gif", { type: "image/gif" }));
+  const gif = await removeBgGuards.readUploadedImage(
+    new Request("https://x/api/remove-bg", { method: "POST", body: gifForm }),
+    { plan, planCode: "free", requestId: "t" }
+  );
+  assert.equal(gif.response.status, 400);
+  assert.match((await gif.response.json()).error, /PNG, JPG, or WebP/);
+
+  const empty = await removeBgGuards.readUploadedImage(
+    new Request("https://x/api/remove-bg", { method: "POST", body: new FormData() }),
+    { plan, planCode: "free", requestId: "t" }
+  );
+  assert.equal((await empty.response.json()).code, "NO_IMAGE");
 });
 
 console.log("\nshared products catalog");
@@ -1030,65 +1331,293 @@ test("shared products has all plan + credit SKUs", () => {
     assert.ok(sharedProducts.default[id], `missing ${id}`);
   }
 });
-const productsTs = fs.readFileSync(path.join(root, "src/lib/products.ts"), "utf8");
-test("frontend products.ts imports shared products.js", () => {
-  assert.match(productsTs, /shared\/products\.js/);
-});
-const paypalLibSrc = fs.readFileSync(
-  path.join(root, "functions/api/payment/paypal-lib.js"),
-  "utf8"
-);
-test("paypal-lib imports shared products.js", () => {
-  assert.match(paypalLibSrc, /shared\/products\.js/);
+await testAsync("frontend product catalog is the same SKUs and prices", async () => {
+  const productsTs = await importTs("src/lib/products.ts");
+  for (const [id, product] of Object.entries(sharedProducts.default)) {
+    const front = productsTs.PRODUCTS[id];
+    assert.ok(front, `frontend missing ${id}`);
+    assert.equal(front.amount, product.amount, `${id} price`);
+    assert.equal(front.type, product.type, `${id} type`);
+  }
+  // Price labels shown on /pricing must be derived from those amounts
+  assert.equal(
+    productsTs.planPriceLabel("pro", "monthly"),
+    `${productsTs.formatUsdShort(sharedProducts.default.pro_monthly.amount)}/mo`
+  );
 });
 
-// BgRemover UX helpers (source-level — pure functions duplicated for assert)
-console.log("\nbatch ETA helper");
-function formatEta(remainingJobs, avgSec, currentElapsed = 0) {
-  if (remainingJobs <= 0) return "";
-  const secPer = avgSec > 0 ? avgSec : 8;
-  const currentLeft = Math.max(0, secPer - currentElapsed);
-  const queuedLeft = Math.max(0, remainingJobs - 1) * secPer;
-  const total = Math.round(currentLeft + queuedLeft);
-  if (total < 5) return "a few seconds";
-  if (total < 60) return `~${total}s left`;
-  const mins = Math.floor(total / 60);
-  const secs = total % 60;
-  if (mins < 3 && secs > 0) return `~${mins}m ${secs}s left`;
-  if (secs < 15) return `~${mins} min left`;
-  return `~${mins + 1} min left`;
-}
+console.log("\ntool helpers: ETA, canvas, deep links");
+const bgFormat = await importTs("src/lib/bg-remover/format.ts");
+const bgCanvas = await importTs("src/lib/bg-remover/canvas.ts");
+const bgDeepLink = await importTs("src/lib/bg-remover/deep-link.ts");
+
 test("formatEta for multi-image batch", () => {
-  assert.match(formatEta(5, 10, 0), /left/);
-  assert.equal(formatEta(0, 10, 0), "");
-  assert.match(formatEta(1, 8, 7), /few seconds|~1s|left/);
+  assert.match(bgFormat.formatEta(5, 10, 0), /left/);
+  assert.equal(bgFormat.formatEta(0, 10, 0), "");
+  assert.match(bgFormat.formatEta(1, 8, 7), /few seconds|~1s|left/);
+  // 6 jobs × 10s = 60s → minutes, not "60s"
+  assert.match(bgFormat.formatEta(6, 10, 0), /min left/);
+  // No samples yet → falls back to the default estimate rather than 0
+  assert.equal(bgFormat.formatEta(2, 0, 0), bgFormat.formatEta(2, bgFormat.DEFAULT_SEC_PER_IMAGE, 0));
 });
-const bgSrc = bgSrcEarly;
-test("BgRemover has dual download CTAs and deep-link export", () => {
-  assert.match(bgSrc, /Transparent PNG/);
-  assert.match(bgSrc, /White background JPG/);
-  assert.match(bgSrc, /export=white/);
-  assert.match(bgSrc, /handleDownloadAmazonWhite/);
-  assert.match(bgSrc, /batchEta/);
+
+test("formatFileSize and statusLabel", () => {
+  assert.equal(bgFormat.formatFileSize(512), "512 B");
+  assert.equal(bgFormat.formatFileSize(2048), "2.0 KB");
+  assert.equal(bgFormat.formatFileSize(5 * 1024 * 1024), "5.0 MB");
+  assert.equal(bgFormat.statusLabel("skipped"), "Skipped");
+  assert.equal(bgFormat.planLabel("business"), "Business");
+  assert.equal(bgFormat.planLabel(undefined), "—");
 });
-const whiteSrc = fs.readFileSync(
-  path.join(root, "src/app/white-background/page.tsx"),
-  "utf8"
-);
-test("white-background CTA deep-links export=white", () => {
-  assert.match(whiteSrc, /export=white&size=2000/);
+
+test("white/marketplace export upgrades 'original' to a 2000² square", () => {
+  assert.equal(bgCanvas.resolveWhiteExportSize("original"), "2000");
+  // An explicit choice is always honored
+  assert.equal(bgCanvas.resolveWhiteExportSize("1000"), "1000");
+  assert.equal(bgCanvas.resolveWhiteExportSize("1600"), "1600");
+  assert.equal(bgCanvas.canvasEdge("original"), null);
+  assert.equal(bgCanvas.canvasEdge("2000"), 2000);
 });
-test("BgRemover white ZIP defaults to 2000", () => {
-  assert.match(bgSrc, /ZIP white JPG/);
-  assert.match(bgSrc, /zipSize.*2000|2000.*zipSize|canvasSize === "original" \? "2000"/);
-  assert.match(bgSrc, /handleDownloadAllCustomSolid|white_jpeg_zip/);
+
+test("export filename slugs", () => {
+  assert.equal(bgCanvas.solidColorSlug("#ffffff"), "white");
+  assert.equal(bgCanvas.solidColorSlug("#000000"), "black");
+  assert.equal(bgCanvas.solidColorSlug("#12AB34"), "12ab34");
+  assert.equal(bgCanvas.solidColorLabel("#12AB34"), "#12AB34");
+  assert.equal(bgCanvas.sizeSlug("original"), "orig");
+  assert.equal(bgCanvas.sizeSlug("2000"), "2000");
 });
-const analyticsSrc = fs.readFileSync(path.join(root, "src/lib/analytics.ts"), "utf8");
-test("analytics has GA4 ecommerce helpers", () => {
-  assert.match(analyticsSrc, /trackBeginCheckout/);
-  assert.match(analyticsSrc, /trackPurchase/);
-  assert.match(analyticsSrc, /begin_checkout/);
-  assert.match(analyticsSrc, /view_pricing/);
+
+test("canvas size deep-link params", () => {
+  assert.equal(bgCanvas.parseCanvasSizeParam("2000x2000"), "2000");
+  assert.equal(bgCanvas.parseCanvasSizeParam(" ORIG "), "original");
+  assert.equal(bgCanvas.parseCanvasSizeParam("1234"), null);
+  assert.equal(bgCanvas.parseCanvasSizeParam(null), null);
+});
+
+test("?export=white lands on Amazon-ready defaults", () => {
+  const link = bgDeepLink.parseExportDeepLink("#tool?export=white&size=2000", "");
+  assert.equal(link.preferWhiteExport, true);
+  assert.equal(link.bgColor, "#FFFFFF");
+  assert.equal(link.canvasSize, "2000");
+  assert.equal(link.openExportMenu, true);
+  assert.equal(link.focusTool, true);
+});
+
+test("?export=white without a size still squares the canvas", () => {
+  const link = bgDeepLink.parseExportDeepLink("#tool?export=amazon", "");
+  assert.equal(link.canvasSize, "2000");
+  assert.equal(link.preferWhiteExport, true);
+});
+
+test("deep link falls back to the query string and leaves defaults alone", () => {
+  const black = bgDeepLink.parseExportDeepLink("", "?bg=black");
+  assert.equal(black.bgColor, "#000000");
+  assert.equal(black.preferWhiteExport, false);
+  assert.equal(black.canvasSize, undefined);
+
+  const bare = bgDeepLink.parseExportDeepLink("#tool", "");
+  assert.equal(bare.bgColor, undefined);
+  assert.equal(bare.canvasSize, undefined);
+  assert.equal(bare.openExportMenu, false);
+  assert.equal(bare.focusTool, true);
+});
+
+test("white-background landing CTA deep-links into the tool", () => {
+  // Cross-file contract: the static page's href must parse to white + 2000.
+  // This page puts the params on the pathname (`/?export=…#tool`), which is why
+  // parseExportDeepLink falls back to location.search.
+  const whiteSrc = fs.readFileSync(path.join(root, "src/app/white-background/page.tsx"), "utf8");
+  const href = whiteSrc.match(/["'`](\/\?[^"'`]*#tool)["'`]/)?.[1];
+  assert.ok(href, "landing page should link into the tool with export params");
+
+  const url = new URL(href, "https://picturebackgroundremover.xyz");
+  const link = bgDeepLink.parseExportDeepLink(url.hash, url.search);
+  assert.equal(link.preferWhiteExport, true);
+  assert.equal(link.canvasSize, "2000");
+  assert.equal(link.focusTool, true);
+});
+
+console.log("\ntool helpers: quota, batch allowance, error mapping");
+const bgQuotaView = await importTs("src/lib/bg-remover/quota-view.ts");
+const bgAllowance = await importTs("src/lib/bg-remover/batch-allowance.ts");
+const bgErrors = await importTs("src/lib/bg-remover/removal-errors.ts");
+const MAX_BATCH = sharedPlanLimits.MAX_BATCH_SIZE;
+
+test("credits only count for signed-in users", () => {
+  const guest = bgQuotaView.deriveQuotaView({
+    plan: "guest",
+    used: 5,
+    limit: 5,
+    remaining: 0,
+    credits: 99,
+    maxFileSizeMb: 10,
+    loggedIn: false,
+  });
+  assert.equal(guest.totalAvailable, 0);
+  assert.equal(guest.usingCreditsNext, false);
+  assert.equal(guest.usedPercent, 100);
+
+  const paid = bgQuotaView.deriveQuotaView({
+    plan: "pro",
+    used: 200,
+    limit: 200,
+    remaining: 0,
+    credits: 40,
+    maxFileSizeMb: 25,
+    loggedIn: true,
+  });
+  assert.equal(paid.totalAvailable, 40);
+  assert.equal(paid.usingCreditsNext, true);
+});
+
+test("batch allowance caps at the shared batch size", () => {
+  const r = bgAllowance.resolveBatchAllowance({
+    quota: { plan: "pro", used: 0, limit: 200, remaining: 200, maxFileSizeMb: 25, loggedIn: true },
+    fileCount: MAX_BATCH + 5,
+    maxBatchSize: MAX_BATCH,
+  });
+  assert.equal(r.allowed, true);
+  assert.equal(r.count, MAX_BATCH);
+  assert.match(r.notice, new RegExp(`first ${MAX_BATCH} images`));
+});
+
+test("batch allowance trims to remaining quota + credits", () => {
+  const r = bgAllowance.resolveBatchAllowance({
+    quota: { plan: "free", used: 18, limit: 20, remaining: 2, credits: 1, maxFileSizeMb: 15, loggedIn: true },
+    fileCount: 10,
+    maxBatchSize: MAX_BATCH,
+  });
+  assert.equal(r.count, 3, "2 plan + 1 credit");
+  assert.match(r.notice, /3 removals left/);
+});
+
+test("batch allowance blocks at zero with the right upsell code", () => {
+  const guest = bgAllowance.resolveBatchAllowance({
+    quota: { plan: "guest", used: 5, limit: 5, remaining: 0, maxFileSizeMb: 10, loggedIn: false },
+    fileCount: 1,
+    maxBatchSize: MAX_BATCH,
+  });
+  assert.equal(guest.allowed, false);
+  assert.equal(guest.code, "GUEST_MONTHLY_LIMIT_REACHED");
+  assert.match(guest.message, /Sign in/);
+
+  const member = bgAllowance.resolveBatchAllowance({
+    quota: { plan: "free", used: 20, limit: 20, remaining: 0, credits: 0, maxFileSizeMb: 15, loggedIn: true },
+    fileCount: 1,
+    maxBatchSize: MAX_BATCH,
+  });
+  assert.equal(member.allowed, false);
+  assert.equal(member.code, "MONTHLY_LIMIT_REACHED");
+  assert.match(member.message, /credits or upgrade/);
+});
+
+test("unknown quota still lets a batch start", () => {
+  const r = bgAllowance.resolveBatchAllowance({
+    quota: null,
+    fileCount: 3,
+    maxBatchSize: MAX_BATCH,
+  });
+  assert.equal(r.allowed, true);
+  assert.equal(r.count, 3);
+  assert.equal(r.notice, null);
+});
+
+test("RATE_LIMITED is retryable and honors Retry-After", () => {
+  const { result, analytics } = bgErrors.mapRemovalFailure({
+    status: 429,
+    data: { code: "RATE_LIMITED", retryAfterSec: 60 },
+    retryAfterHeader: "20",
+    planHint: "free",
+  });
+  assert.equal(result.rateLimited, true);
+  assert.equal(result.hardStop, false);
+  assert.equal(result.retryAfterSec, 20, "header wins over body");
+  assert.equal(analytics.event, "remove_error");
+  assert.equal(analytics.params.reason, "rate_limited");
+});
+
+test("quota 429 stops the batch and drives the right upsell", () => {
+  const guest = bgErrors.mapRemovalFailure({
+    status: 429,
+    data: { code: "GUEST_IP_LIMIT_REACHED", plan: "guest" },
+    planHint: "guest",
+  });
+  assert.equal(guest.result.hardStop, true);
+  assert.equal(guest.result.rateLimited, undefined);
+  assert.equal(guest.result.limit.loggedIn, false);
+  assert.match(guest.result.error, /this network/);
+  assert.equal(guest.analytics.event, "limit_reached");
+
+  const member = bgErrors.mapRemovalFailure({
+    status: 429,
+    data: { code: "MONTHLY_LIMIT_REACHED", plan: "pro" },
+    planHint: "pro",
+  });
+  assert.equal(member.result.limit.loggedIn, true);
+  assert.equal(member.analytics.params.plan, "pro");
+});
+
+test("daily budget and generic errors are distinguished", () => {
+  const budget = bgErrors.mapRemovalFailure({
+    status: 503,
+    data: { code: "DAILY_BUDGET_EXCEEDED" },
+    planHint: "free",
+  });
+  assert.equal(budget.result.hardStop, true);
+  assert.equal(budget.analytics.params.reason, "daily_budget");
+
+  const oversize = bgErrors.mapRemovalFailure({
+    status: 413,
+    data: { code: "FILE_TOO_LARGE", error: "File too large. Maximum size is 15MB for your current plan." },
+    planHint: "free",
+  });
+  // One bad file must not stop the rest of the batch
+  assert.equal(oversize.result.hardStop, undefined);
+  assert.match(oversize.result.error, /Maximum size is 15MB/);
+  assert.equal(oversize.analytics.params.reason, "server");
+
+  const empty = bgErrors.mapRemovalFailure({ status: 500, data: {}, planHint: "free" });
+  assert.match(empty.result.error, /Server error \(500\)/);
+});
+
+console.log("\nGA4 analytics helpers");
+await testAsync("ecommerce events carry GA4-shaped params", async () => {
+  const events = [];
+  globalThis.window = { gtag: (...args) => events.push(args) };
+  try {
+    const analytics = await importTs("src/lib/analytics.ts");
+    assert.equal(analytics.parseMoneyValue("9.90"), 9.9);
+    assert.equal(analytics.parseMoneyValue("nope"), undefined);
+
+    analytics.trackBeginCheckout({ productId: "pro_monthly", value: 9.9, productType: "subscription" });
+    analytics.trackPurchase({ orderId: 42, productId: "pro_monthly", value: 9.9, kind: "plan" });
+    analytics.trackViewPricing("test");
+
+    // begin_checkout is mirrored as checkout_start for the older dashboards
+    const names = events.map(([, name]) => name);
+    assert.deepEqual(names, ["begin_checkout", "checkout_start", "purchase", "view_pricing"]);
+
+    const [, , beginParams] = events[0];
+    assert.equal(beginParams.currency, "USD");
+    assert.equal(beginParams.value, 9.9);
+    assert.equal(beginParams.product_id, "pro_monthly");
+    assert.equal(beginParams.product_type, "subscription");
+
+    const purchaseParams = events[2][2];
+    // Stable transaction_id from the order row is what GA4 dedupes on
+    assert.equal(purchaseParams.transaction_id, "po_42");
+    assert.equal(purchaseParams.value, 9.9);
+    assert.equal(purchaseParams.kind, "plan");
+    // GA4 rejects undefined/null params — trackEvent must strip them
+    for (const params of events.map(([, , p]) => p)) {
+      for (const [key, value] of Object.entries(params)) {
+        assert.ok(value !== undefined && value !== null, `${key} should be stripped when empty`);
+      }
+    }
+  } finally {
+    delete globalThis.window;
+  }
 });
 
 console.log(`\n${passed} passed, ${failed} failed\n`);

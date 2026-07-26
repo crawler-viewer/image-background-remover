@@ -23,24 +23,31 @@
 - 首页如何同时承担营销页和工具页
 
 ### 4. `src/components/BgRemover.tsx`
-重点：
+只剩状态机 + 编排（~990 行）。重点：
 - state 设计
 - `fetchQuota`
-- `processImage`
-- 错误处理
-- 下载逻辑
-- before/after 对比 UI
+- `processSingle` / `runBatch`（批处理循环、限流重试、ETA 采样）
+- `runZipDownload`（三种 ZIP 共用）
+
+纯逻辑已抽到 `src/lib/bg-remover/`，全部有单测：
+- `canvas.ts` 画布尺寸 / 文件名 slug（`resolveWhiteExportSize` = 白底默认 2000²）
+- `deep-link.ts` `?export=white&size=2000` 解析
+- `removal-errors.ts` 失败响应 → 重试 / 中止 / 单文件失败
+- `batch-allowance.ts` 批量条数（batch cap ∩ 剩余额度+积分）
+- `quota-view.ts` 额度派生值（三处 UI 共用）
+- `format.ts` ETA / 文件大小 / 状态文案
+- `export-image.ts`、`zip-batch.ts` 依赖浏览器 API（canvas / Blob）
+
+展示组件在 `src/components/bg-remover/`（QuotaBar、UploadDropzone、BatchQueue、
+CompareSlider、ResultActions、ExportOptions、BatchZipMenu…），全部无自身状态。
 
 ### 5. `functions/api/remove-bg.js`
-重点：
-- session/user 判定
-- guest 判定
-- planCode 来源
-- 过期套餐降级
-- quota 检查
-- credits fallback
-- 第三方 API 路由
-- usage 记录
+编排层（~140 行），三个阶段模块各管一段：
+- `_remove-bg-guards.js` 日预算 → IP 短窗限流 → Content-Length 预筛 → 格式/大小校验
+- `_remove-bg-billing.js` session/user → planCode（过期降级）→ 配额认领 + 排名复核 → credits fallback → 回滚
+- `_remove-bg-upstream.js` Clipdrop / Remove.bg 调用 + 错误映射
+
+不变量：先认领后调用，任何失败都 `releaseClaims`；游客新 cookie 必须挂在消耗配额的那个响应上。
 
 ### 6. `db/schema.sql`
 重点：
@@ -49,6 +56,7 @@
 - guest_usage_logs
 - payment_orders
 - user_credits
+- rate_limit_logs
 
 ## 二、第二层阅读：理解规则从哪来
 
@@ -202,11 +210,12 @@
 
 ## 九、如果你要接手改项目，先盯这 5 点
 
-1. `remove-bg.js` 是否还能继续堆逻辑
-2. quota 语义到底是不是月额度，统一命名
-3. auth 回调 / session 是否完整
+1. 新逻辑该进哪个阶段模块（`_remove-bg-guards` / `-billing` / `-upstream`），别再往编排层堆
+2. quota 语义统一按**月额度**（后端 `monthRange()` 是 UTC 月）
+3. auth 回调 / session 是否完整（无状态 HMAC，无法吊销）
 4. account 相关接口是否和前端字段对齐
-5. 支付表虽然有了，但支付闭环是否真的可跑
+5. 支付闭环：capture 跳转与 webhook 两条路径都必须过 `verifyCapturedAmount`，
+   且 `PAYPAL_WEBHOOK_ID` 未配置时 webhook 一律 503
 
 ## 十、最省力的阅读策略
 

@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "// node": "22.18+ imports .ts directly (native type stripping) — pnpm test relies on it",
+    "node": ">=22.18"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
