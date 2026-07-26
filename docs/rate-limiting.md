@@ -44,8 +44,14 @@ Omit or set `0` to disable. Structured logs include `costUsdEst` when `UPSTREAM_
 npx wrangler d1 execute bg-remover-db --remote --file=db/schema.sql
 ```
 
-`CREATE TABLE IF NOT EXISTS rate_limit_logs` is idempotent.  
-If the table is missing, `assertRateLimit` **fails open** (logs error, allows request) so a forgotten migration does not take the product offline.
+`CREATE TABLE IF NOT EXISTS rate_limit_logs` is idempotent.
+
+Failure behaviour is deliberately split:
+
+- **Table missing** (`no such table`) → **fail open**, so a forgotten migration does not take the product offline.
+- **Any other D1 error** → **fail closed** (`429`, `error: true` in the result). A D1 blip must not silently disable the limiter while upstream spend continues.
+
+Each accepted request costs one D1 round trip: the hit row and the window count go out together in a `db.batch()`. A rejected request spends a second round trip deleting its own hit, so repeated retries cannot extend their own lockout.
 
 ## Cloudflare Rate Limiting (dashboard)
 
@@ -102,4 +108,4 @@ Custom domains on Cloudflare Pages inherit zone WAF rules.
 |---------|--------|
 | Legitimate batch users hit 429 mid-queue | Raise `RATE_LIMIT_MAX_PER_WINDOW` to 20, or lower batch concurrency gap only |
 | API bill spike | Lower CF rule to 10/min + tighten guest IP monthly |
-| Shared office NAT false positives | Prefer Managed Challenge over Block at CF; keep app fail-open on DB errors |
+| Shared office NAT false positives | Prefer Managed Challenge over Block at CF; raise `RATE_LIMIT_MAX_PER_WINDOW` rather than re-opening the DB-error path |

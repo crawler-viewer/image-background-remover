@@ -8,16 +8,15 @@ import {
   getClientIp,
   getOrCreateGuestId,
   guestCookieString,
-  getMonthlyUsage,
-  getGuestMonthlyUsage,
   claimUserUsage,
   rollbackUserUsage,
+  getUserUsageRank,
+  getGuestUsageRanks,
   claimGuestUsage,
   rollbackGuestUsage,
   tryDeductCredit,
   refundCredit,
   recordUsage,
-  ipGuestKey,
   GUEST_IP_MONTHLY_LIMIT,
 } from "./usage.js";
 import { getPlanConfig } from "./plan-config.js";
@@ -141,6 +140,27 @@ export async function onRequestPost(context) {
       plan = active.plan;
     }
 
+    // Reject oversized uploads before buffering the body into Worker memory.
+    // Multipart framing adds a little overhead, hence the small slack.
+    const declaredLength = Number(request.headers.get("content-length") || 0);
+    if (Number.isFinite(declaredLength) && declaredLength > plan.maxFileSizeBytes + 64 * 1024) {
+      logEvent("info", "upload_rejected_by_content_length", {
+        requestId,
+        plan: planCode,
+        declaredKb: Math.round(declaredLength / 1024),
+        limitMb: Math.round(plan.maxFileSizeBytes / (1024 * 1024)),
+      });
+      return json(
+        {
+          error: `File too large. Maximum size is ${Math.round(
+            plan.maxFileSizeBytes / (1024 * 1024)
+          )}MB for your current plan.`,
+          code: "FILE_TOO_LARGE",
+        },
+        { status: 413 }
+      );
+    }
+
     // Parse + validate image before any quota claim / credit deduct
     let formData;
     try {
@@ -176,13 +196,15 @@ export async function onRequestPost(context) {
           )}MB for your current plan.`,
           code: "FILE_TOO_LARGE",
         },
-        { status: 400 }
+        // Same code/status as the Content-Length pre-check above
+        { status: 413 }
       );
     }
 
     if (user?.google_sub) {
       const quota = await assertMonthlyLimit(env, user.google_sub, planCode);
       let reservedOnQuota = false;
+      let usedNow = quota.used;
 
       if (quota.allowed) {
         try {
@@ -193,10 +215,14 @@ export async function onRequestPost(context) {
           });
           claims = { userUsageId: claim.id, googleSub: user.google_sub };
 
-          const usedAfter = await getMonthlyUsage(env, user.google_sub);
-          if (usedAfter > plan.monthlyLimit) {
+          // Rank of this row inside the month, not a fresh total: two requests
+          // racing on the last slot get ranks N and N+1, so the earlier one
+          // keeps it instead of both rolling back.
+          const rank = await getUserUsageRank(env, user.google_sub, claim.id);
+          if (rank > plan.monthlyLimit) {
             await rollbackUserUsage(env, claim.id);
             claims = null;
+            usedNow = rank - 1;
           } else {
             billMode = "quota";
             reservedOnQuota = true;
@@ -217,7 +243,6 @@ export async function onRequestPost(context) {
       }
 
       if (!reservedOnQuota) {
-        const usedNow = await getMonthlyUsage(env, user.google_sub);
         const deducted = await tryDeductCredit(env, user.google_sub);
         if (!deducted) {
           return json(
@@ -265,9 +290,17 @@ export async function onRequestPost(context) {
         claims = { guestClaim };
 
         const guestPlan = getPlanConfig("guest");
-        const cookieUsed = await getGuestMonthlyUsage(env, guestInfo.guestId);
-        const ipUsed = await getGuestMonthlyUsage(env, ipGuestKey(clientIp));
-        if (cookieUsed > guestPlan.monthlyLimit || ipUsed > GUEST_IP_MONTHLY_LIMIT) {
+        // Same per-row ranking as the logged-in path (see getUserUsageRank)
+        const { cookieRank, ipRank } = await getGuestUsageRanks(env, {
+          guestKey: guestInfo.guestId,
+          clientIp,
+          guestLogId: guestClaim.guestLogId,
+          ipLogId: guestClaim.ipLogId,
+        });
+        const overCookie = cookieRank > guestPlan.monthlyLimit;
+        const overIp = ipRank > GUEST_IP_MONTHLY_LIMIT;
+
+        if (overCookie || overIp) {
           await rollbackGuestUsage(env, guestClaim);
           claims = null;
           const headers = { "Content-Type": "application/json" };
@@ -275,13 +308,24 @@ export async function onRequestPost(context) {
             headers["Set-Cookie"] = guestCookieString(guestInfo.guestId);
           }
           return new Response(
-            JSON.stringify({
-              error: "Guest monthly limit reached. Sign in to unlock more removals.",
-              code: "GUEST_MONTHLY_LIMIT_REACHED",
-              used: cookieUsed,
-              limit: guestPlan.monthlyLimit,
-              plan: "guest",
-            }),
+            JSON.stringify(
+              overCookie
+                ? {
+                    error: "Guest monthly limit reached. Sign in to unlock more removals.",
+                    code: "GUEST_MONTHLY_LIMIT_REACHED",
+                    used: Math.max(0, cookieRank - 1),
+                    limit: guestPlan.monthlyLimit,
+                    plan: "guest",
+                  }
+                : {
+                    error:
+                      "Too many free removals from this network this month. Sign in to continue.",
+                    code: "GUEST_IP_LIMIT_REACHED",
+                    used: Math.max(0, ipRank - 1),
+                    limit: GUEST_IP_MONTHLY_LIMIT,
+                    plan: "guest",
+                  }
+            ),
             { status: 429, headers }
           );
         }

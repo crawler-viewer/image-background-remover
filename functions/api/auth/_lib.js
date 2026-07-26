@@ -230,49 +230,6 @@ export async function readSession(request, env) {
   return verifySession(env.AUTH_SECRET, token);
 }
 
-export async function debugSession(request, env) {
-  const token = getCookie(request, SESSION_COOKIE);
-  if (!token) {
-    return {
-      hasCookie: false,
-      tokenPreview: null,
-      verified: false,
-      reason: "missing_cookie",
-    };
-  }
-
-  const [payload, signature] = token.includes(".") ? token.split(".") : [null, null];
-  if (!payload || !signature) {
-    return {
-      hasCookie: true,
-      tokenPreview: token.slice(0, 24),
-      verified: false,
-      reason: "invalid_token_shape",
-    };
-  }
-
-  const expected = await hmacSign(env.AUTH_SECRET, payload);
-  const signatureValid = signature === expected;
-
-  let decoded = null;
-  let decodeError = null;
-  try {
-    decoded = JSON.parse(new TextDecoder().decode(fromBase64Url(payload)));
-  } catch (error) {
-    decodeError = error instanceof Error ? error.message : String(error);
-  }
-
-  return {
-    hasCookie: true,
-    tokenPreview: token.slice(0, 24),
-    signatureValid,
-    decodeError,
-    decoded,
-    verified: signatureValid && !!decoded,
-    reason: signatureValid ? (decoded ? null : "decode_failed") : "signature_mismatch",
-  };
-}
-
 export function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     ...init,

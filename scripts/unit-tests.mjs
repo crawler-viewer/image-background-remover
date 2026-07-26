@@ -653,6 +653,148 @@ const usageForRate = await import(
   pathToFileURL(path.join(root, "functions/api/usage.js")).href
 );
 
+console.log("\nrate limiter (D1 batch)");
+
+/**
+ * Fake D1 for assertRateLimit: `batch()` answers [insert, count], and every
+ * follow-up statement is recorded so we can assert on the rejection cleanup.
+ */
+function fakeRateLimitDb({ count, hitId = 500, throwOn = null }) {
+  const statements = [];
+  const db = {
+    statements,
+    prepare(sql) {
+      const stmt = {
+        sql,
+        args: [],
+        bind(...args) {
+          stmt.args = args;
+          statements.push({ sql, args });
+          return stmt;
+        },
+        async run() {
+          if (throwOn && sql.includes(throwOn)) throw new Error(throwOn);
+          return { meta: { changes: 1, last_row_id: hitId } };
+        },
+        async first() {
+          return { count };
+        },
+      };
+      return stmt;
+    },
+    async batch() {
+      if (throwOn) throw new Error(throwOn);
+      return [
+        { meta: { last_row_id: hitId, changes: 1 } },
+        { results: [{ count }] },
+      ];
+    },
+  };
+  return db;
+}
+
+await testAsync("rate limiter allows up to the window max", async () => {
+  const db = fakeRateLimitDb({ count: rateLimitShared.RATE_LIMIT_MAX_PER_WINDOW });
+  const r = await usageForRate.assertRateLimit({ DB: db }, { clientIp: "1.2.3.4" });
+  assert.equal(r.allowed, true);
+  assert.equal(r.used, rateLimitShared.RATE_LIMIT_MAX_PER_WINDOW);
+  assert.equal(
+    db.statements.some((s) => s.sql.includes("DELETE FROM rate_limit_logs WHERE id")),
+    false,
+    "an accepted hit must stay in the window"
+  );
+});
+
+await testAsync("rate limiter rejects past the max and removes its own hit", async () => {
+  const db = fakeRateLimitDb({ count: rateLimitShared.RATE_LIMIT_MAX_PER_WINDOW + 1, hitId: 77 });
+  const r = await usageForRate.assertRateLimit({ DB: db }, { clientIp: "1.2.3.4" });
+  assert.equal(r.allowed, false);
+  assert.equal(r.retryAfterSec, 60);
+  // Rejected attempts must not extend the window, or a retrying client never recovers
+  const cleanup = db.statements.find((s) =>
+    s.sql.includes("DELETE FROM rate_limit_logs WHERE id")
+  );
+  assert.ok(cleanup, "rejected hit should be deleted");
+  assert.deepEqual(cleanup.args, [77]);
+});
+
+await testAsync("rate limiter fails open only when the table is missing", async () => {
+  const missing = fakeRateLimitDb({ count: 1, throwOn: "no such table: rate_limit_logs" });
+  const open = await withSilencedConsole(() =>
+    usageForRate.assertRateLimit({ DB: missing }, { clientIp: "1.2.3.4" })
+  );
+  assert.equal(open.allowed, true, "pre-migration must not block traffic");
+
+  const broken = fakeRateLimitDb({ count: 1, throwOn: "D1_ERROR: network" });
+  const closed = await withSilencedConsole(() =>
+    usageForRate.assertRateLimit({ DB: broken }, { clientIp: "1.2.3.4" })
+  );
+  assert.equal(closed.allowed, false, "a DB blip must not silently disable the limiter");
+  assert.equal(closed.error, true);
+});
+
+console.log("\nquota claim ranking");
+
+/** Fake D1 that returns one fixed row and records the SQL it was asked for. */
+function fakeRowDb(row) {
+  const seen = [];
+  return {
+    seen,
+    prepare(sql) {
+      const stmt = {
+        bind(...args) {
+          seen.push({ sql, args });
+          return stmt;
+        },
+        async first() {
+          return row;
+        },
+      };
+      return stmt;
+    },
+  };
+}
+
+await testAsync("getUserUsageRank ranks the claimed row, not the total", async () => {
+  const db = fakeRowDb({ rank: 21 });
+  const rank = await usageForRate.getUserUsageRank({ DB: db }, "sub-1", 4242);
+  assert.equal(rank, 21);
+
+  const { sql, args } = db.seen[0];
+  assert.match(sql, /id <= \?/, "rank must be scoped to rows at or before the claim");
+  assert.equal(args[0], "sub-1");
+  assert.equal(args[3], 4242);
+  // Rank 21 with a limit of 20 → this claim loses; rank 20 would have won
+  assert.equal(rank > planConfig.getPlanConfig("free").monthlyLimit, true);
+});
+
+await testAsync("getUserUsageRank short-circuits without a claim id", async () => {
+  const db = fakeRowDb({ rank: 9 });
+  assert.equal(await usageForRate.getUserUsageRank({ DB: db }, "sub-1", 0), 0);
+  assert.equal(db.seen.length, 0, "no query for a missing claim");
+});
+
+await testAsync("getGuestUsageRanks covers cookie and IP rows in one query", async () => {
+  const db = fakeRowDb({ cookie_rank: 3, ip_rank: 11 });
+  const ranks = await usageForRate.getGuestUsageRanks(
+    { DB: db },
+    { guestKey: "guest-1", clientIp: "9.9.9.9", guestLogId: 10, ipLogId: 11 }
+  );
+  assert.deepEqual(ranks, { cookieRank: 3, ipRank: 11 });
+  assert.equal(db.seen.length, 1, "one round trip");
+  assert.deepEqual(db.seen[0].args[4], "ip:9.9.9.9");
+});
+
+await testAsync("getGuestUsageRanks skips the IP rank when no mirror row exists", async () => {
+  const db = fakeRowDb({ cookie_rank: 2 });
+  const ranks = await usageForRate.getGuestUsageRanks(
+    { DB: db },
+    { guestKey: "guest-1", clientIp: "unknown", guestLogId: 10, ipLogId: null }
+  );
+  assert.deepEqual(ranks, { cookieRank: 2, ipRank: 0 });
+  assert.doesNotMatch(db.seen[0].sql, /ip_rank/);
+});
+
 console.log("\nrate-limit + cost-guard");
 test("shared rate limit constants are sensible", () => {
   assert.equal(rateLimitShared.RATE_LIMIT_WINDOW_MS, 60_000);

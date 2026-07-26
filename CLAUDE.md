@@ -33,10 +33,14 @@ Key consequence: anything dynamic (auth, quota, image processing, payments) must
 1. `readSession` (`functions/api/auth/_lib.js`) — verifies HMAC-signed `bg_session` cookie using `AUTH_SECRET`.
 2. `getUserWithSession` (`functions/api/auth/db.js`) — loads the D1 `users` row.
 3. Plan resolution + expiry downgrade — if `plan_expires_at` is past, the user is downgraded to `free` in-place.
-4. Monthly quota — `assertMonthlyLimit` / `assertGuestMonthlyLimit` in `functions/api/usage.js` count rows in `usage_logs` / `guest_usage_logs` for the current UTC month.
-5. Credit fallback — when a logged-in user exceeds quota, `user_credits.balance` is checked; if positive, the request proceeds and 1 credit is deducted on success.
-6. Upstream — **Clipdrop is preferred when `CLIPDROP_API_KEY` is set; otherwise falls back to Remove.bg via `REMOVE_BG_API_KEY`**. The README only mentions Remove.bg but the live code prefers Clipdrop.
-7. Usage row inserted on success only.
+4. Size pre-check — `Content-Length` over the plan cap is rejected with 413 **before** `request.formData()` buffers the upload into Worker memory.
+5. Monthly quota — `assertMonthlyLimit` / `assertGuestAccess` in `functions/api/usage.js` count rows in `usage_logs` / `guest_usage_logs` for the current UTC month.
+6. Claim, then rank — the usage row is inserted *before* the upstream call, then `getUserUsageRank` / `getGuestUsageRanks` compute that row's position within the month. Over the limit → roll the row back. Ranking (not re-counting a total) is what keeps two requests racing on the last slot from both being rejected.
+7. Credit fallback — when a logged-in user exceeds quota, `user_credits.balance` is checked; if positive, the request proceeds and 1 credit is deducted on success.
+8. Upstream — **Clipdrop is preferred when `CLIPDROP_API_KEY` is set; otherwise falls back to Remove.bg via `REMOVE_BG_API_KEY`**. The README only mentions Remove.bg but the live code prefers Clipdrop.
+9. Failure → `releaseClaims` deletes the claimed rows and refunds any deducted credit.
+
+`functions/api/quota.js` mirrors steps 1–3, 5 and 7 (read-only) and is what the frontend polls.
 
 Guest removals write **two** `guest_usage_logs` rows (cookie + `ip:<addr>` mirror). Anything that counts removals must exclude the mirror rows via `EXCLUDE_IP_MIRROR_SQL` (`functions/api/guest-usage-sql.js`) — `stats.js`, `admin/report.js` and `cost-guard.js` all do.
 
@@ -52,7 +56,7 @@ Guests get a UUID in the `__bg_gid` cookie (`guestCookieString`, 1-year, HttpOnl
 
 Anti-abuse: successful guest removals also write a second row with `guest_key = ip:<cf-connecting-ip>`. `assertGuestAccess` enforces cookie limit **and** IP soft ceiling (`GUEST_IP_MONTHLY_LIMIT = 15` per UTC month). Clearing cookies cannot exceed the IP ceiling.
 
-Short-window rate limit: `assertRateLimit` writes to D1 `rate_limit_logs` (**12 POSTs / IP / 60s** on `/api/remove-bg`). Fails open if the table is missing. See `docs/rate-limiting.md` for Cloudflare WAF setup.
+Short-window rate limit: `assertRateLimit` writes to D1 `rate_limit_logs` (**12 POSTs / IP / 60s** on `/api/remove-bg`). The hit is written and counted in one `db.batch()`; a rejected request deletes its own hit so a retrying client is not locked out beyond the window. Fails **open only when the table is missing** (pre-migration) — any other D1 error fails closed. See `docs/rate-limiting.md` for Cloudflare WAF setup.
 
 ### Auth
 
