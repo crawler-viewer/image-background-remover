@@ -711,17 +711,20 @@ await testAsync("assertDailyUpstreamBudget disabled allows traffic", async () =>
   assert.equal(r.disabled, true);
 });
 await testAsync("assertDailyUpstreamBudget blocks when used >= limit", async () => {
+  let queries = 0;
+  let seenSql = "";
   const env = {
     DAILY_UPSTREAM_LIMIT: "10",
     DB: {
       prepare(sql) {
+        queries += 1;
+        seenSql = sql;
         return {
           bind() {
             return this;
           },
           async first() {
-            // Each query returns 6 → total 12 > 10
-            return { count: 6 };
+            return { count: 12 };
           },
         };
       },
@@ -731,6 +734,10 @@ await testAsync("assertDailyUpstreamBudget blocks when used >= limit", async () 
   assert.equal(r.allowed, false);
   assert.equal(r.used, 12);
   assert.equal(r.limit, 10);
+  // Both tables are summed in a single D1 round trip
+  assert.equal(queries, 1);
+  assert.match(seenSql, /usage_logs/);
+  assert.match(seenSql, /guest_usage_logs/);
 });
 await testAsync("assertDailyUpstreamBudget allows under limit", async () => {
   const env = {
@@ -742,7 +749,7 @@ await testAsync("assertDailyUpstreamBudget allows under limit", async () => {
             return this;
           },
           async first() {
-            return { count: 3 };
+            return { count: 6 };
           },
         };
       },
@@ -753,6 +760,91 @@ await testAsync("assertDailyUpstreamBudget allows under limit", async () => {
   assert.equal(r.used, 6);
   assert.equal(r.remaining, 94);
 });
+await testAsync("daily budget query never counts ip:* mirror rows", async () => {
+  let seenSql = "";
+  const env = {
+    DAILY_UPSTREAM_LIMIT: "10",
+    DB: {
+      prepare(sql) {
+        seenSql = sql;
+        return { bind() { return this; }, async first() { return { count: 0 }; } };
+      },
+    },
+  };
+  await costGuard.assertDailyUpstreamBudget(env);
+  assert.match(seenSql, /guest_key NOT LIKE 'ip:%'/);
+});
+console.log("\nreporting (guest mirror rows + admin auth)");
+const stats = await import(pathToFileURL(path.join(root, "functions/api/stats.js")).href);
+const adminReport = await import(
+  pathToFileURL(path.join(root, "functions/api/admin/report.js")).href
+);
+
+/** Mock D1 that records every SQL string and answers every count with `value`. */
+function countingDb(value = 0) {
+  const queries = [];
+  return {
+    queries,
+    prepare(sql) {
+      queries.push(sql);
+      return {
+        bind() {
+          return this;
+        },
+        async first() {
+          return { count: value, c: value, total: value };
+        },
+        async all() {
+          return { results: [] };
+        },
+      };
+    },
+  };
+}
+
+await testAsync("public stats exclude ip:* mirror rows", async () => {
+  const db = countingDb(7);
+  const res = await stats.onRequestGet({ env: { DB: db } });
+  const body = await res.json();
+
+  const guestQuery = db.queries.find((q) => q.includes("guest_usage_logs"));
+  assert.ok(guestQuery, "stats must query guest_usage_logs");
+  assert.match(guestQuery, /guest_key NOT LIKE 'ip:%'/);
+  // 7 logged-in + 7 guest cookie rows, not 7 + 14
+  assert.equal(body.totalProcessed, 14);
+});
+
+await testAsync("admin report rejects the API key in the query string", async () => {
+  const res = await adminReport.onRequestGet({
+    request: new Request("https://picturebackgroundremover.xyz/api/admin/report?key=s3cret"),
+    env: { ADMIN_API_KEY: "s3cret", DB: countingDb(1) },
+  });
+  assert.equal(res.status, 401);
+});
+
+await testAsync("admin report accepts the x-admin-key header and de-dupes guests", async () => {
+  const db = countingDb(4);
+  const res = await adminReport.onRequestGet({
+    request: new Request("https://picturebackgroundremover.xyz/api/admin/report", {
+      headers: { "x-admin-key": "s3cret" },
+    }),
+    env: { ADMIN_API_KEY: "s3cret", DB: db },
+  });
+  assert.equal(res.status, 200);
+
+  const guestQueries = db.queries.filter((q) => q.includes("guest_usage_logs"));
+  assert.equal(guestQueries.length, 4, "today / yesterday / month / all-time");
+  for (const q of guestQueries) {
+    assert.match(q, /guest_key NOT LIKE 'ip:%'/);
+  }
+});
+
+test("deploy workflow is gated on tests passing", () => {
+  const src = fs.readFileSync(path.join(root, ".github/workflows/deploy.yml"), "utf8");
+  assert.match(src, /needs:\s*test/);
+  assert.match(src, /pnpm test/);
+});
+
 test("frontend rate-limit.ts imports shared/rate-limit.js", () => {
   const src = fs.readFileSync(path.join(root, "src/lib/rate-limit.ts"), "utf8");
   assert.match(src, /shared\/rate-limit\.js/);

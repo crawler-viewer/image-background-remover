@@ -1,8 +1,10 @@
+import { EXCLUDE_IP_MIRROR_SQL } from "../guest-usage-sql.js";
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
-  // Simple API key auth
-  const authKey = request.headers.get("x-admin-key") || new URL(request.url).searchParams.get("key");
+  // Header only — a `?key=` would land in access logs, browser history and Referer
+  const authKey = request.headers.get("x-admin-key");
   if (!env.ADMIN_API_KEY || authKey !== env.ADMIN_API_KEY) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -25,8 +27,9 @@ export async function onRequestGet(context) {
     const todayUsage = await db.prepare(
       `SELECT COUNT(*) AS c FROM usage_logs WHERE action='remove_bg' AND created_at >= ? AND created_at < ?`
     ).bind(todayStart, todayEnd).first();
+    // Guest counts exclude the `ip:*` mirror rows (see guest-usage-sql.js)
     const todayGuest = await db.prepare(
-      `SELECT COUNT(*) AS c FROM guest_usage_logs WHERE action='remove_bg' AND created_at >= ? AND created_at < ?`
+      `SELECT COUNT(*) AS c FROM guest_usage_logs WHERE action='remove_bg' AND ${EXCLUDE_IP_MIRROR_SQL} AND created_at >= ? AND created_at < ?`
     ).bind(todayStart, todayEnd).first();
 
     // Yesterday's removals
@@ -34,7 +37,7 @@ export async function onRequestGet(context) {
       `SELECT COUNT(*) AS c FROM usage_logs WHERE action='remove_bg' AND created_at >= ? AND created_at < ?`
     ).bind(yesterdayStart, todayStart).first();
     const yesterdayGuest = await db.prepare(
-      `SELECT COUNT(*) AS c FROM guest_usage_logs WHERE action='remove_bg' AND created_at >= ? AND created_at < ?`
+      `SELECT COUNT(*) AS c FROM guest_usage_logs WHERE action='remove_bg' AND ${EXCLUDE_IP_MIRROR_SQL} AND created_at >= ? AND created_at < ?`
     ).bind(yesterdayStart, todayStart).first();
 
     // This month's removals
@@ -42,12 +45,14 @@ export async function onRequestGet(context) {
       `SELECT COUNT(*) AS c FROM usage_logs WHERE action='remove_bg' AND created_at >= ?`
     ).bind(monthStart).first();
     const monthGuest = await db.prepare(
-      `SELECT COUNT(*) AS c FROM guest_usage_logs WHERE action='remove_bg' AND created_at >= ?`
+      `SELECT COUNT(*) AS c FROM guest_usage_logs WHERE action='remove_bg' AND ${EXCLUDE_IP_MIRROR_SQL} AND created_at >= ?`
     ).bind(monthStart).first();
 
     // Total all time
     const totalUsage = await db.prepare(`SELECT COUNT(*) AS c FROM usage_logs WHERE action='remove_bg'`).first();
-    const totalGuest = await db.prepare(`SELECT COUNT(*) AS c FROM guest_usage_logs WHERE action='remove_bg'`).first();
+    const totalGuest = await db.prepare(
+      `SELECT COUNT(*) AS c FROM guest_usage_logs WHERE action='remove_bg' AND ${EXCLUDE_IP_MIRROR_SQL}`
+    ).first();
 
     // Users
     const totalUsers = await db.prepare(`SELECT COUNT(*) AS c FROM users`).first();

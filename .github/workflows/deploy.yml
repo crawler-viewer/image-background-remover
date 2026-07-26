@@ -6,7 +6,34 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Gate: deploy must never run on a red build. ci.yml runs the same checks for
+  # pull requests; this job is what blocks the push-to-main deploy.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Keep >= 22.18: pnpm test imports .ts via native type stripping
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          # Must match package.json "packageManager" exactly (action-setup v4)
+          version: 9.15.9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests
+        run: pnpm test
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read

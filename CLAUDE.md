@@ -17,7 +17,8 @@ pnpm pages:env:update         # push env vars to Cloudflare Pages preview+produc
 
 There is no lint, test, or typecheck script. Type errors surface at `pnpm build` time (Next.js runs `tsc`). When changing code, run `pnpm build` to verify.
 
-CI (`.github/workflows/deploy.yml`) builds and deploys on every push to `main`; there is no separate test job.
+CI: `.github/workflows/ci.yml` covers pull requests. `.github/workflows/deploy.yml` runs tests
+in a `test` job that the `deploy` job depends on, so a red build never reaches production.
 
 ## Architecture
 
@@ -37,7 +38,7 @@ Key consequence: anything dynamic (auth, quota, image processing, payments) must
 6. Upstream — **Clipdrop is preferred when `CLIPDROP_API_KEY` is set; otherwise falls back to Remove.bg via `REMOVE_BG_API_KEY`**. The README only mentions Remove.bg but the live code prefers Clipdrop.
 7. Usage row inserted on success only.
 
-`functions/api/quota.js` mirrors steps 1–5 (read-only) and is what the frontend polls.
+Guest removals write **two** `guest_usage_logs` rows (cookie + `ip:<addr>` mirror). Anything that counts removals must exclude the mirror rows via `EXCLUDE_IP_MIRROR_SQL` (`functions/api/guest-usage-sql.js`) — `stats.js`, `admin/report.js` and `cost-guard.js` all do.
 
 ### Plan config
 
@@ -59,7 +60,7 @@ Google OAuth flow lives in `functions/api/auth/google/` (login, callback). Sessi
 
 ### Database (Cloudflare D1)
 
-Binding name is `DB`. Schema is `db/schema.sql`. Tables: `users`, `usage_logs`, `guest_usage_logs`, `payment_orders`, `user_credits`. Apply with:
+Binding name is `DB`. Schema is `db/schema.sql`. Tables: `users`, `usage_logs`, `guest_usage_logs`, `payment_orders`, `user_credits`, `rate_limit_logs`. Apply with:
 
 ```bash
 npx wrangler d1 execute bg-remover-db --remote --file=db/schema.sql

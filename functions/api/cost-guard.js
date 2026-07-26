@@ -6,6 +6,7 @@
  * - DAILY_UPSTREAM_LIMIT — max claimed removals per UTC day (0/empty = disabled)
  * - UPSTREAM_COST_USD — optional estimated USD per image for logs (default 0.04)
  */
+import { EXCLUDE_IP_MIRROR_SQL } from "./guest-usage-sql.js";
 
 /**
  * @param {Date} [now]
@@ -50,31 +51,26 @@ export async function getDailyUpstreamUsage(env, now = new Date()) {
   if (!env?.DB) throw new Error("Missing D1 binding: DB");
   const { start, end } = dayRangeUtc(now);
 
-  const userRow = await env.DB
+  // One round trip: logged-in rows + guest cookie rows (mirror rows excluded)
+  const row = await env.DB
     .prepare(
-      `SELECT COUNT(*) AS count
-       FROM usage_logs
-       WHERE action = 'remove_bg'
-         AND created_at >= ?
-         AND created_at < ?`
+      `SELECT
+         (SELECT COUNT(*)
+            FROM usage_logs
+           WHERE action = 'remove_bg'
+             AND created_at >= ?
+             AND created_at < ?)
+       + (SELECT COUNT(*)
+            FROM guest_usage_logs
+           WHERE action = 'remove_bg'
+             AND ${EXCLUDE_IP_MIRROR_SQL}
+             AND created_at >= ?
+             AND created_at < ?) AS count`
     )
-    .bind(start, end)
+    .bind(start, end, start, end)
     .first();
 
-  // Exclude ip:* mirror rows written for guest anti-abuse
-  const guestRow = await env.DB
-    .prepare(
-      `SELECT COUNT(*) AS count
-       FROM guest_usage_logs
-       WHERE action = 'remove_bg'
-         AND created_at >= ?
-         AND created_at < ?
-         AND guest_key NOT LIKE 'ip:%'`
-    )
-    .bind(start, end)
-    .first();
-
-  return Number(userRow?.count || 0) + Number(guestRow?.count || 0);
+  return Number(row?.count || 0);
 }
 
 /**

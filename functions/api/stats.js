@@ -1,3 +1,5 @@
+import { EXCLUDE_IP_MIRROR_SQL } from "./guest-usage-sql.js";
+
 export async function onRequestGet(context) {
   const { env } = context;
 
@@ -8,8 +10,14 @@ export async function onRequestGet(context) {
     const totalRow = await db
       .prepare(`SELECT COUNT(*) AS count FROM usage_logs WHERE action = 'remove_bg'`)
       .first();
+    // Exclude the `ip:*` mirror rows or every guest removal counts twice
     const guestRow = await db
-      .prepare(`SELECT COUNT(*) AS count FROM guest_usage_logs WHERE action = 'remove_bg'`)
+      .prepare(
+        `SELECT COUNT(*) AS count
+         FROM guest_usage_logs
+         WHERE action = 'remove_bg'
+           AND ${EXCLUDE_IP_MIRROR_SQL}`
+      )
       .first();
 
     const totalProcessed = Number(totalRow?.count || 0) + Number(guestRow?.count || 0);
