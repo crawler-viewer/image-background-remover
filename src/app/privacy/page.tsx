@@ -58,7 +58,7 @@ export default function Page() {
               <section>
                 <h2 className="text-lg font-semibold">6. Data Retention</h2>
                 <p className="mt-2">
-                  Account data is retained as long as your account is active. Usage logs are retained for billing and analytics purposes. You may request account deletion by contacting us.
+                  Account data is retained as long as your account is active. Usage logs are retained for billing and analytics purposes. You can export or delete your account data yourself from your <a href="/account/" className="text-emerald-700 underline underline-offset-4">account page</a>; deleting removes your profile, usage history and any credit balance. Records of completed payments are kept for accounting and dispute handling, with your identity detached from them.
                 </p>
               </section>
 

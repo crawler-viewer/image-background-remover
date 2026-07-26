@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { parseMoneyValue, trackEvent, trackPurchase } from "@/lib/analytics";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import DataRightsCard from "@/components/account/DataRightsCard";
 
 type AccountUser = {
   id: number | null;
@@ -594,6 +595,8 @@ export default function AccountPageClient() {
               </div>
             )}
           </section>
+
+          <DataRightsCard creditBalance={Number(user?.credits || 0)} />
         </div>
       </main>
       <SiteFooter />

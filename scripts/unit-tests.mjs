@@ -1557,6 +1557,158 @@ await testAsync("a failed PayPal call does not leave a pending order behind", as
   }
 });
 
+console.log("\naccount data rights");
+const accountDelete = await import(
+  pathToFileURL(path.join(root, "functions/api/account/delete.js")).href
+);
+const accountExport = await import(
+  pathToFileURL(path.join(root, "functions/api/account/export.js")).href
+);
+
+const ACCOUNT_ENV = { AUTH_SECRET: "test-secret-for-unit-tests" };
+
+/** Records every statement so we can assert on order and content. */
+function fakeAccountDb(user = { id: 7, google_sub: "sub-7", email: "a@b.c", plan: "pro" }) {
+  const statements = [];
+  const handle = (sql, args) => {
+    const s = sql.replace(/\s+/g, " ").trim();
+    statements.push({ sql: s, args });
+    if (s.includes("FROM users")) return { row: user };
+    if (s.includes("FROM usage_logs")) return { results: [{ action: "remove_bg", created_at: "x" }] };
+    if (s.includes("FROM payment_orders")) return { results: [{ id: 1, amount_usd: "9.90" }] };
+    if (s.includes("FROM user_credits")) return { row: { balance: 12, updated_at: "x" } };
+    return { meta: { changes: 1 } };
+  };
+  return {
+    statements,
+    prepare(sql) {
+      const stmt = {
+        sql,
+        args: [],
+        bind(...args) {
+          stmt.args = args;
+          return stmt;
+        },
+        async first() {
+          return handle(sql, stmt.args).row ?? null;
+        },
+        async all() {
+          return handle(sql, stmt.args);
+        },
+        async run() {
+          return handle(sql, stmt.args);
+        },
+      };
+      return stmt;
+    },
+    async batch(stmts) {
+      return stmts.map((st) => handle(st.sql, st.args));
+    },
+  };
+}
+
+async function signedRequest(url, init = {}) {
+  const cookie = await authLib.createSessionCookie(ACCOUNT_ENV, {
+    sub: "sub-7",
+    email: "a@b.c",
+    name: "Test",
+  });
+  return new Request(url, {
+    ...init,
+    headers: { ...(init.headers || {}), Cookie: cookie.split(";")[0] },
+  });
+}
+
+await testAsync("export requires a session and streams the user's own rows", async () => {
+  const anon = await accountExport.onRequestGet({
+    request: new Request("https://x/api/account/export"),
+    env: { ...ACCOUNT_ENV, DB: fakeAccountDb() },
+  });
+  assert.equal(anon.status, 401);
+
+  const db = fakeAccountDb();
+  const res = await accountExport.onRequestGet({
+    request: await signedRequest("https://x/api/account/export"),
+    env: { ...ACCOUNT_ENV, DB: db },
+  });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("Content-Disposition") || "", /attachment/);
+
+  const body = await res.json();
+  assert.equal(body.profile.email, "a@b.c");
+  assert.ok(Array.isArray(body.usage) && Array.isArray(body.payments));
+  // Every query must be scoped to this user
+  for (const st of db.statements.filter((s) => s.sql.includes("WHERE google_sub"))) {
+    assert.equal(st.args[0], "sub-7");
+  }
+});
+
+await testAsync("delete refuses without an explicit confirmation", async () => {
+  const db = fakeAccountDb();
+  const res = await accountDelete.onRequestPost({
+    request: await signedRequest("https://x/api/account/delete", {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
+    env: { ...ACCOUNT_ENV, DB: db },
+  });
+  assert.equal(res.status, 400);
+  assert.equal((await res.json()).code, "CONFIRMATION_REQUIRED");
+  assert.equal(
+    db.statements.some((s) => s.sql.startsWith("DELETE") || s.sql.startsWith("UPDATE")),
+    false,
+    "nothing may be written without confirmation"
+  );
+});
+
+await testAsync("delete erases PII, keeps payments, and re-keys them together", async () => {
+  const db = fakeAccountDb();
+  const res = await withSilencedConsole(async () =>
+    accountDelete.onRequestPost({
+      request: await signedRequest("https://x/api/account/delete", {
+        method: "POST",
+        body: JSON.stringify({ confirm: "DELETE" }),
+      }),
+      env: { ...ACCOUNT_ENV, DB: db },
+    })
+  );
+
+  assert.equal(res.status, 200);
+  // Session must not survive the account
+  assert.match(res.headers.get("Set-Cookie") || "", /bg_session=;?\s*Max-Age=0/);
+
+  const writes = db.statements.filter(
+    (s) => s.sql.startsWith("DELETE") || s.sql.startsWith("UPDATE")
+  );
+  const order = writes.map((s) => s.sql.split(" ").slice(0, 3).join(" "));
+  assert.deepEqual(order, [
+    "DELETE FROM usage_logs",
+    "DELETE FROM user_credits",
+    "UPDATE payment_orders SET",
+    "UPDATE users SET",
+  ]);
+
+  // The users row is re-keyed LAST: every other statement matches the old
+  // google_sub, so re-keying first would silently orphan them.
+  const tombstone = writes[2].args[0];
+  assert.match(tombstone, /^deleted:/);
+  assert.equal(writes[2].args[1], "sub-7");
+  assert.equal(writes[3].args[0], tombstone, "users and payments share one tombstone");
+  assert.equal(writes[3].args[2], "sub-7");
+
+  // Payment rows are kept (accounting), profile columns are nulled
+  assert.equal(
+    writes.some((s) => s.sql.startsWith("DELETE FROM payment_orders")),
+    false,
+    "financial records must survive"
+  );
+  const usersUpdate = writes[3].sql;
+  for (const col of ["email = NULL", "name = NULL", "avatar_url = NULL"]) {
+    assert.ok(usersUpdate.includes(col), `users update should clear ${col}`);
+  }
+  assert.ok(usersUpdate.includes("status = 'deleted'"));
+});
+
 console.log("\nshared products catalog");
 const sharedProducts = await import(
   pathToFileURL(path.join(root, "shared/products.js")).href
