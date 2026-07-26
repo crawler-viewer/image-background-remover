@@ -1,6 +1,6 @@
 "use client";
 
-import type { RefObject } from "react";
+import type { KeyboardEvent, RefObject } from "react";
 import { formatFileSize } from "@/lib/bg-remover/format";
 import type { BatchItem } from "@/lib/bg-remover/types";
 
@@ -10,10 +10,54 @@ type Props = {
   containerRef: RefObject<HTMLDivElement | null>;
   /** Start dragging from a mouse/touch x position */
   onGrab: (clientX: number) => void;
+  /** Move the wipe to an absolute percentage (keyboard) */
+  onSetPosition: (percent: number) => void;
 };
 
+const STEP = 2;
+const BIG_STEP = 10;
+
 /** Before/after wipe slider for one finished image. */
-export default function CompareSlider({ item, sliderPos, containerRef, onGrab }: Props) {
+export default function CompareSlider({
+  item,
+  sliderPos,
+  containerRef,
+  onGrab,
+  onSetPosition,
+}: Props) {
+  const rounded = Math.round(sliderPos);
+
+  /**
+   * The wipe is the product's signature control, so it has to work without a
+   * pointer: arrows nudge, PageUp/PageDown jump, Home/End pin to either image.
+   */
+  const handleKeyDown = (e: KeyboardEvent) => {
+    const move = (delta: number) => {
+      e.preventDefault();
+      onSetPosition(Math.max(0, Math.min(100, sliderPos + delta)));
+    };
+    switch (e.key) {
+      case "ArrowLeft":
+      case "ArrowDown":
+        return move(-STEP);
+      case "ArrowRight":
+      case "ArrowUp":
+        return move(STEP);
+      case "PageDown":
+        return move(-BIG_STEP);
+      case "PageUp":
+        return move(BIG_STEP);
+      case "Home":
+        e.preventDefault();
+        return onSetPosition(0);
+      case "End":
+        e.preventDefault();
+        return onSetPosition(100);
+      default:
+        break;
+    }
+  };
+
   return (
     <>
       <div
@@ -54,7 +98,18 @@ export default function CompareSlider({ item, sliderPos, containerRef, onGrab }:
           className="pointer-events-none absolute bottom-0 top-0 w-0.5 bg-white shadow"
           style={{ left: `${sliderPos}%`, transform: "translateX(-50%)" }}
         >
-          <div className="pointer-events-auto absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 cursor-col-resize items-center justify-center rounded-full border border-black/10 bg-white shadow-md transition-transform hover:scale-110">
+          <div
+            role="slider"
+            tabIndex={0}
+            aria-label="Compare original and background-removed image"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={rounded}
+            aria-valuetext={`${rounded}% original, ${100 - rounded}% background removed`}
+            aria-orientation="horizontal"
+            onKeyDown={handleKeyDown}
+            className="pointer-events-auto absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 cursor-col-resize items-center justify-center rounded-full border border-black/10 bg-white shadow-md transition-transform hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+          >
             <svg
               className="h-5 w-5 text-neutral-600"
               fill="none"
@@ -76,7 +131,8 @@ export default function CompareSlider({ item, sliderPos, containerRef, onGrab }:
       </div>
 
       <p className="text-center text-xs text-neutral-500">
-        Drag the slider to compare · {item.file.name} · {formatFileSize(item.file.size)}
+        Drag the slider — or focus it and use the arrow keys — to compare · {item.file.name} ·{" "}
+        {formatFileSize(item.file.size)}
         {item.processingSec ? ` · ${item.processingSec}s` : ""}
       </p>
     </>

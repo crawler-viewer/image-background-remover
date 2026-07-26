@@ -869,6 +869,7 @@ export default function BgRemover() {
                 sliderPos={sliderPos}
                 containerRef={containerRef}
                 onGrab={grabSlider}
+                onSetPosition={setSliderPos}
               />
 
               <ResultActions
